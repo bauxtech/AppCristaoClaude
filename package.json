@@ -55,7 +55,11 @@
       "./jest.setup.js"
     ],
     "testPathIgnorePatterns": [
-      "/node_modules/"
+      "/node_modules/",
+      "/web/"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/web/"
     ]
   }
 }
