@@ -5,6 +5,7 @@ import { AppText, Avatar, Button, Card, Chip, ConfirmCard, EmptyState, Icon, Lis
 import { File } from 'expo-file-system'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { cancelAllReminders } from '../../../lib/reminders'
+import { signOutRemote } from '../../../lib/supabase'
 import { useSession } from '../../../state/session'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -414,6 +415,7 @@ export function SignOutScreen() {
           if (wipe) deleteLocalFiles([...sermons.map((s) => s.audioUri), ...prayer.requests.map((r) => r.videoUri), profile.photoUri])
           // Os lembretes deste aparelho param junto com a conta.
           cancelAllReminders()
+          signOutRemote()
           session.signOut()
           router.replace('/entrar')
         }}

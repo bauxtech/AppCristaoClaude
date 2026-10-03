@@ -123,3 +123,10 @@ describe('frases de crise', () => {
   ])('detecta: %s', (frase) => expect(isCrisis(frase)).toBe(true))
   test.each(['Jesus morreu por nós', 'o que é a morte na Bíblia', 'como orar pelos que morreram'])('não confunde: %s', (frase) => expect(isCrisis(frase)).toBe(false))
 })
+
+describe('chat pelo servidor', () => {
+  test('chave do versículo vira livro, capítulo e versículo', () => {
+    const { parseKey } = require('../src/features/chat/remote')
+    expect(parseKey('1-pedro:5:7')).toEqual({ book: '1-pedro', chapter: 5, verse: 7 })
+  })
+})

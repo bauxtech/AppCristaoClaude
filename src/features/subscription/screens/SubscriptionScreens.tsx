@@ -4,7 +4,7 @@ import { Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppText, Button, Card, Icon, Page, SectionLabel, Segmented, Sheet, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
-import { openStoreSubscriptions, simulateStorePurchase, STORE_NAME } from '../../../lib/store'
+import { openStoreSubscriptions, purchase, simulateStorePurchase, STORE_ENABLED, STORE_NAME } from '../../../lib/store'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { longDate } from '../../settings/screens/AccountScreens'
@@ -106,6 +106,24 @@ export function StoreSheet({ billing, visible, onCancel, onConfirm }: { billing:
   )
 }
 
+/**
+ * Assinar: com a loja ligada, abre a folha de compra da própria Apple ou Google.
+ * Sem a loja, abre a folha de exemplo (onSample). Cancelar volta para a tela, sem mensagem de erro.
+ */
+function useBuy(onSample: () => void, onDone: (b: Billing) => void) {
+  const toast = useToast()
+  return async (billing: Billing) => {
+    if (!STORE_ENABLED) return onSample()
+    try {
+      const r = await purchase(billing)
+      if (r === 'ok') onDone(billing)
+      else if (r === 'unavailable') toast('A loja não está disponível agora. Tente de novo.')
+    } catch {
+      toast('A compra não foi concluída. Tente de novo.')
+    }
+  }
+}
+
 function useRestore() {
   const toast = useToast()
   const sub = useSubscription()
@@ -133,6 +151,10 @@ export function PlansScreen() {
   const sub = useSubscription()
   const [billing, setBilling] = useState<Billing>('annual')
   const [sheet, setSheet] = useState(false)
+  const buy = useBuy(
+    () => setSheet(true),
+    (b) => (sub.subscribe(b), router.replace('/assinatura/confirmada')),
+  )
   return (
     <Page title="Assinar">
       <View style={{ backgroundColor: colors.primarySoft, borderRadius: 20, padding: 20, alignItems: 'center', gap: 4 }}>
@@ -150,7 +172,7 @@ export function PlansScreen() {
       <PriceCard billing={billing} />
       <SectionLabel>O que está incluído</SectionLabel>
       <FeatureList />
-      <Button label="Assinar" onPress={() => setSheet(true)} />
+      <Button label="Assinar" onPress={() => buy(billing)} />
       <LegalLinks />
       <StoreSheet
         billing={billing}
@@ -286,7 +308,7 @@ export function MyPlanScreen() {
 
       <SectionLabel>Trocar período</SectionLabel>
       <BillingPicker value={billing} onChange={setBilling} />
-      {billing !== sub.plan.billing ? <Button label={`Trocar para ${PRICES[billing].label.toLowerCase()}`} variant="soft" onPress={() => setSheet(true)} /> : null}
+      {billing !== sub.plan.billing ? <Button label={`Trocar para ${PRICES[billing].label.toLowerCase()}`} variant="soft" onPress={() => (STORE_ENABLED ? openStoreSubscriptions() : setSheet(true))} /> : null}
 
       <Button label="Gerenciar assinatura" onPress={openStoreSubscriptions} accessibilityHint={`Abre as assinaturas na ${STORE_NAME}`} />
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
@@ -394,6 +416,10 @@ export function BlockedScreen() {
   const restore = useRestore()
   const [billing, setBilling] = useState<Billing>('annual')
   const [sheet, setSheet] = useState(false)
+  const buy = useBuy(
+    () => setSheet(true),
+    (b) => (sub.subscribe(b), router.push('/assinatura/confirmada')),
+  )
   const expired = !!sub.plan
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 32, paddingBottom: insets.bottom + 24, paddingHorizontal: 20, gap: 16 }}>
@@ -410,7 +436,7 @@ export function BlockedScreen() {
       </View>
       <BillingPicker value={billing} onChange={setBilling} />
       <PriceCard billing={billing} />
-      <Button label="Assinar" onPress={() => setSheet(true)} />
+      <Button label="Assinar" onPress={() => buy(billing)} />
       <Button label="Restaurar compra" variant="text" onPress={restore} />
       <View style={{ borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 16, gap: 4 }}>
         <SectionLabel>Acesso permitido</SectionLabel>

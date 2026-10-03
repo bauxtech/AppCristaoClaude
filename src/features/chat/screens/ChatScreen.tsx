@@ -14,6 +14,8 @@ import { slugify } from '../../bible/books'
 import { formatMeetingDay } from '../../cell/meetings'
 import { useSermons } from '../../sermon/SermonContext'
 import { askBible, transcribeQuestion, type ChatContextRef } from '../answer'
+import { askRemote, ChatBlocked } from '../remote'
+import { IS_REMOTE } from '../../../lib/supabase'
 import { useChat, type Conversation, type Message } from '../ChatContext'
 import { DAILY_LIMIT, isCrisis } from '../rules'
 
@@ -83,11 +85,18 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
     }
     setTyping(true)
     try {
-      const answer = await askBible(q, c.context, sermon)
+      const answer = IS_REMOTE ? await askRemote(q, null, c.context?.label ?? null) : await askBible(q, c.context, sermon)
       const msg: Message = { id: replyId, role: 'assistant', text: answer.text, answer }
       if (existing) chat.replaceMessage(c.id, replyId, { ...msg, failed: false })
       else chat.addMessage(c.id, msg)
-    } catch {
+    } catch (e) {
+      // O servidor confere crise, assinatura e limite de novo: o app obedece.
+      if (e instanceof ChatBlocked) {
+        if (e.reason === 'crisis') setCrisis(true)
+        if (e.reason === 'limit') chat.fillTodayLimit()
+        if (e.reason === 'no_access') router.replace('/assinatura')
+        return
+      }
       const msg: Message = { id: replyId, role: 'assistant', text: q, failed: true }
       if (existing) chat.replaceMessage(c.id, replyId, msg)
       else chat.addMessage(c.id, msg)

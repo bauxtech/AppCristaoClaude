@@ -54,3 +54,9 @@ jest.mock('@react-native-community/netinfo', () => ({
   addEventListener: jest.fn(() => () => {}),
   fetch: jest.fn(async () => ({ isConnected: true, isInternetReachable: true })),
 }))
+jest.mock('react-native-purchases', () => ({
+  __esModule: true,
+  default: { configure: jest.fn(), getOfferings: jest.fn(), purchasePackage: jest.fn(), restorePurchases: jest.fn() },
+  PURCHASES_ERROR_CODE: { PURCHASE_CANCELLED_ERROR: '1' },
+}))
+jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async () => null), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }))

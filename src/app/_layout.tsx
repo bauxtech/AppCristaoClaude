@@ -13,6 +13,8 @@ import { useEffect } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ConnectionFrame, ToastProvider } from '../components'
 import { ConnectionProvider } from '../state/connection'
+import { watchSession } from '../lib/supabase'
+import { configureStore } from '../lib/store'
 import { AudioProvider } from '../features/audio/AudioContext'
 import { BibleProvider } from '../features/bible/BibleContext'
 import { CellProvider } from '../features/cell/CellContext'
@@ -30,6 +32,8 @@ SplashScreen.preventAutoHideAsync().catch(() => {})
 
 function RootStack() {
   const { colors, isDark } = useTheme()
+  // Com o servidor ligado, a loja (RevenueCat) usa o id da pessoa logada.
+  useEffect(() => watchSession(configureStore), [])
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />

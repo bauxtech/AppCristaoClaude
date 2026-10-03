@@ -1,4 +1,6 @@
 import { router } from 'expo-router'
+import { hasProfileName, IS_REMOTE, sendLoginCode, verifyLoginCode } from '../../../lib/supabase'
+import { configureStore } from '../../../lib/store'
 import { useEffect, useRef, useState } from 'react'
 import { TextInput, View } from 'react-native'
 import { AppText, Button, useToast } from '../../../components'
@@ -30,8 +32,25 @@ export function CodeScreen() {
 
   const phoneLabel = `+55 (${draft.ddd}) ${formatPhoneNumber(draft.number)}`
   const channel = draft.channel === 'whatsapp' ? 'WhatsApp' : 'SMS'
+  const e164 = `+55${draft.ddd}${draft.number}`
+
+  async function verifyRemote() {
+    if (onlyDigits(code).length < 6) return setError('Digite os 6 números do código.')
+    try {
+      const uid = await verifyLoginCode(e164, onlyDigits(code))
+      if (!uid) throw new Error('sem usuário')
+      setError('')
+      configureStore(uid)
+      updateProfile({ phone: phoneLabel })
+      router.push((await hasProfileName(uid)) ? '/bem-vindo-de-volta' : '/termos')
+    } catch {
+      // O servidor limita as tentativas. A mensagem não diz se o número existe.
+      setError(CODE_MESSAGES.wrong)
+    }
+  }
 
   function verify() {
+    if (IS_REMOTE) return void verifyRemote()
     const result = checkCode(code, DEMO_CODES)
     if (result === 'incomplete') {
       setError('Digite os 6 números do código.')
@@ -50,6 +69,7 @@ export function CodeScreen() {
   function resend() {
     setCountdown(RESEND_SECONDS)
     setError('')
+    if (IS_REMOTE) sendLoginCode(e164, draft.channel === 'whatsapp' ? 'whatsapp' : 'sms').catch(() => setError('Não foi possível reenviar. Tente de novo.'))
     toast('Código reenviado')
   }
 
@@ -64,11 +84,7 @@ export function CodeScreen() {
       footer={<Button label="Verificar" onPress={verify} />}
     >
       <View>
-        <View
-          style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        >
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {digits.map((d, i) => (
             <View
               key={i}
@@ -113,15 +129,12 @@ export function CodeScreen() {
         </AppText>
       ) : null}
       <View style={{ alignItems: 'center', gap: 4 }}>
-        <Button
-          label={countdown > 0 ? `Reenviar código em ${countdown}s` : 'Reenviar código'}
-          variant="text"
-          onPress={resend}
-          disabled={countdown > 0}
-        />
-        <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-          {`Na prévia, use ${DEMO_CODES.ok} para entrar.`}
-        </AppText>
+        <Button label={countdown > 0 ? `Reenviar código em ${countdown}s` : 'Reenviar código'} variant="text" onPress={resend} disabled={countdown > 0} />
+        {IS_REMOTE ? null : (
+          <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
+            {`Na prévia, use ${DEMO_CODES.ok} para entrar.`}
+          </AppText>
+        )}
       </View>
     </OnboardingScaffold>
   )
