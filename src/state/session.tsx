@@ -32,6 +32,9 @@ interface SessionValue {
   /** Dias (AAAA-MM-DD) com leitura ou oração. Não existe sequência, só o total. */
   activeDays: string[]
   markActiveToday: () => void
+  /** Minutos de leitura e oração por dia (AAAA-MM-DD). */
+  minutes: Record<string, { reading: number; prayer: number }>
+  addMinutes: (kind: 'reading' | 'prayer', mins: number) => void
 }
 
 const empty: Profile = { name: '', phone: '', tradition: null, goal: null, time: null, church: null }
@@ -42,6 +45,21 @@ function todayISO() {
   const d = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/** Semana de exemplo do protótipo: leitura e oração por dia, de segunda a domingo. */
+export function sampleMinutes(now = new Date()) {
+  const reading = [40, 25, 55, 0, 30, 70, 44]
+  const prayer = [15, 10, 20, 0, 15, 30, 22]
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
+  const out: Record<string, { reading: number; prayer: number }> = {}
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)
+    if (d > now) break
+    out[`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`] = { reading: reading[i], prayer: prayer[i] }
+  }
+  return out
 }
 
 /** 48 dias de exemplo: os 3 primeiros do mês e 45 espalhados antes. */
@@ -68,6 +86,9 @@ export function SessionProvider({
   const [sampleData, setSampleData] = useState<boolean>(() => initialSampleData ?? getItem('sampleData', false))
   const [dataEpoch, setDataEpoch] = useState(0)
   const [activeDays, setActiveDays] = useState<string[]>(() => (initialSampleData !== undefined ? (initialSampleData ? sampleActiveDays() : []) : getItem('activeDays', [])))
+  const [minutes, setMinutes] = useState<Record<string, { reading: number; prayer: number }>>(() =>
+    initialSampleData !== undefined ? (initialSampleData ? sampleMinutes() : {}) : getItem('minutes', {}),
+  )
   const [onboarded, setOnboarded] = useState<boolean>(() => initialOnboarded ?? getItem('onboarded', false))
   const [profile, setProfile] = useState<Profile>(() => getItem('profile', empty))
   const [cellStatus, setCellStatusState] = useState<CellStatus>(() => initialCellStatus ?? getItem('cellStatus', 'none'))
@@ -96,6 +117,9 @@ export function SessionProvider({
     const days = sample ? sampleActiveDays() : []
     setActiveDays(days)
     setItem('activeDays', days)
+    const mins = sample ? sampleMinutes() : {}
+    setMinutes(mins)
+    setItem('minutes', mins)
     setDataEpoch((e) => e + 1)
   }, [])
 
@@ -105,6 +129,17 @@ export function SessionProvider({
       if (prev.includes(t)) return prev
       const next = [...prev, t]
       setItem('activeDays', next)
+      return next
+    })
+  }, [])
+
+  const addMinutes = useCallback((kind: 'reading' | 'prayer', mins: number) => {
+    if (mins <= 0) return
+    setMinutes((prev) => {
+      const t = todayISO()
+      const cur = prev[t] ?? { reading: 0, prayer: 0 }
+      const next = { ...prev, [t]: { ...cur, [kind]: cur[kind] + mins } }
+      setItem('minutes', next)
       return next
     })
   }, [])
@@ -120,8 +155,8 @@ export function SessionProvider({
   }, [resetData])
 
   const value = useMemo(
-    () => ({ onboarded, profile, cellStatus, updateProfile, setCellStatus, finishOnboarding, signOut, sampleData, dataEpoch, resetData, activeDays, markActiveToday }),
-    [onboarded, profile, cellStatus, updateProfile, setCellStatus, finishOnboarding, signOut, sampleData, dataEpoch, resetData, activeDays, markActiveToday],
+    () => ({ onboarded, profile, cellStatus, updateProfile, setCellStatus, finishOnboarding, signOut, sampleData, dataEpoch, resetData, activeDays, markActiveToday, minutes, addMinutes }),
+    [onboarded, profile, cellStatus, updateProfile, setCellStatus, finishOnboarding, signOut, sampleData, dataEpoch, resetData, activeDays, markActiveToday, minutes, addMinutes],
   )
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }

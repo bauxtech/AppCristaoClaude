@@ -13,6 +13,7 @@ import { toISODate } from '../../prayer/data'
 import { formatBR } from '../../prayer/dates'
 import { verseLabel, type Sermon } from '../data'
 import { useSermons } from '../SermonContext'
+import { SuggestedSong } from '../../music/screens/MusicScreens'
 
 function useSermon() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -139,6 +140,7 @@ function Ready({ s }: { s: Sermon }) {
           {isLeader ? <Button label="Transformar em roteiro da célula" onPress={toPlan} /> : null}
           {cell ? <Button label="Enviar resumo para a célula" variant="outline" onPress={() => setSheet('send')} /> : null}
           <Button label="Perguntar sobre este culto" icon="chat" variant="outline" onPress={() => router.push({ pathname: '/chat', params: { culto: s.id } })} />
+          <SuggestedSong moment="culto" />
         </>
       ) : null}
 

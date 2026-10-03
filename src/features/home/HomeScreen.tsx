@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, ScrollView, View } from 'react-native'
+import { Linking, Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppText, Button, Card, Chip, Icon, IconButton, ListRow, MIN_TOUCH, ProgressBar, SectionLabel, Sheet, useToast } from '../../components'
 import { formatLongDate } from '../../lib/date'
@@ -15,6 +15,7 @@ import { slugify } from '../bible/books'
 import { planState } from '../bible/plans'
 import { useChurch } from '../church/ChurchContext'
 import { upcomingCommitments } from './commitments'
+import { SERVICES, songUrl } from '../music/catalog'
 import { verseText } from '../bible/text'
 import { moods, passage, prayerOfDay, reflection, songOfDay, wordForNow } from './data'
 
@@ -228,8 +229,21 @@ export function HomeScreen() {
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Button label="Spotify" icon="external" variant="soft" size="sm" onPress={() => toast('Abrindo o Spotify')} accessibilityHint="Abre a música no Spotify" style={{ flex: 1 }} />
-            <Button label="YouTube" icon="external" variant="soft" size="sm" onPress={() => toast('Abrindo o YouTube')} accessibilityHint="Abre a música no YouTube" style={{ flex: 1 }} />
+            {SERVICES.map((svc) => (
+              <Button
+                key={svc}
+                label={svc}
+                icon="external"
+                variant="soft"
+                size="sm"
+                accessibilityHint={`Abre a música no ${svc}`}
+                onPress={() => {
+                  toast(`Abrindo o ${svc}`)
+                  Linking.openURL(songUrl(songOfDay, svc)).catch(() => {})
+                }}
+                style={{ flex: 1 }}
+              />
+            ))}
           </View>
         </Card>
       </View>

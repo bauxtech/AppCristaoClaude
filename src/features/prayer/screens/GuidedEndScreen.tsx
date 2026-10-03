@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect } from 'react'
 import { usePrayer } from '../PrayerContext'
+import { useSession } from '../../../state/session'
 import { Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Circle, Polyline } from 'react-native-svg'
@@ -18,7 +19,11 @@ export function GuidedEndScreen() {
   const insets = useSafeAreaInsets()
   const { min } = useLocalSearchParams<{ min: string }>()
   const { markPrayedToday } = usePrayer()
-  useEffect(() => markPrayedToday(), []) // eslint-disable-line react-hooks/exhaustive-deps
+  const { addMinutes } = useSession()
+  useEffect(() => {
+    markPrayedToday()
+    addMinutes('prayer', Number(min) || 0)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.darkSurface, paddingTop: insets.top, paddingBottom: insets.bottom + 24, paddingHorizontal: 32, justifyContent: 'center', gap: 24 }}>

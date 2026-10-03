@@ -66,7 +66,8 @@
           "photosPermission": "As fotos são usadas para a capa da célula e para materiais que você escolher.",
           "cameraPermission": "A câmera é usada para gravar pedidos em Libras, ler o QR code da célula e fotografar a capa e os materiais."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "eas": {

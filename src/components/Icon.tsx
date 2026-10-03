@@ -63,6 +63,7 @@ export type IconName =
   | 'award'
   | 'checkCircle'
   | 'users'
+  | 'heartFilled'
 
 interface Props {
   name: IconName
@@ -462,6 +463,8 @@ function paths(name: IconName, s: Record<string, unknown>, color: string) {
           <Polyline points="8 12 11 15 16 9" {...s} />
         </>
       )
+    case 'heartFilled':
+      return <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" {...s} fill={color} />
     case 'users':
       return (
         <>

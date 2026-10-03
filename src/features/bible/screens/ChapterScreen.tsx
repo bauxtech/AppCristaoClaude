@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { AppText, Button, Card, IconButton, MIN_TOUCH, Sheet, Tag, TopBar, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
@@ -11,6 +11,8 @@ import { bookBySlug } from '../books'
 import { chapterKey, getChapter } from '../text'
 import { TRANSLATIONS } from '../../onboarding/data'
 import { NotFound } from './NotFound'
+import { useSession } from '../../../state/session'
+import { SuggestedSong } from '../../music/screens/MusicScreens'
 
 export function ChapterScreen() {
   const { colors, isDark } = useTheme()
@@ -23,6 +25,16 @@ export function ChapterScreen() {
   const book = bookBySlug(slug)
   const bible = useBible()
   const [selected, setSelected] = useState<number | null>(null)
+  const { addMinutes } = useSession()
+
+  // Tempo de leitura: conta enquanto o capítulo está aberto, até 30 minutos por vez.
+  useEffect(() => {
+    const started = Date.now()
+    return () => {
+      const mins = Math.min(30, Math.floor((Date.now() - started) / 60000))
+      if (mins > 0) addMinutes('reading', mins)
+    }
+  }, [slug, chapter]) // eslint-disable-line react-hooks/exhaustive-deps
   const [sheet, setSheet] = useState<'actions' | 'highlight' | 'translation' | 'more' | null>(null)
 
   if (!book || !chapter || chapter < 1 || chapter > book.chapters) return <NotFound />
@@ -149,6 +161,11 @@ export function ChapterScreen() {
             <Button label={prev ? `Capítulo ${prev}` : 'Início'} icon="chevronLeft" variant="outline" size="sm" disabled={!prev} onPress={() => prev && router.replace(`/biblia/${slug}/${prev}`)} style={{ flex: 1 }} />
             <Button label={next ? `Capítulo ${next}` : 'Fim'} variant="outline" size="sm" disabled={!next} onPress={() => next && router.replace(`/biblia/${slug}/${next}`)} style={{ flex: 1 }} />
           </View>
+          {isRead && verses.length ? (
+            <View style={{ alignSelf: 'stretch', marginTop: 8 }}>
+              <SuggestedSong moment="oracao" />
+            </View>
+          ) : null}
         </View>
       </ScrollView>
 

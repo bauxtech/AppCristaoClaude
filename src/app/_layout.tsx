@@ -19,6 +19,7 @@ import { ChurchProvider } from '../features/church/ChurchContext'
 import { PrayerProvider } from '../features/prayer/PrayerContext'
 import { SermonProvider } from '../features/sermon/SermonContext'
 import { ChatProvider } from '../features/chat/ChatContext'
+import { ProfileProvider } from '../features/profile/ProfileContext'
 import { SessionProvider } from '../state/session'
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider'
 
@@ -69,11 +70,13 @@ export default function RootLayout() {
                 <ChurchProvider>
                   <SermonProvider>
                     <ChatProvider>
-                      <AudioProvider>
-                        <ToastProvider>
-                          <RootStack />
-                        </ToastProvider>
-                      </AudioProvider>
+                      <ProfileProvider>
+                        <AudioProvider>
+                          <ToastProvider>
+                            <RootStack />
+                          </ToastProvider>
+                        </AudioProvider>
+                      </ProfileProvider>
                     </ChatProvider>
                   </SermonProvider>
                 </ChurchProvider>

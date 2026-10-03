@@ -1,0 +1,3 @@
+import { EditProfileScreen } from '../../../features/profile/screens/ProfileScreens'
+
+export default EditProfileScreen
