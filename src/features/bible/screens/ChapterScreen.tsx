@@ -29,7 +29,7 @@ export function ChapterScreen() {
 
   const { verses, complete } = getChapter(slug, chapter)
   const key = chapterKey(slug, chapter)
-  const isRead = chapter <= book.read || bible.readChapters.includes(key)
+  const isRead = bible.readChapters.includes(key)
   const next = chapter < book.chapters ? chapter + 1 : null
   const prev = chapter > 1 ? chapter - 1 : null
   const title = `${book.name} ${chapter}`

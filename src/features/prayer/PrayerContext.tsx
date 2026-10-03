@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
+import { useSession } from '../../state/session'
+import { useDataReset } from '../../state/useDataReset'
 import { sampleData, toISODate, type Campaign, type CampaignType, type DiaryEntry, type PrayerRequest } from './data'
 
 interface PrayerState {
@@ -27,6 +29,8 @@ interface PrayerValue extends PrayerState {
   /** Vídeo em Libras gravado para o pedido que está sendo escrito. */
   draftVideo: { uri: string; seconds: number } | null
   setDraftVideo: (v: { uri: string; seconds: number } | null) => void
+  /** Conta o dia de hoje no total de dias com oração. */
+  markPrayedToday: () => void
 }
 
 const PrayerContext = createContext<PrayerValue | null>(null)
@@ -46,11 +50,18 @@ export function titleFrom(text: string) {
   return (space > 20 ? cut.slice(0, space) : cut).replace(/[,;:]$/, '')
 }
 
+/** Conta nova: diário, pedidos e campanhas vazios. Exemplo: os do protótipo. */
+export function prayerInitial(sample: boolean): PrayerState {
+  return sample ? { ...sampleData(new Date()), diaryLock: true } : { diary: [], requests: [], campaigns: [], diaryLock: true }
+}
+
 export function PrayerProvider({ children, initial }: { children: ReactNode; initial?: Partial<PrayerState> }) {
+  const { sampleData: sample, markActiveToday } = useSession()
   const [state, setState] = useState<PrayerState>(() => {
-    if (initial) return { ...sampleData(new Date()), diaryLock: true, ...initial }
-    return getItem<PrayerState>('prayer', { ...sampleData(new Date()), diaryLock: true })
+    if (initial) return { ...prayerInitial(true), ...initial }
+    return getItem<PrayerState>('prayer', prayerInitial(sample))
   })
+  useDataReset((s) => setState(prayerInitial(s)))
   const [diaryUnlocked, setDiaryUnlocked] = useState(false)
   const [draftVideo, setDraftVideo] = useState<{ uri: string; seconds: number } | null>(null)
 
@@ -67,6 +78,7 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
       setDiaryUnlocked,
       setDiaryLock: (v) => update((s) => ({ ...s, diaryLock: v })),
       addDiaryEntry: (text) => {
+        markActiveToday()
         const entry = { id: newId('d'), date: toISODate(new Date()), text: text.trim() }
         update((s) => ({ ...s, diary: [entry, ...s.diary] }))
         return entry
@@ -95,12 +107,15 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
         update((s) => ({ ...s, campaigns: [c, ...s.campaigns] }))
         return c
       },
-      markCampaignDay: (id, day) =>
-        update((s) => ({ ...s, campaigns: s.campaigns.map((c) => (c.id === id && !c.doneDays.includes(day) ? { ...c, doneDays: [...c.doneDays, day].sort((a, b) => a - b) } : c)) })),
+      markCampaignDay: (id, day) => {
+        markActiveToday()
+        update((s) => ({ ...s, campaigns: s.campaigns.map((c) => (c.id === id && !c.doneDays.includes(day) ? { ...c, doneDays: [...c.doneDays, day].sort((a, b) => a - b) } : c)) }))
+      },
+      markPrayedToday: markActiveToday,
       draftVideo,
       setDraftVideo,
     }),
-    [state, diaryUnlocked, draftVideo, update],
+    [state, diaryUnlocked, draftVideo, update, markActiveToday],
   )
 
   return <PrayerContext.Provider value={value}>{children}</PrayerContext.Provider>

@@ -16,7 +16,7 @@ export function ChaptersScreen() {
   const book = bookBySlug(String(livro))
   if (!book) return <NotFound />
 
-  const isRead = (ch: number) => ch <= book.read || readChapters.includes(chapterKey(String(livro), ch))
+  const isRead = (ch: number) => readChapters.includes(chapterKey(String(livro), ch))
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>

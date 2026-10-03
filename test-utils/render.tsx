@@ -11,10 +11,10 @@ import { SessionProvider, type CellStatus } from '../src/state/session'
 import { ThemeProvider } from '../src/theme/ThemeProvider'
 
 /** Renderiza com todos os provedores do app. */
-export function renderApp(ui: ReactElement, opts: { onboarded?: boolean; cellStatus?: CellStatus; prayer?: Parameters<typeof PrayerProvider>[0]['initial']; cells?: Parameters<typeof CellProvider>[0]['initial']; church?: Parameters<typeof ChurchProvider>[0]['initial'] } = {}) {
+export function renderApp(ui: ReactElement, opts: { onboarded?: boolean; sampleData?: boolean; cellStatus?: CellStatus; prayer?: Parameters<typeof PrayerProvider>[0]['initial']; cells?: Parameters<typeof CellProvider>[0]['initial']; church?: Parameters<typeof ChurchProvider>[0]['initial'] } = {}) {
   return render(
     <ThemeProvider>
-      <SessionProvider initialOnboarded={opts.onboarded ?? false} initialCellStatus={opts.cellStatus}>
+      <SessionProvider initialOnboarded={opts.onboarded ?? false} initialCellStatus={opts.cellStatus} initialSampleData={opts.sampleData ?? true}>
         <BibleProvider>
           <PrayerProvider initial={opts.prayer ?? {}}>
             <CellProvider initial={opts.cells ?? { cells: [], currentId: null }}>

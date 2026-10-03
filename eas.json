@@ -10,7 +10,12 @@
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_PREVIEW": "1"
+      }
     },
     "production": {
       "autoIncrement": true

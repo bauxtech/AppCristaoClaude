@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
 import { useSession } from '../../state/session'
+import { useDataReset } from '../../state/useDataReset'
 import { DIRECTORY, sampleCourses, sampleMinistries, type Church, type Course, type Ministry } from './data'
 
 interface ChurchState {
@@ -25,22 +26,23 @@ interface ChurchValue extends ChurchState {
 
 const ChurchContext = createContext<ChurchValue | null>(null)
 
-function initialState(churchName: string | null): ChurchState {
+export function initialState(churchName: string | null, sample = true): ChurchState {
   const now = new Date()
-  const known = churchName ? DIRECTORY.find((c) => c.name === churchName) : undefined
+  const known = churchName ? DIRECTORY.find((c) => c.name === churchName) : sample ? DIRECTORY[0] : undefined
   const fromOnboarding: Church | null = known ?? (churchName ? { id: 'manual-1', name: churchName, city: '', neighborhood: '', address: '', source: 'manual', services: [], accessibility: {}, events: [] } : null)
   return {
     churches: fromOnboarding ? [{ church: fromOnboarding, relation: 'frequento' }] : [],
     mainId: fromOnboarding?.id ?? null,
     savedEvents: [],
-    ministries: sampleMinistries(now),
-    courses: sampleCourses(now),
+    ministries: sample ? sampleMinistries(now) : [],
+    courses: sample ? sampleCourses(now) : [],
   }
 }
 
 export function ChurchProvider({ children, initial }: { children: ReactNode; initial?: Partial<ChurchState> }) {
-  const { profile } = useSession()
-  const [state, setState] = useState<ChurchState>(() => (initial ? { ...initialState(null), ...initial } : getItem<ChurchState | null>('church', null) ?? initialState(profile.church)))
+  const { profile, sampleData } = useSession()
+  const [state, setState] = useState<ChurchState>(() => (initial ? { ...initialState(null, false), ministries: sampleMinistries(new Date()), courses: sampleCourses(new Date()), ...initial } : getItem<ChurchState | null>('church', null) ?? initialState(profile.church, sampleData)))
+  useDataReset((sample) => setState(initialState(sample ? null : profile.church, sample)))
 
   useEffect(() => {
     if (!initial) setItem('church', state)
@@ -49,7 +51,7 @@ export function ChurchProvider({ children, initial }: { children: ReactNode; ini
   // A igreja escolhida no primeiro acesso entra como a que a pessoa frequenta.
   useEffect(() => {
     if (initial || !profile.church || state.churches.some((x) => x.church.name === profile.church)) return
-    if (state.churches.length === 0) setState((s) => ({ ...s, ...initialState(profile.church), ministries: s.ministries, courses: s.courses }))
+    if (state.churches.length === 0) setState((s) => ({ ...s, ...initialState(profile.church, false), ministries: s.ministries, courses: s.courses }))
   }, [profile.church, state.churches, initial])
 
   const main = state.churches.find((x) => x.church.id === state.mainId)?.church ?? state.churches[0]?.church ?? null

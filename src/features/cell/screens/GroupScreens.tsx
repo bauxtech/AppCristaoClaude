@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { Linking, View } from 'react-native'
 import { AppText, Avatar, Button, Card, EmptyState, Page, ProgressBar, SectionLabel, Segmented, Switch, Tag, TextField, useToast } from '../../../components'
 import { fonts } from '../../../theme/typography'
-import { planById, PLANS } from '../../bible/plans'
+import { useBible } from '../../bible/BibleContext'
+import { planState } from '../../bible/plans'
 import { onlyDigits } from '../../onboarding/validation'
 import { formatAgo } from '../../prayer/dates'
 import { usePrayer } from '../../prayer/PrayerContext'
@@ -240,7 +241,8 @@ export function GroupReadingScreen() {
 function GroupReading({ cell }: { cell: Cell }) {
   const toast = useToast()
   const { update } = useCell()
-  const plan = planById(cell.readingPlan.planId)
+  const bible = useBible()
+  const plan = bible.planDef(cell.readingPlan.planId)
   const me = cell.members.find((m) => m.isMe)!
   const showing = cell.members.filter((m) => m.showReadingProgress && (!m.isMe || cell.readingPlan.joined))
 
@@ -252,7 +254,7 @@ function GroupReading({ cell }: { cell: Cell }) {
             <AppText variant="body" tone="secondary">
               Escolha um plano para a célula ler junto.
             </AppText>
-            {PLANS.filter((p) => p.day < p.total).map((p) => (
+            {bible.plans.map((p) => (
               <Button key={p.id} label={p.name} variant="outline" onPress={() => update((c) => ({ ...c, readingPlan: { planId: p.id, joined: false } }))} />
             ))}
           </>
@@ -268,7 +270,7 @@ function GroupReading({ cell }: { cell: Cell }) {
       <Card style={{ gap: 4 }}>
         <SectionLabel>Plano em grupo</SectionLabel>
         <AppText variant="title">{plan.name}</AppText>
-        <AppText variant="body" tone="secondary">{`Leitura de hoje: ${plan.todayReading}`}</AppText>
+        <AppText variant="body" tone="secondary">{`Leitura de hoje: ${planState(plan, bible.progress[plan.id]).todayLabel}`}</AppText>
       </Card>
       {cell.readingPlan.joined ? (
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}>

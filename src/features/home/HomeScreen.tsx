@@ -12,9 +12,11 @@ import { fonts } from '../../theme/typography'
 import { useAudio } from '../audio/AudioContext'
 import { useBible } from '../bible/BibleContext'
 import { slugify } from '../bible/books'
-import { planById } from '../bible/plans'
+import { planState } from '../bible/plans'
+import { useChurch } from '../church/ChurchContext'
+import { upcomingCommitments } from './commitments'
 import { verseText } from '../bible/text'
-import { activeDaysThisMonth, commitments, moods, passage, prayerOfDay, reflection, songOfDay, totalDays, unreadNotifications, wordForNow } from './data'
+import { moods, passage, prayerOfDay, reflection, songOfDay, wordForNow } from './data'
 
 const SOON = 'Disponível em breve'
 
@@ -23,14 +25,19 @@ export function HomeScreen() {
   const insets = useSafeAreaInsets()
   const toast = useToast()
   const audio = useAudio()
-  const { activePlanId } = useBible()
-  const { cellStatus, profile } = useSession()
+  const bible = useBible()
+  const { cellStatus, profile, activeDays, sampleData } = useSession()
   const { cell } = useCell()
+  const church = useChurch()
+  const totalDays = activeDays.length
+  const unreadNotifications = sampleData ? 3 : 0
+  const commitments = upcomingCommitments({ cell, church: church.main, courses: church.main ? church.courses : [], ministries: church.main ? church.ministries : [] })
   const cellPrayers = cell && can(cell.myRole, 'seePrayers') ? cell.prayers.filter((p) => !cell.hidden.includes(p.id)).length : null
   const [mood, setMood] = useState<string | null>(null)
   const [daysOpen, setDaysOpen] = useState(false)
 
-  const plan = activePlanId ? planById(activePlanId) : undefined
+  const planDef = bible.activePlanId ? bible.planDef(bible.activePlanId) : undefined
+  const plan = planDef && bible.progress[planDef.id] ? { def: planDef, ...planState(planDef, bible.progress[planDef.id]) } : undefined
   const isNewUser = cellStatus === 'none' && !profile.church
   const word = mood ? wordForNow[mood] : null
 
@@ -145,26 +152,26 @@ export function HomeScreen() {
         </Card>
 
         {/* Continuar leitura ou escolher plano */}
-        {plan ? (
+        {plan && plan.status !== 'done' ? (
           <Card>
             <SectionLabel>Continuar leitura</SectionLabel>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
               <View style={{ flex: 1 }}>
-                <AppText variant="bodyStrong">{plan.name}</AppText>
+                <AppText variant="bodyStrong">{plan.def.name}</AppText>
                 <AppText variant="small" tone="secondary">
-                  {`Dia ${plan.day} de ${plan.total} · Hoje: ${plan.todayReading}`}
+                  {`Dia ${plan.day} de ${plan.total} · Hoje: ${plan.todayLabel}`}
                 </AppText>
               </View>
-              <Button label="Continuar" variant="outline" size="sm" onPress={() => router.push(`/biblia/${slugify(plan.todayRef.book)}/${plan.todayRef.chapter}`)} />
+              <Button label="Continuar" variant="outline" size="sm" onPress={() => router.push(`/biblia/${slugify(plan.today[0].book)}/${plan.today[0].from}`)} />
             </View>
-            <ProgressBar value={plan.day} max={plan.total} label={`Dia ${plan.day} de ${plan.total}`} />
+            <ProgressBar value={plan.done} max={plan.total} label={`${plan.done} de ${plan.total} dias lidos`} />
             <AppText variant="small" tone="secondary" style={{ marginTop: 6 }} importantForAccessibility="no" accessibilityElementsHidden>
-              {`${Math.round((plan.day / plan.total) * 100)}% concluído`}
+              {`${Math.round((plan.done / plan.total) * 100)}% concluído`}
             </AppText>
           </Card>
         ) : (
           <Card style={{ paddingVertical: 8 }}>
-            <ListRow icon="book" label="Escolher um plano de leitura" sub="Novo Testamento em 90 dias, Bíblia em 1 ano e outros" onPress={() => router.push('/biblia/planos')} />
+            <ListRow icon="book" label="Escolher um plano de leitura" sub="Escolha um plano do app ou crie o seu" onPress={() => router.push('/biblia/planos')} />
           </Card>
         )}
 
@@ -180,7 +187,7 @@ export function HomeScreen() {
               <SectionLabel>Próximos compromissos</SectionLabel>
               {commitments.length === 0 ? (
                 <AppText variant="small" tone="secondary">
-                  Nenhum compromisso por enquanto.
+                  Nenhum compromisso por enquanto. Eles aparecem aqui quando você entra numa célula, vincula a igreja ou cadastra cursos e ministérios.
                 </AppText>
               ) : (
                 commitments.map((c, i) => (
@@ -227,13 +234,14 @@ export function HomeScreen() {
         </Card>
       </View>
 
-      <TotalDaysSheet visible={daysOpen} onClose={() => setDaysOpen(false)} />
+      <TotalDaysSheet visible={daysOpen} onClose={() => setDaysOpen(false)} activeDays={activeDays} />
     </ScrollView>
   )
 }
 
 /** Total de dias com leitura ou oração, com o mês marcado. Não existe sequência. */
-function TotalDaysSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function TotalDaysSheet({ visible, onClose, activeDays }: { visible: boolean; onClose: () => void; activeDays: string[] }) {
+  const totalDays = activeDays.length
   const { colors } = useTheme()
   const today = new Date()
   const year = today.getFullYear()
@@ -245,7 +253,7 @@ function TotalDaysSheet({ visible, onClose }: { visible: boolean; onClose: () =>
   return (
     <Sheet visible={visible} onClose={onClose} title={`${totalDays} dias com leitura ou oração`}>
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-        Um dia conta quando você lê ou ora pelo app.
+        {totalDays === 0 ? 'Ainda nenhum dia. Um dia conta quando você lê ou ora pelo app.' : 'Um dia conta quando você lê ou ora pelo app.'}
       </AppText>
       <AppText variant="label" tone="secondary">{`${monthName} de ${year}`}</AppText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
@@ -257,7 +265,7 @@ function TotalDaysSheet({ visible, onClose }: { visible: boolean; onClose: () =>
           </View>
         ))}
         {cells.map((d, i) => {
-          const active = d > 0 && activeDaysThisMonth.includes(d)
+          const active = d > 0 && activeDays.includes(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
           return (
             <View key={i} style={{ width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4 }} accessible={d > 0} accessibilityLabel={d > 0 ? `${d} de ${monthName}${active ? ', com leitura ou oração' : ''}` : undefined}>
               {d > 0 ? (

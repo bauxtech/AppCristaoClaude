@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
 import { useSession } from '../../state/session'
+import { useDataReset } from '../../state/useDataReset'
 import { newCell, sampleCell, type Cell, type CellType } from './data'
 import type { CellRole } from './permissions'
 
@@ -37,6 +38,17 @@ export function CellProvider({ children, initial }: { children: ReactNode; initi
   useEffect(() => {
     if (!initial) setItem('cells', state)
   }, [state, initial])
+
+  useDataReset((sample) => {
+    if (sample) {
+      const c = sampleCell('lider', profile.name)
+      setState({ cells: [c], currentId: c.id })
+      setCellStatus('leader')
+    } else {
+      setState({ cells: [], currentId: null })
+      setCellStatus('none')
+    }
+  })
 
   // Quem já tem célula (primeiro acesso ou estado salvo) recebe a célula de exemplo.
   useEffect(() => {

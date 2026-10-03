@@ -1,53 +1,63 @@
 import { router } from 'expo-router'
-import { Pressable, ScrollView, View } from 'react-native'
-import { AppText, ProgressBar, Tag, TopBar } from '../../../components'
-import { useTheme } from '../../../theme/ThemeProvider'
+import { View } from 'react-native'
+import { AppText, Button, Page, ProgressBar, SectionLabel, Tag, TapCard } from '../../../components'
 import { useBible } from '../BibleContext'
-import { PLANS, planStatus } from '../plans'
+import { planState, type PlanDef } from '../plans'
 
-export function StatusTags({ id }: { id: string }) {
-  const plan = PLANS.find((p) => p.id === id)!
-  const { activePlanId } = useBible()
-  const s = planStatus(plan)
+export function StatusTags({ plan }: { plan: PlanDef }) {
+  const { activePlanId, progress } = useBible()
+  const s = planState(plan, progress[plan.id])
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-      {s === 'done' ? <Tag label="Concluído" /> : null}
-      {activePlanId === id && s !== 'done' ? <Tag label="Em andamento" /> : null}
-      {s === 'behind' ? <Tag label={`${plan.behind} dias atrasado`} tone="danger" /> : null}
+      {plan.custom ? <Tag label="Meu plano" tone="neutral" /> : null}
+      {s.status === 'done' ? <Tag label="Concluído" /> : null}
+      {activePlanId === plan.id && s.status !== 'done' ? <Tag label="Em andamento" /> : null}
+      {s.status === 'behind' ? <Tag label={`${s.behind} ${s.behind === 1 ? 'dia' : 'dias'} atrasado`} tone="danger" /> : null}
     </View>
   )
 }
 
-export function PlansScreen() {
-  const { colors } = useTheme()
-  const { activePlanId } = useBible()
+function PlanCard({ plan }: { plan: PlanDef }) {
+  const { progress } = useBible()
+  const s = planState(plan, progress[plan.id])
+  const started = !!progress[plan.id]
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <TopBar title="Planos de leitura" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 120 }}>
-        {PLANS.map((p) => {
-          const active = activePlanId === p.id
-          return (
-            <Pressable
-              key={p.id}
-              onPress={() => router.push(`/biblia/plano/${p.id}`)}
-              accessibilityRole="button"
-              accessibilityLabel={`${p.name}, ${p.total} dias${active ? `, em andamento, dia ${p.day}` : ''}`}
-              style={({ pressed }) => ({ backgroundColor: colors.card, borderRadius: 16, borderWidth: active ? 2 : 1, borderColor: active ? colors.primary : colors.line, padding: 18, gap: 8, opacity: pressed ? 0.85 : 1 })}
-            >
-              <StatusTags id={p.id} />
-              <AppText variant="bodyStrong">{p.name}</AppText>
-              <AppText variant="small" tone="secondary">{`${p.total} dias`}</AppText>
-              {active && p.day < p.total ? (
-                <>
-                  <ProgressBar value={p.day} max={p.total} label={`Dia ${p.day} de ${p.total}`} />
-                  <AppText variant="small" tone="secondary">{`Dia ${p.day} · ${Math.round((p.day / p.total) * 100)}% concluído`}</AppText>
-                </>
-              ) : null}
-            </Pressable>
-          )
-        })}
-      </ScrollView>
-    </View>
+    <TapCard
+      label={`${plan.name}, ${plan.total} dias${started ? `, dia ${s.day} de ${s.total}${s.status === 'behind' ? `, ${s.behind} dias atrasado` : ''}${s.status === 'done' ? ', concluído' : ''}` : ''}`}
+      onPress={() => router.push(`/biblia/plano/${plan.id}`)}
+    >
+      <StatusTags plan={plan} />
+      <AppText variant="bodyStrong">{plan.name}</AppText>
+      <AppText variant="small" tone="secondary">{`${plan.total} dias`}</AppText>
+      {started && s.status !== 'done' ? (
+        <View style={{ gap: 4, marginTop: 4 }}>
+          <ProgressBar value={s.done} max={s.total} label={`${s.done} de ${s.total} dias lidos`} />
+          <AppText variant="small" tone="secondary">{`Dia ${s.day} · ${Math.round((s.done / s.total) * 100)}% concluído`}</AppText>
+        </View>
+      ) : null}
+    </TapCard>
+  )
+}
+
+export function PlansScreen() {
+  const { plans, progress } = useBible()
+  const mine = plans.filter((p) => progress[p.id] || p.custom)
+  const catalog = plans.filter((p) => !p.custom && !progress[p.id])
+  return (
+    <Page title="Planos de leitura">
+      <Button label="Criar meu plano" icon="plus" onPress={() => router.push('/biblia/plano-novo')} />
+      <SectionLabel>Meus planos</SectionLabel>
+      {mine.length === 0 ? (
+        <AppText variant="body" tone="secondary">
+          Você ainda não começou nenhum plano. Escolha um abaixo ou crie o seu.
+        </AppText>
+      ) : (
+        mine.map((p) => <PlanCard key={p.id} plan={p} />)
+      )}
+      {catalog.length ? <SectionLabel>Planos do app</SectionLabel> : null}
+      {catalog.map((p) => (
+        <PlanCard key={p.id} plan={p} />
+      ))}
+    </Page>
   )
 }

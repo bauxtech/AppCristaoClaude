@@ -67,6 +67,11 @@
           "cameraPermission": "A câmera é usada para gravar pedidos em Libras, ler o QR code da célula e fotografar a capa e os materiais."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e3e9e31b-1ad3-4cb4-bd06-22861dd53537"
+      }
+    }
   }
 }

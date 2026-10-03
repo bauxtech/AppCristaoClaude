@@ -11,8 +11,7 @@ import { BOOKS, slugify, type BookInfo } from '../books'
 
 export function bookProgress(book: BookInfo, readChapters: string[]) {
   const slug = slugify(book.name)
-  const extra = readChapters.filter((k) => k.startsWith(`${slug}:`) && Number(k.split(':')[1]) > book.read).length
-  return Math.min(book.chapters, book.read + extra)
+  return Math.min(book.chapters, new Set(readChapters.filter((k) => k.startsWith(`${slug}:`))).size)
 }
 
 export function BooksScreen() {

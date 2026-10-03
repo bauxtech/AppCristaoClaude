@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { AppText, Button, Card, Chip, ConfirmCard, IconButton, Page, SectionLabel, Tag, TextField, useToast } from '../../../components'
 import { useTheme } from '../../../theme/ThemeProvider'
-import { PLANS, planById } from '../../bible/plans'
+import { useBible } from '../../bible/BibleContext'
+import { planState } from '../../bible/plans'
 import { useCell } from '../CellContext'
 import { SAMPLE_PLAN, SAMPLE_RECORDINGS, type Cell, type PlanSection } from '../data'
 import { CellGuard } from './Guard'
@@ -56,6 +57,7 @@ let n = 0
 const sid = () => `s${Date.now().toString(36)}${n++}`
 
 function EditPlan({ cell }: { cell: Cell }) {
+  const bible = useBible()
   const { colors } = useTheme()
   const toast = useToast()
   const { update } = useCell()
@@ -127,13 +129,13 @@ function EditPlan({ cell }: { cell: Cell }) {
             Escolha o plano. A leitura de hoje vira o texto base da palavra.
           </AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {PLANS.filter((p) => p.day < p.total).map((p) => (
+            {bible.plans.map((p) => (
               <Chip
                 key={p.id}
                 label={p.name}
                 selected={false}
                 onPress={() => {
-                  const r = p.todayReading
+                  const r = planState(p, bible.progress[p.id]).todayLabel
                   apply({ title: p.name, ref: r, sections: skeleton(`Texto base: ${r}`) })
                 }}
               />
@@ -234,8 +236,4 @@ export function ChooseRecordingScreen() {
       }
     </CellGuard>
   )
-}
-
-export function planNameFor(id: string) {
-  return planById(id)?.name ?? ''
 }

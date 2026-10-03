@@ -1,5 +1,9 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
+import { useSession } from '../../state/session'
+import { useDataReset } from '../../state/useDataReset'
+import { BOOKS, slugify } from './books'
+import { CATALOG, readingsForDay, sampleProgress, type PlanDef, type PlanProgress } from './plans'
 
 // Marcações da pessoa na Bíblia. Ficam no aparelho até o banco entrar, e funcionam sem internet.
 
@@ -19,6 +23,8 @@ interface BibleState {
   notes: Record<string, string>
   fontSize: number
   activePlanId: string | null
+  customPlans: PlanDef[]
+  progress: Record<string, PlanProgress>
 }
 
 interface BibleValue extends BibleState {
@@ -28,17 +34,57 @@ interface BibleValue extends BibleState {
   saveNote: (verseKey: string, text: string) => void
   setFontSize: (n: number) => void
   setActivePlan: (id: string | null) => void
+  /** Catálogo do app e planos criados pela pessoa. */
+  plans: PlanDef[]
+  planDef: (id: string) => PlanDef | undefined
+  createPlan: (p: Omit<PlanDef, 'id' | 'custom'>, start: boolean) => PlanDef
+  deletePlan: (id: string) => void
+  startPlan: (id: string) => void
+  stopPlan: (id: string) => void
+  /** Marca o próximo dia do plano como lido, e os capítulos dele. */
+  markPlanDay: (id: string) => void
+  /** Recomeça a contagem a partir de hoje, sem perder o que já foi lido. */
+  resumePlan: (id: string) => void
 }
 
-const initial: BibleState = { readChapters: [], highlights: {}, favorites: [], notes: {}, fontSize: 19, activePlanId: 'nt-90' }
+function today() {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function daysAgo(n: number) {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  const pad = (x: number) => String(x).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/** Conta nova: nada lido, nenhum plano. Exemplo: o progresso do protótipo. */
+export function bibleInitial(sample: boolean): BibleState {
+  if (!sample) return { readChapters: [], highlights: {}, favorites: [], notes: {}, fontSize: 19, activePlanId: null, customPlans: [], progress: {} }
+  const readChapters = BOOKS.flatMap((b) => Array.from({ length: b.read }, (_, i) => `${slugify(b.name)}:${i + 1}`))
+  return { readChapters, highlights: {}, favorites: [], notes: {}, fontSize: 19, activePlanId: 'nt-90', customPlans: [], progress: sampleProgress() }
+}
 
 const BibleContext = createContext<BibleValue | null>(null)
 
 export const FONT_MIN = 16
 export const FONT_MAX = 28
 
-export function BibleProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<BibleState>(() => getItem('bible', initial))
+export function BibleProvider({ children, initial }: { children: ReactNode; initial?: Partial<BibleState> }) {
+  const { sampleData, markActiveToday } = useSession()
+  const [state, setState] = useState<BibleState>(() => {
+    const base = bibleInitial(sampleData)
+    if (initial) return { ...base, ...initial }
+    const saved = getItem<Partial<BibleState> | null>('bible', null)
+    return saved ? { ...base, customPlans: [], progress: {}, ...saved } : base
+  })
+  useDataReset((sample) => {
+    const next = bibleInitial(sample)
+    setState(next)
+    setItem('bible', next)
+  })
 
   const update = useCallback((fn: (s: BibleState) => BibleState) => {
     setState((prev) => {
@@ -51,7 +97,10 @@ export function BibleProvider({ children }: { children: ReactNode }) {
   const value = useMemo<BibleValue>(
     () => ({
       ...state,
-      markRead: (k) => update((s) => (s.readChapters.includes(k) ? s : { ...s, readChapters: [...s.readChapters, k] })),
+      markRead: (k) => {
+        markActiveToday()
+        update((s) => (s.readChapters.includes(k) ? s : { ...s, readChapters: [...s.readChapters, k] }))
+      },
       setHighlight: (k, c) =>
         update((s) => {
           const h = { ...s.highlights }
@@ -69,8 +118,55 @@ export function BibleProvider({ children }: { children: ReactNode }) {
         }),
       setFontSize: (n) => update((s) => ({ ...s, fontSize: Math.max(FONT_MIN, Math.min(FONT_MAX, n)) })),
       setActivePlan: (id) => update((s) => ({ ...s, activePlanId: id })),
+      plans: [...CATALOG, ...state.customPlans],
+      planDef: (id) => [...CATALOG, ...state.customPlans].find((p) => p.id === id),
+      createPlan: (p, start) => {
+        const def: PlanDef = { ...p, id: `meu-${Date.now().toString(36)}`, custom: true }
+        update((s) => ({
+          ...s,
+          customPlans: [...s.customPlans, def],
+          progress: start ? { ...s.progress, [def.id]: { startedAt: today(), doneDays: [] } } : s.progress,
+          activePlanId: start ? def.id : s.activePlanId,
+        }))
+        return def
+      },
+      deletePlan: (id) =>
+        update((s) => {
+          const progress = { ...s.progress }
+          delete progress[id]
+          return { ...s, customPlans: s.customPlans.filter((p) => p.id !== id), progress, activePlanId: s.activePlanId === id ? null : s.activePlanId }
+        }),
+      startPlan: (id) => update((s) => ({ ...s, activePlanId: id, progress: s.progress[id] ? s.progress : { ...s.progress, [id]: { startedAt: today(), doneDays: [] } } })),
+      stopPlan: (id) =>
+        update((s) => {
+          const progress = { ...s.progress }
+          delete progress[id]
+          return { ...s, progress, activePlanId: s.activePlanId === id ? null : s.activePlanId }
+        }),
+      markPlanDay: (id) => {
+        const def = [...CATALOG, ...state.customPlans].find((p) => p.id === id)
+        if (!def) return
+        markActiveToday()
+        update((s) => {
+          const prog = s.progress[id] ?? { startedAt: today(), doneDays: [] }
+          const next = prog.doneDays.length + 1
+          if (next > def.total) return s
+          const keys = readingsForDay(def, next).flatMap((r) => Array.from({ length: r.to - r.from + 1 }, (_, i) => `${slugify(r.book)}:${r.from + i}`))
+          return {
+            ...s,
+            readChapters: [...new Set([...s.readChapters, ...keys])],
+            progress: { ...s.progress, [id]: { ...prog, doneDays: [...prog.doneDays, next] } },
+          }
+        })
+      },
+      resumePlan: (id) =>
+        update((s) => {
+          const prog = s.progress[id]
+          if (!prog) return s
+          return { ...s, progress: { ...s.progress, [id]: { ...prog, startedAt: daysAgo(prog.doneDays.length) } } }
+        }),
     }),
-    [state, update],
+    [state, update, markActiveToday],
   )
 
   return <BibleContext.Provider value={value}>{children}</BibleContext.Provider>
