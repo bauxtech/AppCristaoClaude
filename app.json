@@ -2,6 +2,7 @@
   "expo": {
     "name": "App Cristão",
     "slug": "app-cristao",
+    "owner": "baux-tech",
     "scheme": "appcristao",
     "version": "0.1.0",
     "orientation": "portrait",

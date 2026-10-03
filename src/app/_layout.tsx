@@ -15,6 +15,7 @@ import { ToastProvider } from '../components'
 import { AudioProvider } from '../features/audio/AudioContext'
 import { BibleProvider } from '../features/bible/BibleContext'
 import { CellProvider } from '../features/cell/CellContext'
+import { ChurchProvider } from '../features/church/ChurchContext'
 import { PrayerProvider } from '../features/prayer/PrayerContext'
 import { SessionProvider } from '../state/session'
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider'
@@ -62,11 +63,13 @@ export default function RootLayout() {
           <BibleProvider>
             <PrayerProvider>
               <CellProvider>
-                <AudioProvider>
-                  <ToastProvider>
-                    <RootStack />
-                  </ToastProvider>
-                </AudioProvider>
+                <ChurchProvider>
+                  <AudioProvider>
+                    <ToastProvider>
+                      <RootStack />
+                    </ToastProvider>
+                  </AudioProvider>
+                </ChurchProvider>
               </CellProvider>
             </PrayerProvider>
           </BibleProvider>

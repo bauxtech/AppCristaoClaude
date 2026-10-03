@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 import type { ReactNode } from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native'
 import { useTheme } from '../theme/ThemeProvider'
 import { AppText } from './AppText'
 import { Button } from './Button'
@@ -63,5 +63,21 @@ export function EmptyState({ text }: { text: string }) {
         {text}
       </AppText>
     </View>
+  )
+}
+
+/** Cartão inteiro tocável, com nome para o leitor de tela. */
+export function TapCard({ label, onPress, children, hint }: { label: string; onPress: () => void; children: ReactNode; hint?: string }) {
+  const { colors } = useTheme()
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={hint}
+      style={({ pressed }) => ({ padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 4, opacity: pressed ? 0.8 : 1 })}
+    >
+      {children}
+    </Pressable>
   )
 }
