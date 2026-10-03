@@ -5,8 +5,33 @@ import { AppText, Button, Card, IconButton, SectionLabel, useToast } from '../..
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { TileGrid } from '../../cell/screens/parts'
+import { useSermons } from '../../sermon/SermonContext'
 import { useChurch } from '../ChurchContext'
 import { ACCESS_ITEMS, servicesByDay } from './format'
+
+function RecordCard() {
+  const { colors } = useTheme()
+  const { sermons } = useSermons()
+  return (
+    <>
+      <Pressable
+        onPress={() => router.push('/culto/gravar')}
+        accessibilityRole="button"
+        accessibilityLabel="Gravar culto. Transcrição e resumo"
+        style={({ pressed }) => ({ borderRadius: 16, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.primarySoft, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pressed ? 0.85 : 1 })}
+      >
+        <View style={{ flex: 1 }}>
+          <AppText variant="bodyStrong">Gravar culto</AppText>
+          <AppText variant="small" tone="secondary">
+            Transcrição e resumo
+          </AppText>
+        </View>
+        <Icon name="mic" size={22} color={colors.primary} />
+      </Pressable>
+      <Button label={sermons.length ? `Ver cultos gravados (${sermons.length})` : 'Ver cultos gravados'} variant="text" onPress={() => router.push('/culto')} />
+    </>
+  )
+}
 
 export function ChurchHubScreen() {
   const { colors } = useTheme()
@@ -34,6 +59,7 @@ export function ChurchHubScreen() {
         </View>
         <Button label="Buscar minha igreja" onPress={() => router.push('/igreja/buscar')} />
         <Button label="Cadastrar à mão" variant="outline" onPress={() => router.push('/igreja/cadastrar')} />
+        <RecordCard />
       </ScrollView>
     )
   }
@@ -152,6 +178,7 @@ export function ChurchHubScreen() {
           <Icon name="chevronRight" size={16} color={colors.lineStrong} />
         </Pressable>
       </Card>
+      <RecordCard />
     </ScrollView>
   )
 }

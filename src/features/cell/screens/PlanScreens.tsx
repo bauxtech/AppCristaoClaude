@@ -6,7 +6,9 @@ import { useTheme } from '../../../theme/ThemeProvider'
 import { useBible } from '../../bible/BibleContext'
 import { planState } from '../../bible/plans'
 import { useCell } from '../CellContext'
-import { SAMPLE_PLAN, SAMPLE_RECORDINGS, type Cell, type PlanSection } from '../data'
+import { type Cell, type PlanSection } from '../data'
+import { useSermons } from '../../sermon/SermonContext'
+import { formatMeetingDay } from '../meetings'
 import { CellGuard } from './Guard'
 
 function SectionCard({ s }: { s: PlanSection }) {
@@ -186,54 +188,36 @@ function EditPlan({ cell }: { cell: Cell }) {
   )
 }
 
-/** Escolher o culto gravado e revisar o roteiro gerado. */
+/** Escolher um culto gravado: a pregação vira a base do roteiro. */
 export function ChooseRecordingScreen() {
-  const toast = useToast()
-  const { update } = useCell()
-  const [selected, setSelected] = useState<string | null>(null)
-  const rec = SAMPLE_RECORDINGS.find((r) => r.id === selected)
+  const { sermons } = useSermons()
+  const ready = sermons.filter((s) => s.status === 'ready')
   return (
     <CellGuard title="Escolher culto" action="editPlan">
-      {() =>
-        rec ? (
-          <Page title="Roteiro gerado" onBack={() => setSelected(null)}>
-            <Card style={{ gap: 4 }}>
-              <SectionLabel>Baseado em</SectionLabel>
-              <AppText variant="bodyStrong">{rec.theme}</AppText>
-              <AppText variant="small" tone="secondary">{`${rec.preacher} · ${rec.date}`}</AppText>
-            </Card>
-            <AppText variant="small" tone="secondary">
-              Na prévia, o roteiro gerado é o de exemplo do protótipo. Revise e ajuste antes de usar.
-            </AppText>
-            {SAMPLE_PLAN.map((s) => (
-              <SectionCard key={s.id} s={s} />
-            ))}
-            <Button
-              label="Usar este roteiro"
-              onPress={() => {
-                update((c) => ({ ...c, plan: SAMPLE_PLAN.map((s) => ({ ...s, id: sid() })), planTitle: rec.theme, planRef: rec.ref }))
-                toast('Roteiro aplicado')
-                router.dismissTo('/celula')
-              }}
-            />
-            <Button label="Escolher outro culto" variant="text" onPress={() => setSelected(null)} />
-          </Page>
-        ) : (
-          <Page title="Escolher culto">
+      {() => (
+        <Page title="Escolher culto">
+          {ready.length === 0 ? (
+            <>
+              <AppText variant="body" tone="secondary">
+                Você ainda não gravou nenhum culto. Grave a próxima pregação e depois monte o roteiro a partir dela.
+              </AppText>
+              <Button label="Gravar culto" icon="mic" onPress={() => router.push('/culto/gravar')} />
+            </>
+          ) : (
             <AppText variant="body" tone="secondary">
-              Escolha o culto que vai ser a base do roteiro desta semana.
+              Escolha o culto. O resultado abre e você toca em "Transformar em roteiro da célula".
             </AppText>
-            {SAMPLE_RECORDINGS.map((r) => (
-              <Card key={r.id} style={{ paddingVertical: 4 }}>
-                <Pressable onPress={() => setSelected(r.id)} accessibilityRole="button" accessibilityLabel={`${r.theme}, ${r.preacher}, ${r.date}`} style={{ minHeight: 64, justifyContent: 'center', gap: 2 }}>
-                  <AppText variant="bodyStrong">{r.theme}</AppText>
-                  <AppText variant="small" tone="secondary">{`${r.preacher} · ${r.date}`}</AppText>
-                </Pressable>
-              </Card>
-            ))}
-          </Page>
-        )
-      }
+          )}
+          {ready.map((r) => (
+            <Card key={r.id} style={{ paddingVertical: 4 }}>
+              <Pressable onPress={() => router.push({ pathname: '/culto/[id]', params: { id: r.id } })} accessibilityRole="button" accessibilityLabel={`${r.theme}, ${r.preacher ? `${r.preacher}, ` : ''}${formatMeetingDay(r.date)}`} style={{ minHeight: 64, justifyContent: 'center', gap: 2 }}>
+                <AppText variant="bodyStrong">{r.theme || 'Culto sem tema'}</AppText>
+                <AppText variant="small" tone="secondary">{[r.preacher, formatMeetingDay(r.date)].filter(Boolean).join(' · ')}</AppText>
+              </Pressable>
+            </Card>
+          ))}
+        </Page>
+      )}
     </CellGuard>
   )
 }

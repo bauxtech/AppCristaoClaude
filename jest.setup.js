@@ -25,3 +25,14 @@ jest.mock('expo-camera', () => ({
   CameraView: () => null,
   useCameraPermissions: () => [{ granted: false, canAskAgain: true }, jest.fn()],
 }))
+jest.mock('expo-audio', () => ({
+  AudioQuality: { MEDIUM: 64 },
+  IOSOutputFormat: { MPEG4AAC: 'aac ' },
+  getRecordingPermissionsAsync: jest.fn(async () => ({ granted: false, canAskAgain: true })),
+  requestRecordingPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  setAudioModeAsync: jest.fn(async () => {}),
+  useAudioPlayer: () => ({ play: jest.fn(), pause: jest.fn(), seekTo: jest.fn(), setPlaybackRate: jest.fn() }),
+  useAudioPlayerStatus: () => ({ currentTime: 0, duration: 0, playing: false }),
+  useAudioRecorder: () => ({ prepareToRecordAsync: jest.fn(async () => {}), record: jest.fn(), pause: jest.fn(), stop: jest.fn(async () => {}), getStatus: () => ({ durationMillis: 0 }), uri: null }),
+  useAudioRecorderState: () => ({ durationMillis: 0 }),
+}))

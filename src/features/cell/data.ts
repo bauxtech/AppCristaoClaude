@@ -123,13 +123,6 @@ export const SAMPLE_PLAN: PlanSection[] = [
   { id: 'p6', title: 'Avisos', content: 'Retiro da célula: 22 de outubro. Confirmar presença até sexta.', minutes: 5 },
 ]
 
-/** Cultos gravados de exemplo, do protótipo. O fluxo do culto substitui esta lista. */
-export const SAMPLE_RECORDINGS = [
-  { id: 'g1', date: '27 de setembro', preacher: 'Pr. Paulo Mendes', theme: 'Vivendo com propósito', ref: 'João 15:1-17' },
-  { id: 'g2', date: '20 de setembro', preacher: 'Pra. Ana Lima', theme: 'Fé que move montanhas', ref: 'Mateus 17:20' },
-  { id: 'g3', date: '13 de setembro', preacher: 'Pr. Paulo Mendes', theme: 'O poder da oração', ref: 'Tiago 5:16' },
-]
-
 export const DEMO_CODE = 'ABC123'
 
 function m(id: string, name: string, role: CellRole, phone: string, extra: Partial<Member> = {}): Member {

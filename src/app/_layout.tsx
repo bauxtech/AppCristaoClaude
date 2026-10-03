@@ -17,6 +17,7 @@ import { BibleProvider } from '../features/bible/BibleContext'
 import { CellProvider } from '../features/cell/CellContext'
 import { ChurchProvider } from '../features/church/ChurchContext'
 import { PrayerProvider } from '../features/prayer/PrayerContext'
+import { SermonProvider } from '../features/sermon/SermonContext'
 import { SessionProvider } from '../state/session'
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider'
 
@@ -32,6 +33,7 @@ function RootStack() {
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="chat" options={{ presentation: 'modal' }} />
         <Stack.Screen name="oracao" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="culto" />
         <Stack.Screen name="componentes" />
         <Stack.Screen name="teste-gravacao" />
       </Stack>
@@ -64,11 +66,13 @@ export default function RootLayout() {
             <PrayerProvider>
               <CellProvider>
                 <ChurchProvider>
-                  <AudioProvider>
-                    <ToastProvider>
-                      <RootStack />
-                    </ToastProvider>
-                  </AudioProvider>
+                  <SermonProvider>
+                    <AudioProvider>
+                      <ToastProvider>
+                        <RootStack />
+                      </ToastProvider>
+                    </AudioProvider>
+                  </SermonProvider>
                 </ChurchProvider>
               </CellProvider>
             </PrayerProvider>
