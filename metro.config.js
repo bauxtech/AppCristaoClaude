@@ -3,6 +3,7 @@ const { getDefaultConfig } = require('expo/metro-config')
 
 const config = getDefaultConfig(__dirname)
 const webDir = new RegExp(`${__dirname.replace(/[/\\\\]/g, '[/\\\\]')}[/\\\\]web[/\\\\].*`)
-config.resolver.blockList = [webDir]
+const supabaseDir = new RegExp(`${__dirname.replace(/[/\\\\]/g, '[/\\\\]')}[/\\\\]supabase[/\\\\].*`)
+config.resolver.blockList = [webDir, supabaseDir]
 
 module.exports = config

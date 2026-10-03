@@ -84,7 +84,10 @@ describe('tela do chat', () => {
     const pad = (n: number) => String(n).padStart(2, '0')
     await renderApp(<ChatScreen />, { onboarded: true, chat: { usage: { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, count: 20 } } })
     expect(screen.getByText('Você usou as 20 perguntas de hoje')).toBeTruthy()
-    expect(screen.queryByLabelText('Sua pergunta sobre a Bíblia')).toBeNull()
+    expect(screen.getByText(/CVV, telefone 188/)).toBeTruthy()
+    await fireEvent.changeText(screen.getByLabelText('Sua pergunta sobre a Bíblia'), 'o que é graça')
+    await fireEvent.press(screen.getByRole('button', { name: 'Enviar pergunta' }))
+    expect(screen.queryByText('o que é graça')).toBeNull()
   })
 })
 
@@ -102,4 +105,21 @@ describe('histórico', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Apagar' }))
     expect(screen.getByText('Nenhuma conversa ainda. As conversas com o chat aparecem aqui.')).toBeTruthy()
   })
+})
+
+describe('frases de crise', () => {
+  const { isCrisis } = require('../src/features/chat/rules')
+  test.each([
+    'não quero viver mais',
+    'tenho vontade de morrer',
+    'estou pensando em morrer',
+    'penso em me mutilar',
+    'automutilação',
+    'vou me enforcar',
+    'quero me jogar da ponte',
+    'vou tomar todos os remédios',
+    'não vejo sentido em viver',
+    'quero desaparecer',
+  ])('detecta: %s', (frase) => expect(isCrisis(frase)).toBe(true))
+  test.each(['Jesus morreu por nós', 'o que é a morte na Bíblia', 'como orar pelos que morreram'])('não confunde: %s', (frase) => expect(isCrisis(frase)).toBe(false))
 })

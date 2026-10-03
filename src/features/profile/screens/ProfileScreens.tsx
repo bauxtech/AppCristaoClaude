@@ -18,7 +18,7 @@ import { useChurch } from '../../church/ChurchContext'
 import { brToISO, formatBR, formatDayMonth, maskDate } from '../../prayer/dates'
 import { usePrayer } from '../../prayer/PrayerContext'
 import { useSermons } from '../../sermon/SermonContext'
-import { NotesLock } from '../../prayer/screens/DiaryLock'
+import { NotesGate } from '../../settings/NotesLock'
 import { useSettings } from '../../settings/SettingsContext'
 import { MILESTONE_TYPES, NOTE_SOURCES, useProfile, type NoteSource } from '../ProfileContext'
 import { TOTAL_CHAPTERS } from './ProfileHome'
@@ -255,19 +255,6 @@ export function useAllNotes(): NoteItem[] {
   return items.sort((a, b) => ((b.date ?? '') > (a.date ?? '') ? 1 : -1))
 }
 
-/** Trava das anotações, ligada em Configurações > Biometria. */
-function NotesGate({ title, children }: { title: string; children: ReactNode }) {
-  const { colors } = useTheme()
-  const s = useSettings()
-  if (!s.notesLock || s.notesUnlocked) return <>{children}</>
-  return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <TopBar title={title} onBack={() => router.back()} />
-      <NotesLock />
-    </View>
-  )
-}
-
 export function NotesScreen() {
   return (
     <NotesGate title="Anotações">
@@ -314,6 +301,14 @@ function NotesList() {
 }
 
 export function NoteEditScreen() {
+  return (
+    <NotesGate title="Anotação">
+      <NoteEditBody />
+    </NotesGate>
+  )
+}
+
+function NoteEditBody() {
   const toast = useToast()
   const { id } = useLocalSearchParams<{ id?: string }>()
   const profile = useProfile()

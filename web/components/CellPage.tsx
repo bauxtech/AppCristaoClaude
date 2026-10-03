@@ -198,6 +198,7 @@ function PrayerForm({ code, leader }: { code: string; leader: string }) {
   const [text, setText] = useState('')
   const [name, setName] = useState('')
   const [sent, setSent] = useState(false)
+  const [consent, setConsent] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   if (sent) {
@@ -226,6 +227,7 @@ function PrayerForm({ code, leader }: { code: string; leader: string }) {
         onSubmit={async (e) => {
           e.preventDefault()
           if (!text.trim()) return setError('Escreva o seu pedido.')
+          if (!consent) return setError(`Marque que autoriza enviar o pedido para ${leader}.`)
           try {
             await leavePrayer(code, text, name || undefined)
             setSent(true)
@@ -242,6 +244,10 @@ function PrayerForm({ code, leader }: { code: string; leader: string }) {
         <label>
           Seu nome (opcional)
           <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={80} />
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+          <span>{`Autorizo enviar este pedido de oração para ${leader}. Pedido de oração é dado sensível e só o líder recebe.`}</span>
         </label>
         {error ? (
           <p className="error" role="alert">

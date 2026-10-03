@@ -30,10 +30,7 @@ export function SubscriptionProvider({ children, initial, now }: { children: Rea
   useEffect(() => {
     if (onboarded && !state.trialStart) setState((s) => ({ ...s, trialStart: new Date().toISOString() }))
   }, [onboarded, state.trialStart])
-  // Saiu da conta: o estado volta ao início. A assinatura de verdade fica na loja e no servidor.
-  useEffect(() => {
-    if (!onboarded && state.trialStart && !initial) setState(empty)
-  }, [onboarded]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Sair e entrar de novo não recomeça o teste. No servidor, o início do teste fica preso à conta.
 
   const value = useMemo<SubValue>(() => {
     const at = now ?? new Date()

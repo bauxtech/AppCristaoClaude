@@ -3,11 +3,14 @@ import { useEffect, useState } from 'react'
 import { Linking, Pressable, View } from 'react-native'
 import { AppText, Button, Card, Chip, ErrorState, Icon, IconButton, Page, SectionLabel, SkeletonCard, Switch, useToast } from '../../../components'
 import { useRemoteState } from '../../../state/connection'
+import { isInternalRoute } from '../../../lib/links'
 import type { IconName } from '../../../components/Icon'
 import { askReminderPermission, reminderPermission, type ReminderPermission } from '../../../lib/reminders'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
-import { groupNotices, NOTICE_TYPE_LABEL, noticeTime, type Notice } from '../notices'
+import { groupNotices, NOTICE_TYPE_LABEL, noticeTime, visibleNotices, type Notice } from '../notices'
+import { useCell } from '../../cell/CellContext'
+import { can } from '../../cell/permissions'
 import { hourLabel, inQuietHours, NOTIFICATION_TYPES } from '../prefs'
 import { useSettings } from '../SettingsContext'
 
@@ -50,17 +53,21 @@ export function NoticesScreen() {
   const s = useSettings()
   const { perm, ask } = usePermission()
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
-  const visible = filter === 'unread' ? s.notices.filter((n) => !n.read) : s.notices
+  const { cell } = useCell()
+  const notices = visibleNotices(s.notices, !cell || can(cell.myRole, 'seePrayers'))
+  const unread = notices.filter((n) => !n.read).length
+  const visible = filter === 'unread' ? notices.filter((n) => !n.read) : notices
   const groups = groupNotices(visible)
   const remote = useRemoteState()
 
   function open(n: Notice) {
     s.markRead(n.id)
-    if (n.href) router.push(n.href as '/celula')
+    // Só abre telas do próprio app.
+    if (isInternalRoute(n.href)) router.push(n.href as '/celula')
   }
 
   return (
-    <Page title={s.unreadCount ? `Avisos (${s.unreadCount})` : 'Avisos'} right={<IconButton icon="settings" label="Configurar avisos" onPress={() => router.push('/avisos/configurar')} />}>
+    <Page title={unread ? `Avisos (${unread})` : 'Avisos'} right={<IconButton icon="settings" label="Configurar avisos" onPress={() => router.push('/avisos/configurar')} />}>
       <PermissionCard perm={perm} ask={ask} />
       {remote.loading ? (
         <>
@@ -71,21 +78,21 @@ export function NoticesScreen() {
       ) : remote.error ? (
         <ErrorState message="Não foi possível carregar os avisos." onRetry={remote.retry} />
       ) : null}
-      {remote.loading || remote.error ? null : s.notices.length > 0 ? (
+      {remote.loading || remote.error ? null : notices.length > 0 ? (
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <Chip label="Todas" selected={filter === 'all'} onPress={() => setFilter('all')} />
-          <Chip label={s.unreadCount ? `Não lidas (${s.unreadCount})` : 'Não lidas'} selected={filter === 'unread'} onPress={() => setFilter('unread')} />
+          <Chip label={unread ? `Não lidas (${unread})` : 'Não lidas'} selected={filter === 'unread'} onPress={() => setFilter('unread')} />
           <View style={{ flex: 1 }} />
-          {s.unreadCount > 0 ? <Button label="Marcar todas como lidas" variant="text" size="sm" onPress={s.markAllRead} /> : null}
+          {unread > 0 ? <Button label="Marcar todas como lidas" variant="text" size="sm" onPress={s.markAllRead} /> : null}
         </View>
       ) : null}
 
       {remote.loading || remote.error ? null : visible.length === 0 ? (
         <View style={{ alignItems: 'center', gap: 8, paddingVertical: 40 }}>
           <Icon name="bell" size={40} color={colors.textSecondary} strokeWidth={1.5} />
-          <AppText variant="bodyStrong">{s.notices.length === 0 ? 'Nenhum aviso por enquanto' : 'Tudo em dia'}</AppText>
+          <AppText variant="bodyStrong">{notices.length === 0 ? 'Nenhum aviso por enquanto' : 'Tudo em dia'}</AppText>
           <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-            {s.notices.length === 0 ? 'Lembretes de leitura e oração, a célula e o culto aparecem aqui.' : 'Nenhuma notificação não lida.'}
+            {notices.length === 0 ? 'Lembretes de leitura e oração, a célula e o culto aparecem aqui.' : 'Nenhuma notificação não lida.'}
           </AppText>
         </View>
       ) : (

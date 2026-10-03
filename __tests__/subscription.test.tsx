@@ -7,6 +7,9 @@ import { previewState, subStatus, trialDaysLeft } from '../src/features/subscrip
 import { BlockedScreen, MyPlanScreen, PlansScreen, TrialBanner } from '../src/features/subscription/screens/SubscriptionScreens'
 import { renderApp } from '../test-utils/render'
 
+// A folha de exemplo da loja só confirma na prévia.
+jest.mock('../src/lib/preview', () => ({ IS_PREVIEW: true }))
+
 beforeEach(() => {
   jest.useRealTimers()
   jest.mocked(router.push).mockClear()

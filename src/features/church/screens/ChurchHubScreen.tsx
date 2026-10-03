@@ -1,7 +1,7 @@
 import { router } from 'expo-router'
 import { Linking, Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AppText, Button, Card, IconButton, SectionLabel, useToast } from '../../../components'
+import { AppText, Button, Card, IconButton, MIN_TOUCH, SectionLabel, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { TileGrid } from '../../cell/screens/parts'
@@ -79,7 +79,7 @@ export function ChurchHubScreen() {
             onPress={() => router.push('/igreja/minhas')}
             accessibilityRole="button"
             accessibilityLabel={`${main.name}. Minhas igrejas${churches.length > 1 ? `, ${churches.length} igrejas` : ''}`}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 32 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: MIN_TOUCH }}
           >
             <AppText variant="small" tone="secondary" style={{ flexShrink: 1 }}>
               {main.name}

@@ -84,9 +84,15 @@ export function StoreSheet({ billing, visible, onCancel, onConfirm }: { billing:
       <AppText variant="label" tone="secondary">
         Exemplo da folha da loja. A compra de verdade entra com a integração da loja.
       </AppText>
+      {!IS_PREVIEW ? (
+        <AppText variant="small" tone="danger" accessibilityLiveRegion="polite">
+          A compra pela loja ainda não está ligada neste app.
+        </AppText>
+      ) : null}
       <Button
         label={busy ? 'Processando' : 'Confirmar assinatura'}
-        disabled={busy}
+        // Fora da prévia, a folha de exemplo não libera o plano sem cobrança.
+        disabled={busy || !IS_PREVIEW}
         onPress={() => {
           setBusy(true)
           setTimeout(() => {

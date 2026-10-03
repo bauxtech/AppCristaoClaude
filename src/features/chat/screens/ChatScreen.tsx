@@ -68,7 +68,8 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
       setInput('')
       return
     }
-    if (limit && !existing) return
+    // A verificação de crise vem antes: o campo fica aberto mesmo sem internet ou no limite do dia.
+    if ((limit || !online) && !existing) return
     let c = existing?.conv ?? conv
     if (!c) {
       c = chat.newConversation(null)
@@ -178,20 +179,26 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
 
       <View style={{ padding: 12, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.card }}>
         {!online ? (
-          <View style={{ gap: 4, alignItems: 'center', paddingVertical: 8 }} accessibilityLiveRegion="polite">
+          <View style={{ gap: 4, alignItems: 'center', paddingBottom: 10 }} accessibilityLiveRegion="polite">
             <AppText variant="bodyStrong">O chat precisa de internet</AppText>
             <AppText variant="small" tone="secondary">
               As conversas anteriores continuam abertas. Quando a internet voltar, você pode perguntar de novo.
             </AppText>
           </View>
         ) : limit ? (
-          <View style={{ gap: 4, alignItems: 'center', paddingVertical: 8 }}>
+          <View style={{ gap: 4, alignItems: 'center', paddingBottom: 10 }}>
             <AppText variant="bodyStrong">{`Você usou as ${DAILY_LIMIT} perguntas de hoje`}</AppText>
             <AppText variant="small" tone="secondary">
               Amanhã você pode perguntar de novo. O histórico continua aberto.
             </AppText>
           </View>
-        ) : (
+        ) : null}
+        {!online || limit ? (
+          <AppText variant="small" tone="secondary" style={{ textAlign: 'center', paddingBottom: 8 }}>
+            Precisa conversar com alguém agora? CVV, telefone 188, 24 horas.
+          </AppText>
+        ) : null}
+        {(
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
             <TextInput
               value={input}

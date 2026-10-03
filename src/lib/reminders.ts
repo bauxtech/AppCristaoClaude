@@ -36,6 +36,12 @@ export async function askReminderPermission(): Promise<ReminderPermission> {
   }
 }
 
+/** Para todos os lembretes deste aparelho (ao sair da conta). */
+export async function cancelAllReminders() {
+  if (Platform.OS === 'web') return
+  await Notifications.cancelAllScheduledNotificationsAsync().catch(() => {})
+}
+
 /** Refaz os lembretes a partir das preferências. Horário dentro do silêncio não é agendado. */
 export async function syncReminders(prefs: NotificationPrefs): Promise<{ scheduled: string[] }> {
   const scheduled: string[] = []

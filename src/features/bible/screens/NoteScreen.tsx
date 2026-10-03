@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router'
+import { NotesGate } from '../../settings/NotesLock'
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { AppText, Button, TextField, TopBar, useToast } from '../../../components'
@@ -9,6 +10,14 @@ import { getChapter } from '../text'
 
 /** Nota presa a um versículo. O versículo ganha a marca "Nota" no texto. */
 export function NoteScreen() {
+  return (
+    <NotesGate title="Nota">
+      <NoteBody />
+    </NotesGate>
+  )
+}
+
+function NoteBody() {
   const { colors } = useTheme()
   const toast = useToast()
   const p = useLocalSearchParams<{ livro: string; capitulo: string; v: string }>()

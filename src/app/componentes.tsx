@@ -1,4 +1,5 @@
 import { router } from 'expo-router'
+import { PreviewOnly } from '../features/subscription/AccessGuard'
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { AppText, Button, Card, Chip, IconButton, ListRow, SectionLabel, Switch, Tag, TopBar, useToast } from '../components'
@@ -6,7 +7,15 @@ import { ProgressBar } from '../components/ProgressBar'
 import { useTheme, type AppearancePreference } from '../theme/ThemeProvider'
 
 /** Vitrine dos componentes, para revisar no celular em todos os modos. Não é uma tela do produto. */
-export default function Componentes() {
+export default function ComponentesRoute() {
+  return (
+    <PreviewOnly>
+      <Componentes />
+    </PreviewOnly>
+  )
+}
+
+function Componentes() {
   const { colors, preference, setPreference, highContrast, setHighContrastOverride } = useTheme()
   const toast = useToast()
   const [on, setOn] = useState(true)

@@ -1,9 +1,28 @@
-// Acesso aos dados da página. Hoje usa os dados de exemplo do app.
-// Quando o banco entrar, estas três funções chamam funções públicas do Supabase com as mesmas entradas e saídas.
+// Acesso aos dados da página.
+// Com NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY definidos, chama as funções públicas do banco
+// (public_cell_page, leave_contact, leave_web_prayer). A chave anon é pública por desenho: as regras ficam no banco.
+// Sem elas, usa os dados de exemplo abaixo. O endereço NUNCA fica no código da página: só chega depois do contato.
 
 import type { PrivateAddress, PublicCell } from './data'
 
-const DEMO: Record<string, PublicCell & { _address: PrivateAddress }> = {
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+export const REMOTE = !!(SUPABASE_URL && SUPABASE_ANON)
+
+async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_ANON!, Authorization: `Bearer ${SUPABASE_ANON}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+  })
+  if (!res.ok) throw new Error((await res.json().catch(() => null))?.message ?? 'Erro no servidor')
+  return res.json() as Promise<T>
+}
+
+// Exemplo para a prévia: só dados públicos. O endereço de exemplo é genérico de propósito.
+const DEMO_ADDRESS: PrivateAddress = { address: 'Endereço de exemplo (na versão real, vem do servidor)', reference: '' }
+
+const DEMO: Record<string, PublicCell> = {
   ABC123: {
     code: 'ABC123',
     name: 'Jovens da Central',
@@ -32,7 +51,6 @@ const DEMO: Record<string, PublicCell & { _address: PrivateAddress }> = {
       { name: 'Estudo: Vivendo com propósito.pdf', kind: 'PDF', size: '1,2 MB', url: '#' },
       { name: 'Louvor outubro.pdf', kind: 'PDF', size: '0,8 MB', url: '#' },
     ],
-    _address: { address: 'Casa da Maria, Rua das Flores, 42', reference: 'Portão azul, ao lado da padaria' },
   },
   NOVA01: {
     code: 'NOVA01',
@@ -49,7 +67,6 @@ const DEMO: Record<string, PublicCell & { _address: PrivateAddress }> = {
     nextMeeting: null,
     plan: null,
     materials: [],
-    _address: { address: 'Rua da Aurora, 100', reference: '' },
   },
   ARQ001: {
     code: 'ARQ001',
@@ -66,7 +83,6 @@ const DEMO: Record<string, PublicCell & { _address: PrivateAddress }> = {
     nextMeeting: null,
     plan: null,
     materials: [],
-    _address: { address: '', reference: '' },
   },
 }
 
@@ -86,11 +102,20 @@ export function normalizeCode(raw: string) {
 
 /** Dados públicos. Nunca inclui endereço completo, membros, telefones ou pedidos. */
 export async function getPublicCell(rawCode: string, now = new Date()): Promise<PublicCell | null> {
-  const c = DEMO[normalizeCode(rawCode)]
+  const code = normalizeCode(rawCode)
+  if (REMOTE) {
+    const rows = await rpc<{ name: string; type: string | null; weekday: number | null; time: string | null; neighborhood: string | null; leader_first_name: string | null; archived: boolean }[]>('public_cell_page', { p_code: code })
+    const r = rows[0]
+    if (!r) return null
+    const day = r.weekday ?? 0
+    const time = r.time ?? '20:00'
+    const status = r.archived ? 'archived' : 'active'
+    // Roteiro e materiais não aparecem na página pública até isso ser decidido.
+    return { code, name: r.name, type: r.type, churchName: null, neighborhood: r.neighborhood ?? '', city: '', coverUrl: null, leaderFirstName: r.leader_first_name ?? '', day, time, status, nextMeeting: status === 'active' ? nextOf(day, time, now) : null, plan: null, materials: [] }
+  }
+  const c = DEMO[code]
   if (!c) return null
-  const { _address, ...pub } = c
-  void _address
-  return { ...pub, nextMeeting: pub.status === 'active' ? nextOf(pub.day, pub.time, now) : null }
+  return { ...c, nextMeeting: c.status === 'active' ? nextOf(c.day, c.time, now) : null }
 }
 
 export function isValidPhone(digits: string) {
@@ -99,17 +124,25 @@ export function isValidPhone(digits: string) {
 
 /** Deixa nome e telefone para o líder. Devolve o endereço completo. */
 export async function leaveContact(rawCode: string, name: string, phoneDigits: string): Promise<PrivateAddress> {
-  const c = DEMO[normalizeCode(rawCode)]
-  if (!c || c.status !== 'active') throw new Error('Célula indisponível')
   if (name.trim().length < 2) throw new Error('Nome inválido')
   if (!isValidPhone(phoneDigits)) throw new Error('Telefone inválido')
-  return c._address
+  if (REMOTE) {
+    const rows = await rpc<PrivateAddress[]>('leave_contact', { p_code: normalizeCode(rawCode), p_name: name.trim(), p_phone: phoneDigits })
+    if (!rows[0]) throw new Error('Célula indisponível')
+    return { address: rows[0].address ?? '', reference: rows[0].reference ?? '' }
+  }
+  const c = DEMO[normalizeCode(rawCode)]
+  if (!c || c.status !== 'active') throw new Error('Célula indisponível')
+  return DEMO_ADDRESS
 }
 
 /** Pedido de oração para o líder. Vai só para o líder, não aparece na página. */
 export async function leavePrayer(rawCode: string, text: string, name?: string): Promise<void> {
+  if (!text.trim()) throw new Error('Pedido vazio')
+  if (REMOTE) {
+    await rpc('leave_web_prayer', { p_code: normalizeCode(rawCode), p_name: name ?? null, p_text: text.trim() })
+    return
+  }
   const c = DEMO[normalizeCode(rawCode)]
   if (!c || c.status !== 'active') throw new Error('Célula indisponível')
-  if (!text.trim()) throw new Error('Pedido vazio')
-  void name
 }

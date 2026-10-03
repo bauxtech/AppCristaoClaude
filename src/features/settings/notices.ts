@@ -13,6 +13,8 @@ export interface Notice {
   read: boolean
   /** Tela que abre ao tocar. */
   href?: string
+  /** Aviso sobre pedido de oração da célula: o visitante não recebe. */
+  cellPrayer?: boolean
 }
 
 export const NOTICE_TYPE_LABEL: Record<NoticeType, string> = {
@@ -32,13 +34,18 @@ export function sampleNotices(now = new Date()): Notice[] {
     { id: 'nt3', type: 'bible', title: 'Plano bíblico', body: 'Você tem 2 capítulos para ler hoje: Salmos 23 e 24.', at: ago(Math.min(5, now.getHours() * 0.8)), read: false, href: '/biblia' },
     { id: 'nt4', type: 'cell', title: 'Ana confirmou presença', body: 'Ana Pereira confirmou para o encontro de quarta.', at: ago(now.getHours() + 4), read: true, href: '/celula' },
     { id: 'nt5', type: 'church', title: 'Resumo do culto pronto', body: 'O resumo do culto de domingo está disponível.', at: ago(now.getHours() + 6), read: true, href: '/culto' },
-    { id: 'nt6', type: 'prayer', title: 'Pedido de oração respondido', body: 'Carlos marcou o pedido "Cura da minha mãe" como respondido.', at: ago(now.getHours() + 30), read: true, href: '/oracao' },
+    { id: 'nt6', type: 'prayer', title: 'Pedido de oração respondido', body: 'Carlos marcou um pedido da célula como respondido.', at: ago(now.getHours() + 30), read: true, href: '/celula/pedidos', cellPrayer: true },
     { id: 'nt7', type: 'system', title: 'Novo plano disponível', body: 'Um novo plano de leitura "Advento 2025" está disponível.', at: ago(now.getHours() + 100), read: true, href: '/biblia/planos' },
   ]
 }
 
 function dayStart(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+}
+
+/** Avisos que a pessoa pode ver. O texto do pedido nunca vai no aviso (aparece na tela bloqueada). */
+export function visibleNotices(list: Notice[], canSeePrayers: boolean) {
+  return canSeePrayers ? list : list.filter((n) => !n.cellPrayer)
 }
 
 /** Agrupa em Hoje, Ontem e Anteriores, do mais novo para o mais antigo. */

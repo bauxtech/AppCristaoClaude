@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
 import { syncReminders } from '../../lib/reminders'
+import { useRelockOnBackground } from '../../lib/relock'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { sampleNotices, type Notice } from './notices'
@@ -15,6 +16,8 @@ export interface Report {
   detail: string
   /** Nome de quem foi denunciado, quando houver. */
   target?: string
+  /** Conteúdo denunciado, como "prayer:cp2" ou "board:b1". */
+  content?: string
   at: string
 }
 
@@ -84,6 +87,7 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
     initial ? { ...settingsInitial(false), ...initial } : { ...settingsInitial(sampleData, profile.time), ...getItem<Partial<SettingsState>>('settings', {}) },
   )
   const [notesUnlocked, setNotesUnlocked] = useState(false)
+  useRelockOnBackground(() => setNotesUnlocked(false))
   useEffect(() => {
     if (!initial) setItem('settings', state)
   }, [state, initial])

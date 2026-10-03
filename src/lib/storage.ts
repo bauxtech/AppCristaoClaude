@@ -1,8 +1,11 @@
 import { File, Paths } from 'expo-file-system'
 import { Platform } from 'react-native'
 
-// Guarda pequenos dados do app no próprio aparelho (preferências, rascunho do cadastro).
-// Dado sensível (fé, pedidos de oração) não fica aqui: vai para o banco com regras de acesso.
+// Guarda os dados do app no próprio aparelho, num arquivo da pasta do app.
+// ATENÇÃO: enquanto o servidor não entra, o diário, os pedidos de oração e os dados da célula
+// ficam aqui, sem criptografia. O backup do Android está desligado (app.json, allowBackup: false).
+// Quando o banco entrar, dado de outras pessoas (pedidos, telefones) deixa de ser gravado aqui
+// e o que for pessoal passa a ser guardado criptografado, com a chave no expo-secure-store.
 
 const FILE_NAME = 'app-estado.json'
 

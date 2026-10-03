@@ -383,11 +383,11 @@ export function ChatTraditionScreen() {
 }
 
 /** Confere se a pessoa consegue desbloquear antes de ligar a trava, para não ficar trancada para fora. */
-async function confirmIdentity(what: string): Promise<'ok' | 'none' | 'fail'> {
+async function confirmIdentity(what: string, on: boolean): Promise<'ok' | 'none' | 'fail'> {
   if (Platform.OS === 'web') return 'ok'
   const level = await LocalAuthentication.getEnrolledLevelAsync().catch(() => LocalAuthentication.SecurityLevel.NONE)
   if (level === LocalAuthentication.SecurityLevel.NONE) return 'none'
-  const res = await LocalAuthentication.authenticateAsync({ promptMessage: `Proteger ${what}`, cancelLabel: 'Cancelar' }).catch(() => ({ success: false }))
+  const res = await LocalAuthentication.authenticateAsync({ promptMessage: on ? `Proteger ${what}` : `Tirar a proteção de ${what}`, cancelLabel: 'Cancelar' }).catch(() => ({ success: false }))
   return res.success ? 'ok' : 'fail'
 }
 
@@ -399,11 +399,10 @@ export function BiometricSettingsScreen() {
 
   async function toggle(kind: 'diary' | 'notes', v: boolean) {
     setMsg(null)
-    if (v) {
-      const r = await confirmIdentity(kind === 'diary' ? 'o diário' : 'as anotações')
-      if (r === 'none') return setMsg('Este celular não tem biometria nem código de bloqueio. Ative um deles nos ajustes do celular.')
-      if (r === 'fail') return
-    }
+    // Ligar e desligar pedem a biometria: quem pega o celular destravado não tira a proteção.
+    const r = await confirmIdentity(kind === 'diary' ? 'o diário' : 'as anotações', v)
+    if (r === 'none' && v) return setMsg('Este celular não tem biometria nem código de bloqueio. Ative um deles nos ajustes do celular.')
+    if (r === 'fail') return
     if (kind === 'diary') prayer.setDiaryLock(v)
     else s.update({ notesLock: v })
     toast(v ? 'Proteção ligada' : 'Proteção desligada')

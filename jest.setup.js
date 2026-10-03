@@ -13,6 +13,7 @@ jest.mock('react-native-safe-area-context', () => {
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
   useLocalSearchParams: jest.fn(() => ({})),
+  useSegments: jest.fn(() => []),
   Redirect: () => null,
 }))
 jest.mock('expo-speech', () => ({ speak: jest.fn(), stop: jest.fn(), pause: jest.fn(), resume: jest.fn() }))

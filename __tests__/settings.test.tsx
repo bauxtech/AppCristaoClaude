@@ -247,3 +247,62 @@ describe('sair e excluir', () => {
     expect(router.replace).toHaveBeenCalledWith('/eu')
   })
 })
+
+describe('correções da revisão de segurança', () => {
+  const LocalAuthentication = require('expo-local-authentication')
+  const { useSegments } = require('expo-router')
+  const { AccessGuard } = require('../src/features/subscription/AccessGuard')
+  const { previewState } = require('../src/features/subscription/plan')
+  const { BiometricSettingsScreen } = require('../src/features/settings/screens/SettingsScreens')
+
+  test('desligar a trava das anotações também pede biometria', async () => {
+    LocalAuthentication.authenticateAsync.mockResolvedValueOnce({ success: false })
+    await renderApp(<BiometricSettingsScreen />, { onboarded: true, settings: { notesLock: true } })
+    await fireEvent.press(screen.getByRole('switch', { name: 'Bloquear notas com biometria' }))
+    expect(LocalAuthentication.authenticateAsync).toHaveBeenLastCalledWith(expect.objectContaining({ promptMessage: 'Tirar a proteção de as anotações' }))
+    expect(screen.getByRole('switch', { name: 'Bloquear notas com biometria' }).props.accessibilityState.checked).toBe(true)
+  })
+
+  test('bloqueado: chat aberto por link mostra a tela de bloqueio', async () => {
+    useSegments.mockReturnValue(['chat'])
+    await renderApp(
+      <AccessGuard>
+        <Text>Conteúdo do chat</Text>
+      </AccessGuard>,
+      { onboarded: true, subscription: previewState('blocked') },
+    )
+    expect(screen.queryByText('Conteúdo do chat')).toBeNull()
+    expect(screen.getByText('Seu teste terminou')).toBeTruthy()
+  })
+
+  test('bloqueado: excluir conta e passar liderança continuam abertos', async () => {
+    for (const seg of ['excluir', 'lideranca', 'dados', 'sair', 'ajuda']) {
+      useSegments.mockReturnValue(['configuracoes', seg])
+      const r = await renderApp(
+        <AccessGuard>
+          <Text>{`Tela ${seg}`}</Text>
+        </AccessGuard>,
+        { onboarded: true, subscription: previewState('blocked') },
+      )
+      expect(screen.getByText(`Tela ${seg}`)).toBeTruthy()
+      await r.unmount()
+    }
+    useSegments.mockReturnValue([])
+  })
+
+  test('sem login, telas fora das abas não abrem', async () => {
+    await renderApp(
+      <AccessGuard>
+        <Text>Conteúdo</Text>
+      </AccessGuard>,
+      { onboarded: false },
+    )
+    expect(screen.queryByText('Conteúdo')).toBeNull()
+  })
+
+  test('aviso de pedido da célula não aparece para visitante', async () => {
+    await renderApp(<NoticesScreen />, { ...withCell('visitante'), settings: { notices: sampleNotices() } })
+    expect(screen.queryByText('Pedido de oração respondido')).toBeNull()
+    expect(screen.getByText('Encontro da célula hoje')).toBeTruthy()
+  })
+})

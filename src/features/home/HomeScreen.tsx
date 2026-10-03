@@ -1,5 +1,6 @@
 import { router } from 'expo-router'
-import { useSettings } from '../settings/SettingsContext'
+import { useBlockedIds, useSettings } from '../settings/SettingsContext'
+import { visibleNotices } from '../settings/notices'
 import { useRemoteState } from '../../state/connection'
 import { ErrorState, SkeletonCard } from '../../components'
 import { LastDayCard, PaymentFailedCard, TrialBanner } from '../subscription/screens/SubscriptionScreens'
@@ -35,7 +36,10 @@ export function HomeScreen() {
   const { cell } = useCell()
   const church = useChurch()
   const totalDays = activeDays.length
-  const { unreadCount: unreadNotifications, simple } = useSettings()
+  const settings = useSettings()
+  const { simple } = settings
+  const blockedIds = useBlockedIds()
+  const unreadNotifications = visibleNotices(settings.notices, !cell || can(cell.myRole, 'seePrayers')).filter((n) => !n.read).length
   const daily = useRemoteState()
   const commitments = upcomingCommitments({
     cell,
@@ -44,7 +48,7 @@ export function HomeScreen() {
     ministries: church.main ? church.ministries : [],
     savedEvents: church.savedEvents,
   })
-  const cellPrayers = cell && can(cell.myRole, 'seePrayers') ? cell.prayers.filter((p) => !cell.hidden.includes(p.id)).length : null
+  const cellPrayers = cell && can(cell.myRole, 'seePrayers') ? cell.prayers.filter((p) => !cell.hidden.includes(p.id) && !blockedIds.has(p.memberId)).length : null
   const [mood, setMood] = useState<string | null>(null)
   const [daysOpen, setDaysOpen] = useState(false)
 

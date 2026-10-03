@@ -80,7 +80,7 @@ function CellPrayers({ cell }: { cell: Cell }) {
             ) : null}
             {p.notified ? <AppText variant="small" tone="secondary">{`${first} foi avisado que você orou`}</AppText> : null}
             <View style={{ alignItems: 'flex-end' }}>
-              <ReportButton what="este pedido" onReport={() => update((c) => ({ ...c, hidden: [...c.hidden, p.id] }))} />
+              <ReportButton what="este pedido" content={`prayer:${p.id}`} onReport={() => update((c) => ({ ...c, hidden: [...c.hidden, p.id] }))} />
             </View>
           </Card>
         )

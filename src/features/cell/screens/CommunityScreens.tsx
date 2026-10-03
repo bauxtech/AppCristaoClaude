@@ -9,7 +9,8 @@ import { fonts } from '../../../theme/typography'
 import { formatAgo } from '../../prayer/dates'
 import { toISODate } from '../../prayer/data'
 import { memberName, useCell } from '../CellContext'
-import { useBlockedIds } from '../../settings/SettingsContext'
+import { useBlockedIds, useSettings } from '../../settings/SettingsContext'
+import { isSafeUrl } from '../../../lib/links'
 import type { Cell, Poll } from '../data'
 import { can } from '../permissions'
 import { CellGuard } from './Guard'
@@ -17,8 +18,9 @@ import { CellGuard } from './Guard'
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 
 /** Menu de denúncia: vai para a equipe do app e some na hora para quem denunciou (regra decidida). */
-export function ReportButton({ what, onReport }: { what: string; onReport: () => void }) {
+export function ReportButton({ what, content, onReport }: { what: string; content: string; onReport: () => void }) {
   const toast = useToast()
+  const settings = useSettings()
   return (
     <Button
       label="Denunciar"
@@ -26,6 +28,7 @@ export function ReportButton({ what, onReport }: { what: string; onReport: () =>
       size="sm"
       accessibilityHint={`Denuncia ${what} para a equipe do app`}
       onPress={() => {
+        settings.report({ reason: 'Denúncia de conteúdo', detail: '', content })
         onReport()
         toast('Recebemos sua denúncia')
       }}
@@ -82,7 +85,7 @@ function Board({ cell }: { cell: Cell }) {
             {post ? (
               <Button label="Apagar" variant="text" size="sm" onPress={() => update((c) => ({ ...c, board: c.board.filter((b) => b.id !== n.id) }))} />
             ) : n.authorId !== 'me' ? (
-              <ReportButton what="este aviso" onReport={() => hide(n.id)} />
+              <ReportButton what="este aviso" content={`board:${n.id}`} onReport={() => hide(n.id)} />
             ) : null}
           </View>
         </Card>
@@ -197,7 +200,7 @@ export function MaterialsScreen() {
                   label={`Abrir ${m.name}`}
                   onPress={() => {
                     toast(`Abrindo ${m.name}`)
-                    if (m.uri) Linking.openURL(m.uri).catch(() => {})
+                    if (m.uri && isSafeUrl(m.uri, true)) Linking.openURL(m.uri).catch(() => {})
                   }}
                 />
                 {manage ? <IconButton icon="trash" label={`Apagar ${m.name}`} onPress={() => update((c) => ({ ...c, materials: c.materials.filter((x) => x.id !== m.id) }))} /> : null}
@@ -259,7 +262,7 @@ export function PlaylistScreen() {
                   onPress={() => {
                     if (s.url) {
                       toast('Abrindo a música')
-                      Linking.openURL(s.url).catch(() => {})
+                      if (isSafeUrl(s.url)) Linking.openURL(s.url).catch(() => {})
                     } else {
                       toast('Abrindo no Spotify')
                       Linking.openURL(`https://open.spotify.com/search/${encodeURIComponent(`${s.title} ${s.artist}`)}`).catch(() => {})

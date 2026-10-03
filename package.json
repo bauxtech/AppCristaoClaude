@@ -61,10 +61,12 @@
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/web/"
+      "/web/",
+      "/supabase/"
     ],
     "modulePathIgnorePatterns": [
-      "<rootDir>/web/"
+      "<rootDir>/web/",
+      "<rootDir>/supabase/"
     ]
   }
 }

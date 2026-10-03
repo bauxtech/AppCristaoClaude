@@ -26,6 +26,7 @@ export function Segmented<T extends string>({ options, value, onChange, label }:
             accessibilityRole="tab"
             accessibilityLabel={o.label}
             accessibilityState={{ selected }}
+            hitSlop={{ top: 4, bottom: 4 }}
             style={{
               flex: 1,
               minHeight: MIN_TOUCH - 8,

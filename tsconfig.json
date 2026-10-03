@@ -12,6 +12,7 @@
   ],
   "exclude": [
     "node_modules",
-    "web"
+    "web",
+    "supabase"
   ]
 }

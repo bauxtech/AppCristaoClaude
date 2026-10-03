@@ -19,7 +19,7 @@ describe('dados públicos', () => {
   test('endereço só depois de nome e telefone válidos', async () => {
     await expect(leaveContact('ABC123', 'A', '11999999999')).rejects.toThrow()
     await expect(leaveContact('ABC123', 'Maria', '123')).rejects.toThrow()
-    await expect(leaveContact('ABC123', 'Maria', '11987654321')).resolves.toMatchObject({ address: 'Casa da Maria, Rua das Flores, 42' })
+    await expect(leaveContact('ABC123', 'Maria', '11987654321')).resolves.toMatchObject({ address: expect.stringContaining('exemplo') })
   })
 
   test('célula arquivada não recebe contato', async () => {
@@ -47,9 +47,9 @@ describe('página da célula', () => {
     await user.click(screen.getByRole('button', { name: 'Enviar e ver o endereço' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Marque que aceita')
 
-    await user.click(screen.getByRole('checkbox'))
+    await user.click(screen.getByRole('checkbox', { name: /Aceito que/ }))
     await user.click(screen.getByRole('button', { name: 'Enviar e ver o endereço' }))
-    expect(await screen.findByText('Casa da Maria, Rua das Flores, 42')).toBeInTheDocument()
+    expect(await screen.findByText(/Endereço de exemplo/)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Quero participar' })).not.toBeInTheDocument()
   })
 
@@ -58,6 +58,9 @@ describe('página da célula', () => {
     render(<CellPage code="ABC123" />)
     const section = (await screen.findByRole('heading', { name: 'Deixar um pedido de oração' })).closest('section')!
     await user.type(within(section).getByLabelText('Seu pedido'), 'Pela minha família')
+    await user.click(within(section).getByRole('button', { name: 'Enviar pedido' }))
+    expect(within(section).getByRole('alert')).toHaveTextContent('Marque que autoriza enviar o pedido para João.')
+    await user.click(within(section).getByRole('checkbox'))
     await user.click(within(section).getByRole('button', { name: 'Enviar pedido' }))
     expect(await screen.findByRole('heading', { name: 'Pedido enviado' })).toBeInTheDocument()
     expect(screen.queryByText('Pela minha família')).not.toBeInTheDocument()

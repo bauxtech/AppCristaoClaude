@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useRelockOnBackground } from '../../lib/relock'
 import { getItem, setItem } from '../../lib/storage'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
@@ -63,6 +64,8 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
   })
   useDataReset((s) => setState(prayerInitial(s)))
   const [diaryUnlocked, setDiaryUnlocked] = useState(false)
+  // Volta a travar quando o app vai para segundo plano.
+  useRelockOnBackground(() => setDiaryUnlocked(false))
   const [draftVideo, setDraftVideo] = useState<{ uri: string; seconds: number } | null>(null)
 
   useEffect(() => {

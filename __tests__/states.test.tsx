@@ -6,6 +6,7 @@ import { ChatScreen } from '../src/features/chat/screens/ChatScreen'
 import { SearchChurchScreen } from '../src/features/church/screens/SearchScreens'
 import { HomeScreen } from '../src/features/home/HomeScreen'
 import { useImagePicker } from '../src/lib/useImagePicker'
+import { PlansScreen } from '../src/features/subscription/screens/SubscriptionScreens'
 import { SYNC_MS, useConnection } from '../src/state/connection'
 import { renderApp } from '../test-utils/render'
 
@@ -42,7 +43,11 @@ describe('sem internet', () => {
   test('chat avisa que precisa de internet e mantém o histórico', async () => {
     await renderApp(<ChatScreen />, { onboarded: true, demo: 'offline' })
     expect(screen.getByText('O chat precisa de internet')).toBeTruthy()
-    expect(screen.queryByLabelText('Sua pergunta sobre a Bíblia')).toBeNull()
+    // O campo continua aberto: quem escreve sobre se machucar ainda vê o CVV.
+    expect(screen.getByText(/CVV, telefone 188/)).toBeTruthy()
+    await fireEvent.changeText(screen.getByLabelText('Sua pergunta sobre a Bíblia'), 'quero morrer')
+    await fireEvent.press(screen.getByRole('button', { name: 'Enviar pergunta' }))
+    expect(screen.getAllByText(/188/).length).toBeGreaterThan(1)
   })
 
   test('busca de igreja sem internet mostra erro com tentar de novo e cadastrar à mão', async () => {
@@ -110,5 +115,14 @@ describe('permissão da câmera', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Tirar foto' }))
     expect(await screen.findByText('A câmera está desligada')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Abrir ajustes do celular' })).toBeTruthy()
+  })
+})
+
+describe('compra fora da prévia', () => {
+  test('a folha de exemplo não libera o plano sem cobrança', async () => {
+    await renderApp(<PlansScreen />, { onboarded: true })
+    await fireEvent.press(screen.getByRole('button', { name: 'Assinar' }))
+    expect(screen.getByText('A compra pela loja ainda não está ligada neste app.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Confirmar assinatura' })).toBeDisabled()
   })
 })

@@ -1,8 +1,4 @@
-// Regras do chat que valem antes de qualquer resposta:
-// - Se a pessoa falar em se machucar, mostra o CVV, telefone 188.
-// - Só fala de Bíblia e fé cristã.
-// - 20 perguntas por dia.
-// No servidor, as mesmas regras se repetem. Aqui elas protegem a pessoa mesmo sem internet.
+// Cópia de src/features/chat/rules.ts. O servidor repete as regras do app (o app pode ser alterado; o servidor não).
 
 export const DAILY_LIMIT = 20
 

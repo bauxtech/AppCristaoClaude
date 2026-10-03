@@ -2,7 +2,9 @@ import { router } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { AppText, Avatar, Button, Card, Chip, ConfirmCard, EmptyState, Icon, ListRow, Page, SectionLabel, SelectCard, TextField, useToast } from '../../../components'
+import { File } from 'expo-file-system'
 import { IS_PREVIEW } from '../../../lib/preview'
+import { cancelAllReminders } from '../../../lib/reminders'
 import { useSession } from '../../../state/session'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -374,20 +376,44 @@ export function ReportScreen() {
   )
 }
 
+/** Apaga do aparelho os arquivos baixados ou gravados: áudio dos cultos, vídeos em Libras e foto. */
+export function deleteLocalFiles(uris: (string | undefined)[]) {
+  for (const uri of uris) {
+    if (!uri || !uri.startsWith('file:')) continue
+    try {
+      const f = new File(uri)
+      if (f.exists) f.delete()
+    } catch {
+      // arquivo já não existe
+    }
+  }
+}
+
 export function SignOutScreen() {
   const session = useSession()
+  const { sermons } = useSermons()
+  const prayer = usePrayer()
+  const profile = useProfile()
   const [wipe, setWipe] = useState(false)
   return (
     <Page title="Sair da conta">
       <AppText variant="body" tone="secondary">
         Você será desconectado deste aparelho. Seus dados ficam salvos na nuvem.
       </AppText>
+      {IS_PREVIEW ? (
+        <AppText variant="small" tone="secondary">
+          Na prévia ainda não há nuvem: sair apaga os dados de exemplo e os que você criou neste aparelho.
+        </AppText>
+      ) : null}
       <SelectCard kind="checkbox" label="Apagar dados baixados neste aparelho" description="Gravações de culto guardadas no aparelho serão removidas. A Bíblia offline fica." selected={wipe} onPress={() => setWipe((v) => !v)} />
       <Button
         label="Sair da conta"
         variant="outline"
         icon="logout"
         onPress={() => {
+          if (wipe) deleteLocalFiles([...sermons.map((s) => s.audioUri), ...prayer.requests.map((r) => r.videoUri), profile.photoUri])
+          // Os lembretes deste aparelho param junto com a conta.
+          cancelAllReminders()
           session.signOut()
           router.replace('/entrar')
         }}
@@ -441,7 +467,7 @@ export function DeleteAccountScreen() {
           <AppText variant="body" tone="secondary">
             {`Antes de excluir a conta, passe a liderança de ${cell!.name} para outro membro ou arquive a célula.`}
           </AppText>
-          <Button label="Passar liderança ou arquivar" variant="primary" size="sm" onPress={() => router.push('/celula/opcoes')} />
+          <Button label="Passar liderança ou arquivar" variant="primary" size="sm" onPress={() => router.push('/configuracoes/lideranca')} />
         </Card>
       ) : null}
       <AppText variant="body" tone="secondary">

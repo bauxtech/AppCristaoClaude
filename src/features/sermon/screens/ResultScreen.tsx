@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router'
+import { NotesLockedInline, useNotesLocked } from '../../settings/NotesLock'
 import { useState } from 'react'
 import { Share, View } from 'react-native'
 import { AppText, Button, Card, ConfirmCard, EmptyState, IconButton, Page, SectionLabel, Segmented, Sheet, useToast } from '../../../components'
@@ -67,6 +68,7 @@ function Ready({ s }: { s: Sermon }) {
   const { cell, update: updateCell } = useCell()
   const { remove, deleteAudio } = useSermons()
   const [tab, setTab] = useState<'resumo' | 'texto' | 'notas'>('resumo')
+  const notesLocked = useNotesLocked()
   const [sheet, setSheet] = useState<'options' | 'send' | null>(null)
   const [confirm, setConfirm] = useState<'delete' | 'audio' | null>(null)
   const isLeader = cell?.myRole === 'lider' && !cell.archived
@@ -150,7 +152,8 @@ function Ready({ s }: { s: Sermon }) {
         </Card>
       ) : null}
 
-      {tab === 'notas' ? (
+      {tab === 'notas' && notesLocked ? <NotesLockedInline /> : null}
+      {tab === 'notas' && !notesLocked ? (
         <>
           <Card style={{ gap: 8 }}>
             <SectionLabel>Notas</SectionLabel>

@@ -1,6 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker'
 import * as ImagePicker from 'expo-image-picker'
 import { useImagePicker } from '../../../lib/useImagePicker'
+import { NotesLockedInline, useNotesLocked } from '../../settings/NotesLock'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Image, Linking, Pressable, View } from 'react-native'
@@ -152,6 +153,7 @@ export function LessonScreen() {
   const l = c && idx >= 0 ? c.lessons[idx] : undefined
   const [notes, setNotes] = useState(l?.notes ?? '')
   const { pickImage, permissionSheet } = useImagePicker()
+  const notesLocked = useNotesLocked()
   if (!c || !l) return <Page title="Aula"><EmptyState text="Esta aula não existe mais." /></Page>
   const setLesson = (patch: Partial<Lesson>) => updateCourse(c.id, (x) => ({ ...x, lessons: x.lessons.map((y) => (y.id === l.id ? { ...y, ...patch } : y)) }))
   const addMaterial = (m: Omit<Material, 'id'>) => {
@@ -241,16 +243,22 @@ export function LessonScreen() {
         </AppText>
       </Card>
 
-      <TextField label="Anotações da aula" value={notes} onChangeText={setNotes} placeholder="Escreva o que aprendeu nesta aula" multiline maxLength={4000} />
-      <Button
-        label="Salvar anotações"
-        variant="outline"
-        disabled={notes === l.notes}
-        onPress={() => {
-          setLesson({ notes })
-          toast('Anotações salvas')
-        }}
-      />
+      {notesLocked ? (
+        <NotesLockedInline />
+      ) : (
+        <>
+          <TextField label="Anotações da aula" value={notes} onChangeText={setNotes} placeholder="Escreva o que aprendeu nesta aula" multiline maxLength={4000} />
+          <Button
+            label="Salvar anotações"
+            variant="outline"
+            disabled={notes === l.notes}
+            onPress={() => {
+              setLesson({ notes })
+              toast('Anotações salvas')
+            }}
+          />
+        </>
+      )}
       <Button label="Revisar o curso" icon="book" variant="soft" onPress={() => router.push({ pathname: '/igreja/curso/[id]/revisao', params: { id: c.id } })} />
     </Page>
   )
