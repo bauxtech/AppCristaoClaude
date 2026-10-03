@@ -1,5 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker'
 import * as ImagePicker from 'expo-image-picker'
+import { useImagePicker } from '../../../lib/useImagePicker'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Image, Linking, Pressable, View } from 'react-native'
@@ -150,6 +151,7 @@ export function LessonScreen() {
   const idx = c?.lessons.findIndex((l) => l.id === aula) ?? -1
   const l = c && idx >= 0 ? c.lessons[idx] : undefined
   const [notes, setNotes] = useState(l?.notes ?? '')
+  const { pickImage, permissionSheet } = useImagePicker()
   if (!c || !l) return <Page title="Aula"><EmptyState text="Esta aula não existe mais." /></Page>
   const setLesson = (patch: Partial<Lesson>) => updateCourse(c.id, (x) => ({ ...x, lessons: x.lessons.map((y) => (y.id === l.id ? { ...y, ...patch } : y)) }))
   const addMaterial = (m: Omit<Material, 'id'>) => {
@@ -159,6 +161,7 @@ export function LessonScreen() {
 
   return (
     <Page title={`Aula ${idx + 1}: ${l.title}`}>
+      {permissionSheet}
       <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}>
         <View style={{ flex: 1 }}>
           <AppText variant="bodyStrong">Presença</AppText>
@@ -198,9 +201,18 @@ export function LessonScreen() {
             variant="soft"
             size="sm"
             onPress={async () => {
-              const perm = await ImagePicker.requestCameraPermissionsAsync()
-              const res = perm.granted ? await ImagePicker.launchCameraAsync({ quality: 0.7 }) : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 })
-              if (!res.canceled && res.assets[0]) addMaterial({ name: `Foto da aula ${idx + 1}`, kind: 'Foto', uri: res.assets[0].uri })
+              const uri = await pickImage('camera', 'para fotografar a apostila', { quality: 0.7 })
+              if (uri) addMaterial({ name: `Foto da aula ${idx + 1}`, kind: 'Foto', uri })
+            }}
+          />
+          <Button
+            label="Da galeria"
+            icon="image"
+            variant="soft"
+            size="sm"
+            onPress={async () => {
+              const uri = await pickImage('library', '', { quality: 0.7 })
+              if (uri) addMaterial({ name: `Foto da aula ${idx + 1}`, kind: 'Foto', uri })
             }}
           />
           <Button
@@ -460,23 +472,25 @@ export function CourseByPhotoScreen() {
   const [count, setCount] = useState(String(PHOTO_SAMPLE.lessons))
   const [time, setTime] = useState(PHOTO_SAMPLE.time)
   const [error, setError] = useState<string | undefined>()
+  const { pickImage, permissionSheet } = useImagePicker()
 
-  async function take() {
-    const perm = await ImagePicker.requestCameraPermissionsAsync()
-    const res = perm.granted ? await ImagePicker.launchCameraAsync({ quality: 0.7 }) : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 })
-    if (!res.canceled && res.assets[0]) setPhoto(res.assets[0].uri)
+  async function take(source: 'camera' | 'library' = 'camera') {
+    const uri = await pickImage(source, 'para fotografar o cronograma do curso', { quality: 0.7 })
+    if (uri) setPhoto(uri)
   }
 
   if (!photo) {
     return (
       <Page title="Curso pela foto">
+        {permissionSheet}
         <View style={{ aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <Icon name="camera" size={36} color={colors.primary} />
           <AppText variant="small" style={{ color: colors.primary }}>
             Foto do cronograma
           </AppText>
         </View>
-        <Button label="Tirar foto do cronograma" icon="camera" onPress={take} />
+        <Button label="Tirar foto do cronograma" icon="camera" onPress={() => take('camera')} />
+        <Button label="Escolher da galeria" icon="image" variant="outline" onPress={() => take('library')} />
         <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
           O app lê o nome do curso, as datas e os horários. Você confere antes de salvar.
         </AppText>

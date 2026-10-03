@@ -1,7 +1,8 @@
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Linking, Pressable, View } from 'react-native'
-import { AppText, Button, Card, Chip, Icon, IconButton, Page, SectionLabel, Switch, useToast } from '../../../components'
+import { AppText, Button, Card, Chip, ErrorState, Icon, IconButton, Page, SectionLabel, SkeletonCard, Switch, useToast } from '../../../components'
+import { useRemoteState } from '../../../state/connection'
 import type { IconName } from '../../../components/Icon'
 import { askReminderPermission, reminderPermission, type ReminderPermission } from '../../../lib/reminders'
 import { useTheme } from '../../../theme/ThemeProvider'
@@ -51,6 +52,7 @@ export function NoticesScreen() {
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
   const visible = filter === 'unread' ? s.notices.filter((n) => !n.read) : s.notices
   const groups = groupNotices(visible)
+  const remote = useRemoteState()
 
   function open(n: Notice) {
     s.markRead(n.id)
@@ -60,7 +62,16 @@ export function NoticesScreen() {
   return (
     <Page title={s.unreadCount ? `Avisos (${s.unreadCount})` : 'Avisos'} right={<IconButton icon="settings" label="Configurar avisos" onPress={() => router.push('/avisos/configurar')} />}>
       <PermissionCard perm={perm} ask={ask} />
-      {s.notices.length > 0 ? (
+      {remote.loading ? (
+        <>
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </>
+      ) : remote.error ? (
+        <ErrorState message="Não foi possível carregar os avisos." onRetry={remote.retry} />
+      ) : null}
+      {remote.loading || remote.error ? null : s.notices.length > 0 ? (
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <Chip label="Todas" selected={filter === 'all'} onPress={() => setFilter('all')} />
           <Chip label={s.unreadCount ? `Não lidas (${s.unreadCount})` : 'Não lidas'} selected={filter === 'unread'} onPress={() => setFilter('unread')} />
@@ -69,7 +80,7 @@ export function NoticesScreen() {
         </View>
       ) : null}
 
-      {visible.length === 0 ? (
+      {remote.loading || remote.error ? null : visible.length === 0 ? (
         <View style={{ alignItems: 'center', gap: 8, paddingVertical: 40 }}>
           <Icon name="bell" size={40} color={colors.textSecondary} strokeWidth={1.5} />
           <AppText variant="bodyStrong">{s.notices.length === 0 ? 'Nenhum aviso por enquanto' : 'Tudo em dia'}</AppText>

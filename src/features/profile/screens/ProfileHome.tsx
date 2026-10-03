@@ -14,6 +14,8 @@ import { TileGrid } from '../../cell/screens/parts'
 import { useChurch } from '../../church/ChurchContext'
 import { useProfile } from '../ProfileContext'
 import { useCell } from '../../cell/CellContext'
+import { useChat } from '../../chat/ChatContext'
+import { useConnection } from '../../../state/connection'
 import { useSettings } from '../../settings/SettingsContext'
 import { longDate } from '../../settings/screens/AccountScreens'
 import { useSubscription } from '../../subscription/SubscriptionContext'
@@ -32,6 +34,8 @@ export function ProfileHome() {
   const settings = useSettings()
   const sub = useSubscription()
   const { cell } = useCell()
+  const connection = useConnection()
+  const chat = useChat()
   const read = new Set(readChapters).size
   const pct = Math.round((read / TOTAL_CHAPTERS) * 100)
   const booksDone = BOOKS.filter((b) => bookProgress(b, readChapters) === b.chapters).length
@@ -130,6 +134,19 @@ export function ProfileHome() {
           <Button label="Ver como conta nova" variant={session.sampleData ? 'primary' : 'outline'} onPress={() => (session.resetData(false), toast('Conta nova: tudo vazio'))} />
           <Button label="Carregar dados de exemplo" variant={session.sampleData ? 'outline' : 'primary'} onPress={() => (session.resetData(true), toast('Dados de exemplo carregados'))} />
           <PreviewSubTools />
+          <Card style={{ gap: 8 }}>
+            <AppText variant="bodyStrong">Estados gerais</AppText>
+            <AppText variant="small" tone="secondary">
+              {connection.demo === 'offline' ? 'Agora: sem internet.' : connection.demo === 'error' ? 'Agora: erro ao carregar.' : connection.demo === 'loading' ? 'Agora: carregando.' : 'Agora: normal.'}
+            </AppText>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Button label="Sem internet" variant="outline" size="sm" onPress={() => connection.setDemo('offline')} />
+              <Button label="Erro" variant="outline" size="sm" onPress={() => connection.setDemo('error')} />
+              <Button label="Carregando" variant="outline" size="sm" onPress={() => connection.setDemo('loading')} />
+              <Button label="Normal" variant="outline" size="sm" onPress={() => connection.setDemo(null)} />
+              <Button label="Limite do chat atingido" variant="outline" size="sm" onPress={() => (chat.fillTodayLimit(), toast('Perguntas de hoje usadas'))} />
+            </View>
+          </Card>
           <ListRow label="Componentes" sub="Ver todos no claro, escuro e alto contraste" onPress={() => router.push('/componentes')} divider />
           <ListRow label="Teste de gravação" sub="Gravar 60 minutos com a tela bloqueada" onPress={() => router.push('/teste-gravacao')} divider />
           <ListRow

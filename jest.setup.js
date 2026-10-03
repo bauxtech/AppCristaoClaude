@@ -1,10 +1,13 @@
 // Mocks usados nos testes. Nada aqui entra no app.
 jest.mock('react-native-safe-area-context', () => {
+  const React = require('react')
   const inset = { top: 0, right: 0, bottom: 0, left: 0 }
+  const Ctx = React.createContext(inset)
   return {
     SafeAreaProvider: ({ children }) => children,
     SafeAreaView: ({ children }) => children,
-    useSafeAreaInsets: () => inset,
+    useSafeAreaInsets: () => React.useContext(Ctx),
+    SafeAreaInsetsContext: Ctx,
   }
 })
 jest.mock('expo-router', () => ({
@@ -45,4 +48,8 @@ jest.mock('expo-notifications', () => ({
   setNotificationChannelAsync: jest.fn(async () => {}),
   cancelAllScheduledNotificationsAsync: jest.fn(async () => {}),
   scheduleNotificationAsync: jest.fn(async () => 'id'),
+}))
+jest.mock('@react-native-community/netinfo', () => ({
+  addEventListener: jest.fn(() => () => {}),
+  fetch: jest.fn(async () => ({ isConnected: true, isInternetReachable: true })),
 }))

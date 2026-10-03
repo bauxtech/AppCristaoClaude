@@ -1,4 +1,5 @@
 import { requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from 'expo-audio'
+import { useRemoteState } from '../../../state/connection'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, TextInput, View } from 'react-native'
@@ -56,6 +57,7 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
   const [divided, setDivided] = useState(false)
   const scroll = useRef<ScrollView>(null)
   const limit = chat.remaining <= 0
+  const { online } = useRemoteState()
   const sermon = conv?.context?.kind === 'sermon' ? sermons.find((s) => s.id === (conv.context as { id: string }).id) ?? null : null
 
   async function ask(text: string, existing?: { conv: Conversation; msgId: string }) {
@@ -175,7 +177,14 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
       </ScrollView>
 
       <View style={{ padding: 12, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.card }}>
-        {limit ? (
+        {!online ? (
+          <View style={{ gap: 4, alignItems: 'center', paddingVertical: 8 }} accessibilityLiveRegion="polite">
+            <AppText variant="bodyStrong">O chat precisa de internet</AppText>
+            <AppText variant="small" tone="secondary">
+              As conversas anteriores continuam abertas. Quando a internet voltar, você pode perguntar de novo.
+            </AppText>
+          </View>
+        ) : limit ? (
           <View style={{ gap: 4, alignItems: 'center', paddingVertical: 8 }}>
             <AppText variant="bodyStrong">{`Você usou as ${DAILY_LIMIT} perguntas de hoje`}</AppText>
             <AppText variant="small" tone="secondary">

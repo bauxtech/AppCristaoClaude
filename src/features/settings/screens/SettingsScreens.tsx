@@ -295,7 +295,8 @@ export function AppearanceScreen() {
         <SwitchRow label="Fonte grande" sub="Aumenta o tamanho do texto no app" value={theme.largeText} onChange={theme.setLargeText} divider />
         <SwitchRow label="Alto contraste" sub="Aumenta o contraste entre elementos" value={theme.highContrast} onChange={(v) => theme.setHighContrastOverride(v)} divider />
         <SwitchRow label="Legenda em tempo real" sub="No chat e nos momentos de oração" value={s.captions} onChange={(v) => s.update({ captions: v })} divider />
-        <SwitchRow label="Intérprete de Libras (vídeo)" sub="Quando disponível no conteúdo" value={s.libras} onChange={(v) => s.update({ libras: v })} />
+        <SwitchRow label="Intérprete de Libras (vídeo)" sub="Quando disponível no conteúdo" value={s.libras} onChange={(v) => s.update({ libras: v })} divider />
+        <SwitchRow label="Modo simplificado" sub="Mostra menos elementos por tela" value={s.simple} onChange={(v) => s.update({ simple: v })} />
       </Card>
       <AppText variant="small" tone="secondary">
         A fonte grande se soma ao tamanho de letra escolhido nos ajustes do celular.

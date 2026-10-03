@@ -35,6 +35,8 @@ interface ChatValue {
   countQuestion: () => void
   removeConversation: (id: string) => void
   clearAll: () => void
+  /** Só na prévia: usa todas as perguntas de hoje. */
+  fillTodayLimit: () => void
 }
 
 const Ctx = createContext<ChatValue | null>(null)
@@ -98,6 +100,7 @@ export function ChatProvider({ children, initial }: { children: ReactNode; initi
         })),
       replaceMessage: (convId, msgId, m) =>
         setState((s) => ({ ...s, conversations: s.conversations.map((c) => (c.id === convId ? { ...c, messages: c.messages.map((x) => (x.id === msgId ? { ...x, ...m } : x)) } : c)) })),
+      fillTodayLimit: () => setState((s) => ({ ...s, usage: { date: today(), count: DAILY_LIMIT } })),
       countQuestion: () => setState((s) => ({ ...s, usage: { date: today(), count: (s.usage.date === today() ? s.usage.count : 0) + 1 } })),
       removeConversation: (id) => setState((s) => ({ ...s, conversations: s.conversations.filter((c) => c.id !== id) })),
       clearAll: () => setState((s) => ({ ...s, conversations: [] })),

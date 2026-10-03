@@ -25,6 +25,8 @@ export interface SettingsState {
   recordingDefault: 'text' | 'audio'
   captions: boolean
   libras: boolean
+  /** Modo simplificado: menos elementos por tela. */
+  simple: boolean
   /** Pede biometria para abrir as anotações. O diário tem a própria trava, na oração. */
   notesLock: boolean
   bibleFont: 'serif' | 'sans'
@@ -47,7 +49,7 @@ interface SettingsValue extends SettingsState {
   dismissNotice: (id: string) => void
   setNotif: (p: Partial<NotificationPrefs>) => void
   setType: (k: keyof NotificationPrefs['types'], v: boolean) => void
-  update: (p: Partial<Pick<SettingsState, 'recordingDefault' | 'captions' | 'libras' | 'notesLock' | 'bibleFont' | 'voice' | 'faithConsent'>>) => void
+  update: (p: Partial<Pick<SettingsState, 'recordingDefault' | 'captions' | 'libras' | 'simple' | 'notesLock' | 'bibleFont' | 'voice' | 'faithConsent'>>) => void
   block: (id: string, name: string) => void
   unblock: (id: string) => void
   isBlocked: (name: string) => boolean
@@ -65,6 +67,7 @@ export function settingsInitial(sample: boolean, timeChoice: string | null = nul
     recordingDefault: 'text',
     captions: false,
     libras: false,
+    simple: false,
     notesLock: false,
     bibleFont: 'serif',
     voice: null,

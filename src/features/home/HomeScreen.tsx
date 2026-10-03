@@ -1,5 +1,7 @@
 import { router } from 'expo-router'
 import { useSettings } from '../settings/SettingsContext'
+import { useRemoteState } from '../../state/connection'
+import { ErrorState, SkeletonCard } from '../../components'
 import { LastDayCard, PaymentFailedCard, TrialBanner } from '../subscription/screens/SubscriptionScreens'
 import { useState } from 'react'
 import { Linking, Pressable, ScrollView, View } from 'react-native'
@@ -33,8 +35,15 @@ export function HomeScreen() {
   const { cell } = useCell()
   const church = useChurch()
   const totalDays = activeDays.length
-  const { unreadCount: unreadNotifications } = useSettings()
-  const commitments = upcomingCommitments({ cell, church: church.main, courses: church.main ? church.courses : [], ministries: church.main ? church.ministries : [], savedEvents: church.savedEvents })
+  const { unreadCount: unreadNotifications, simple } = useSettings()
+  const daily = useRemoteState()
+  const commitments = upcomingCommitments({
+    cell,
+    church: church.main,
+    courses: church.main ? church.courses : [],
+    ministries: church.main ? church.ministries : [],
+    savedEvents: church.savedEvents,
+  })
   const cellPrayers = cell && can(cell.myRole, 'seePrayers') ? cell.prayers.filter((p) => !cell.hidden.includes(p.id)).length : null
   const [mood, setMood] = useState<string | null>(null)
   const [daysOpen, setDaysOpen] = useState(false)
@@ -45,9 +54,23 @@ export function HomeScreen() {
   const word = mood ? wordForNow[mood] : null
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 140 }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      contentContainerStyle={{
+        paddingTop: insets.top + 16,
+        paddingBottom: 140,
+      }}
+    >
       {/* Cabeçalho */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 20,
+          paddingBottom: 16,
+        }}
+      >
         <View style={{ flex: 1 }}>
           <AppText variant="screenTitle" accessibilityRole="header">
             Hoje
@@ -74,7 +97,15 @@ export function HomeScreen() {
             })}
           >
             <Icon name="calendarCheck" size={14} color={colors.accent} strokeWidth={2.5} />
-            <AppText style={{ color: colors.accent, fontFamily: fonts.semibold, fontSize: 14 }}>{totalDays} dias</AppText>
+            <AppText
+              style={{
+                color: colors.accent,
+                fontFamily: fonts.semibold,
+                fontSize: 14,
+              }}
+            >
+              {totalDays} dias
+            </AppText>
           </Pressable>
         </View>
       </View>
@@ -83,69 +114,147 @@ export function HomeScreen() {
         <TrialBanner />
         <LastDayCard />
         <PaymentFailedCard />
-        {/* Passagem do dia */}
-        <Card>
-          <SectionLabel>Passagem do dia</SectionLabel>
-          <AppText variant="bible" style={{ marginBottom: 8 }}>
-            {`"${passage.text}"`}
-          </AppText>
-          <AppText variant="bibleRef" tone="secondary" style={{ marginBottom: 20 }}>
-            {`${passage.reference} · Almeida`}
-          </AppText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-            <Button label="Ler capítulo" onPress={() => router.push({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: 'salmos', capitulo: '23', v: '1' } })} style={{ flexGrow: 1, minWidth: 120 }} />
-            <Button label="Ouvir" icon="volume" variant="outline" onPress={() => audio.play({ title: passage.reference, text: passage.text })} />
-            <Button label="Perguntar sobre isso" variant="text" onPress={() => router.push({ pathname: '/chat', params: { passagem: passage.reference } })} />
-          </View>
-        </Card>
-
-        {/* Reflexão de hoje */}
-        <Card>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-            <View style={{ flex: 1 }}>
-              <SectionLabel>Reflexão de hoje</SectionLabel>
-              <AppText variant="bodyStrong">{reflection.minutes} min de leitura</AppText>
-            </View>
-            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="pen" size={18} color={colors.primary} />
-            </View>
-          </View>
-          <AppText variant="small" tone="secondary" numberOfLines={2} style={{ marginBottom: 16 }}>
-            {reflection.paragraphs[0]}
-          </AppText>
-          <Button label="Ler reflexão completa" variant="soft" onPress={() => router.push('/reflexao')} />
-        </Card>
-
-        {/* Palavra para agora */}
-        <Card>
-          <AppText variant="bodyStrong" accessibilityRole="header" style={{ marginBottom: 12 }}>
-            Como você está agora?
-          </AppText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {moods.map((m) => (
-              <Chip key={m} label={m} selected={mood === m} onPress={() => setMood(mood === m ? null : m)} />
-            ))}
-          </View>
-          {word && mood ? (
-            <View style={{ marginTop: 16, gap: 8 }} accessibilityLiveRegion="polite">
-              <View style={{ backgroundColor: colors.primarySoft, borderRadius: 12, padding: 14, gap: 6 }}>
-                <AppText variant="bible" style={{ fontSize: 17, lineHeight: 27 }}>{`"${verseText(word.book, word.chapter, word.verse)}"`}</AppText>
-                <AppText variant="bibleRef" tone="secondary">{`${word.book} ${word.chapter}:${word.verse}`}</AppText>
+        {daily.loading ? (
+          <>
+            <SkeletonCard lines={3} />
+            <SkeletonCard lines={2} />
+          </>
+        ) : daily.error ? (
+          <ErrorState message="Não foi possível carregar a passagem do dia." onRetry={daily.retry} />
+        ) : (
+          <>
+            {/* Passagem do dia */}
+            <Card>
+              <SectionLabel>Passagem do dia</SectionLabel>
+              <AppText variant="bible" style={{ marginBottom: 8 }}>
+                {`"${passage.text}"`}
+              </AppText>
+              <AppText variant="bibleRef" tone="secondary" style={{ marginBottom: 20 }}>
+                {`${passage.reference} · Almeida`}
+              </AppText>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <Button
+                  label="Ler capítulo"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/biblia/[livro]/[capitulo]',
+                      params: { livro: 'salmos', capitulo: '23', v: '1' },
+                    })
+                  }
+                  style={{ flexGrow: 1, minWidth: 120 }}
+                />
+                <Button label="Ouvir" icon="volume" variant="outline" onPress={() => audio.play({ title: passage.reference, text: passage.text })} />
+                <Button
+                  label="Perguntar sobre isso"
+                  variant="text"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/chat',
+                      params: { passagem: passage.reference },
+                    })
+                  }
+                />
               </View>
-              <AppText variant="body">{word.phrase}</AppText>
-              <Button
-                label={`Perguntar sobre ${mood.toLowerCase()} na Bíblia`}
-                variant="text"
-                onPress={() => router.push({ pathname: '/chat', params: { passagem: `${word.book} ${word.chapter}:${word.verse}` } })}
-                style={{ alignSelf: 'flex-start' }}
-              />
-            </View>
-          ) : null}
-        </Card>
+            </Card>
+
+            {/* Reflexão de hoje */}
+            <Card>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  marginBottom: 12,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <SectionLabel>Reflexão de hoje</SectionLabel>
+                  <AppText variant="bodyStrong">{reflection.minutes} min de leitura</AppText>
+                </View>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    backgroundColor: colors.primarySoft,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Icon name="pen" size={18} color={colors.primary} />
+                </View>
+              </View>
+              <AppText variant="small" tone="secondary" numberOfLines={2} style={{ marginBottom: 16 }}>
+                {reflection.paragraphs[0]}
+              </AppText>
+              <Button label="Ler reflexão completa" variant="soft" onPress={() => router.push('/reflexao')} />
+            </Card>
+          </>
+        )}
+
+        {!simple ? (
+          <>
+            {/* Palavra para agora */}
+            <Card>
+              <AppText variant="bodyStrong" accessibilityRole="header" style={{ marginBottom: 12 }}>
+                Como você está agora?
+              </AppText>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {moods.map((m) => (
+                  <Chip key={m} label={m} selected={mood === m} onPress={() => setMood(mood === m ? null : m)} />
+                ))}
+              </View>
+              {word && mood ? (
+                <View style={{ marginTop: 16, gap: 8 }} accessibilityLiveRegion="polite">
+                  <View
+                    style={{
+                      backgroundColor: colors.primarySoft,
+                      borderRadius: 12,
+                      padding: 14,
+                      gap: 6,
+                    }}
+                  >
+                    <AppText variant="bible" style={{ fontSize: 17, lineHeight: 27 }}>{`"${verseText(word.book, word.chapter, word.verse)}"`}</AppText>
+                    <AppText variant="bibleRef" tone="secondary">{`${word.book} ${word.chapter}:${word.verse}`}</AppText>
+                  </View>
+                  <AppText variant="body">{word.phrase}</AppText>
+                  <Button
+                    label={`Perguntar sobre ${mood.toLowerCase()} na Bíblia`}
+                    variant="text"
+                    onPress={() =>
+                      router.push({
+                        pathname: '/chat',
+                        params: {
+                          passagem: `${word.book} ${word.chapter}:${word.verse}`,
+                        },
+                      })
+                    }
+                    style={{ alignSelf: 'flex-start' }}
+                  />
+                </View>
+              ) : null}
+            </Card>
+          </>
+        ) : null}
 
         {/* Oração do dia */}
         <Card>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+            }}
+          >
             <View style={{ flex: 1 }}>
               <SectionLabel>Oração do dia</SectionLabel>
               <AppText variant="bodyStrong">{prayerOfDay.title}</AppText>
@@ -161,7 +270,15 @@ export function HomeScreen() {
         {plan && plan.status !== 'done' ? (
           <Card>
             <SectionLabel>Continuar leitura</SectionLabel>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 12,
+              }}
+            >
               <View style={{ flex: 1 }}>
                 <AppText variant="bodyStrong">{plan.def.name}</AppText>
                 <AppText variant="small" tone="secondary">
@@ -182,7 +299,13 @@ export function HomeScreen() {
         )}
 
         {isNewUser ? (
-          <Card style={{ borderStyle: 'dashed', borderWidth: 2, paddingVertical: 8 }}>
+          <Card
+            style={{
+              borderStyle: 'dashed',
+              borderWidth: 2,
+              paddingVertical: 8,
+            }}
+          >
             <ListRow icon="people" label="Criar ou entrar numa célula" sub="Conecte-se com pessoas da sua comunidade." onPress={() => router.push('/celula')} divider />
             <ListRow icon="church" label="Cadastrar minha igreja" sub="Veja cultos, horários e acessibilidade." onPress={() => router.push('/igreja')} />
           </Card>
@@ -196,61 +319,86 @@ export function HomeScreen() {
                   Nenhum compromisso por enquanto. Eles aparecem aqui quando você entra numa célula, vincula a igreja ou cadastra cursos e ministérios.
                 </AppText>
               ) : (
-                commitments.map((c, i) => (
-                  <ListRow key={c.title} icon={c.icon} label={c.title} sub={c.when} onPress={() => router.push(c.href as '/celula')} divider={i < commitments.length - 1} />
-                ))
+                commitments.map((c, i) => <ListRow key={c.title} icon={c.icon} label={c.title} sub={c.when} onPress={() => router.push(c.href as '/celula')} divider={i < commitments.length - 1} />)
               )}
             </Card>
 
             {/* Pedidos da célula: só para quem tem célula e não é visitante */}
             {cellPrayers !== null ? (
-            <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <SectionLabel>Pedidos da célula</SectionLabel>
-                  <AppText variant="body" style={{ fontFamily: fonts.medium }}>
-                    {cellPrayers === 0 ? 'Nenhum pedido na sua célula' : `${cellPrayers} ${cellPrayers === 1 ? 'pedido' : 'pedidos'} na sua célula`}
-                  </AppText>
+              <Card>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <SectionLabel>Pedidos da célula</SectionLabel>
+                    <AppText variant="body" style={{ fontFamily: fonts.medium }}>
+                      {cellPrayers === 0 ? 'Nenhum pedido na sua célula' : `${cellPrayers} ${cellPrayers === 1 ? 'pedido' : 'pedidos'} na sua célula`}
+                    </AppText>
+                  </View>
+                  <Button label="Ver pedidos" variant="outline" size="sm" onPress={() => router.push('/celula/pedidos')} />
                 </View>
-                <Button label="Ver pedidos" variant="outline" size="sm" onPress={() => router.push('/celula/pedidos')} />
-              </View>
-            </Card>
+              </Card>
             ) : null}
           </>
         )}
 
-        {/* Música do dia */}
-        <Card>
-          <SectionLabel>Música do dia</SectionLabel>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
-            <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="music" size={20} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <AppText variant="bodyStrong">{songOfDay.title}</AppText>
-              <AppText variant="small" tone="secondary">
-                {songOfDay.artist}
-              </AppText>
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {SERVICES.map((svc) => (
-              <Button
-                key={svc}
-                label={svc}
-                icon="external"
-                variant="soft"
-                size="sm"
-                accessibilityHint={`Abre a música no ${svc}`}
-                onPress={() => {
-                  toast(`Abrindo o ${svc}`)
-                  Linking.openURL(songUrl(songOfDay, svc)).catch(() => {})
+        {!simple ? (
+          <>
+            {/* Música do dia */}
+            <Card>
+              <SectionLabel>Música do dia</SectionLabel>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  marginBottom: 16,
                 }}
-                style={{ flex: 1 }}
-              />
-            ))}
-          </View>
-        </Card>
+              >
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    backgroundColor: colors.primarySoft,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Icon name="music" size={20} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppText variant="bodyStrong">{songOfDay.title}</AppText>
+                  <AppText variant="small" tone="secondary">
+                    {songOfDay.artist}
+                  </AppText>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {SERVICES.map((svc) => (
+                  <Button
+                    key={svc}
+                    label={svc}
+                    icon="external"
+                    variant="soft"
+                    size="sm"
+                    accessibilityHint={`Abre a música no ${svc}`}
+                    onPress={() => {
+                      toast(`Abrindo o ${svc}`)
+                      Linking.openURL(songUrl(songOfDay, svc)).catch(() => {})
+                    }}
+                    style={{ flex: 1 }}
+                  />
+                ))}
+              </View>
+            </Card>
+          </>
+        ) : null}
       </View>
 
       <TotalDaysSheet visible={daysOpen} onClose={() => setDaysOpen(false)} activeDays={activeDays} />
@@ -277,7 +425,16 @@ function TotalDaysSheet({ visible, onClose, activeDays }: { visible: boolean; on
       <AppText variant="label" tone="secondary">{`${monthName} de ${year}`}</AppText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (
-          <View key={`h${i}`} style={{ width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4 }} importantForAccessibility="no" accessibilityElementsHidden>
+          <View
+            key={`h${i}`}
+            style={{
+              width: `${100 / 7}%`,
+              alignItems: 'center',
+              paddingVertical: 4,
+            }}
+            importantForAccessibility="no"
+            accessibilityElementsHidden
+          >
             <AppText variant="small" tone="secondary">
               {d}
             </AppText>
@@ -286,9 +443,27 @@ function TotalDaysSheet({ visible, onClose, activeDays }: { visible: boolean; on
         {cells.map((d, i) => {
           const active = d > 0 && activeDays.includes(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
           return (
-            <View key={i} style={{ width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4 }} accessible={d > 0} accessibilityLabel={d > 0 ? `${d} de ${monthName}${active ? ', com leitura ou oração' : ''}` : undefined}>
+            <View
+              key={i}
+              style={{
+                width: `${100 / 7}%`,
+                alignItems: 'center',
+                paddingVertical: 4,
+              }}
+              accessible={d > 0}
+              accessibilityLabel={d > 0 ? `${d} de ${monthName}${active ? ', com leitura ou oração' : ''}` : undefined}
+            >
               {d > 0 ? (
-                <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? colors.primary : 'transparent' }}>
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: active ? colors.primary : 'transparent',
+                  }}
+                >
                   {active ? <Icon name="check" size={14} color={colors.primaryText} strokeWidth={3} /> : <AppText variant="small">{d}</AppText>}
                 </View>
               ) : null}

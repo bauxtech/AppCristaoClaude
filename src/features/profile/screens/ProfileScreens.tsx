@@ -7,6 +7,7 @@ import { Image, Pressable, View } from 'react-native'
 import { AppText, Avatar, Button, Card, Chip, ConfirmCard, EmptyState, Page, SectionLabel, Segmented, SelectCard, Sheet, Switch, Tag, TapCard, TextField, TopBar, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { useSession } from '../../../state/session'
+import { useImagePicker } from '../../../lib/useImagePicker'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { HIGHLIGHTS, useBible } from '../../bible/BibleContext'
@@ -40,21 +41,20 @@ export function EditProfileScreen() {
   const [error, setError] = useState<string | undefined>()
   const [sheet, setSheet] = useState(false)
 
+  const { pickImage, permissionSheet } = useImagePicker()
+
   async function pick(camera: boolean) {
     setSheet(false)
-    if (camera) {
-      const perm = await ImagePicker.requestCameraPermissionsAsync()
-      if (!perm.granted) return toast('A câmera está desligada para o app')
-    }
-    const res = camera ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.6 }) : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.6 })
-    if (!res.canceled && res.assets[0]) {
-      profile.setPhoto(res.assets[0].uri)
+    const uri = await pickImage(camera ? 'camera' : 'library', 'para a sua foto de perfil', { allowsEditing: true, aspect: [1, 1], quality: 0.6 })
+    if (uri) {
+      profile.setPhoto(uri)
       toast('Foto trocada')
     }
   }
 
   return (
     <Page title="Editar perfil">
+      {permissionSheet}
       <View style={{ alignItems: 'center', gap: 10 }}>
         {profile.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: 88, height: 88, borderRadius: 44 }} accessibilityLabel="Sua foto" /> : <Avatar name={name || '?'} size={88} />}
         <Button label={profile.photoUri ? 'Trocar foto' : 'Adicionar foto'} variant="outline" size="sm" onPress={() => setSheet(true)} />

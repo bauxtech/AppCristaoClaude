@@ -11,7 +11,8 @@ import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { ToastProvider } from '../components'
+import { ConnectionFrame, ToastProvider } from '../components'
+import { ConnectionProvider } from '../state/connection'
 import { AudioProvider } from '../features/audio/AudioContext'
 import { BibleProvider } from '../features/bible/BibleContext'
 import { CellProvider } from '../features/cell/CellContext'
@@ -32,18 +33,25 @@ function RootStack() {
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(onboarding)" />
-        <Stack.Screen name="chat" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="oracao" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="culto" />
-        <Stack.Screen name="avisos" />
-        <Stack.Screen name="configuracoes" />
-        <Stack.Screen name="assinatura" />
-        <Stack.Screen name="componentes" />
-        <Stack.Screen name="teste-gravacao" />
-      </Stack>
+      <ConnectionFrame>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.bg },
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(onboarding)" />
+          <Stack.Screen name="chat" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="oracao" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="culto" />
+          <Stack.Screen name="avisos" />
+          <Stack.Screen name="configuracoes" />
+          <Stack.Screen name="assinatura" />
+          <Stack.Screen name="componentes" />
+          <Stack.Screen name="teste-gravacao" />
+        </Stack>
+      </ConnectionFrame>
     </>
   )
 }
@@ -68,31 +76,33 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <SessionProvider>
-          <SettingsProvider>
-          <SubscriptionProvider>
-          <BibleProvider>
-            <PrayerProvider>
-              <CellProvider>
-                <ChurchProvider>
-                  <SermonProvider>
-                    <ChatProvider>
-                      <ProfileProvider>
-                        <AudioProvider>
-                          <ToastProvider>
-                            <RootStack />
-                          </ToastProvider>
-                        </AudioProvider>
-                      </ProfileProvider>
-                    </ChatProvider>
-                  </SermonProvider>
-                </ChurchProvider>
-              </CellProvider>
-            </PrayerProvider>
-          </BibleProvider>
-          </SubscriptionProvider>
-          </SettingsProvider>
-        </SessionProvider>
+        <ConnectionProvider>
+          <SessionProvider>
+            <SettingsProvider>
+              <SubscriptionProvider>
+                <BibleProvider>
+                  <PrayerProvider>
+                    <CellProvider>
+                      <ChurchProvider>
+                        <SermonProvider>
+                          <ChatProvider>
+                            <ProfileProvider>
+                              <AudioProvider>
+                                <ToastProvider>
+                                  <RootStack />
+                                </ToastProvider>
+                              </AudioProvider>
+                            </ProfileProvider>
+                          </ChatProvider>
+                        </SermonProvider>
+                      </ChurchProvider>
+                    </CellProvider>
+                  </PrayerProvider>
+                </BibleProvider>
+              </SubscriptionProvider>
+            </SettingsProvider>
+          </SessionProvider>
+        </ConnectionProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   )

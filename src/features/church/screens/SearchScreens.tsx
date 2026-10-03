@@ -1,4 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router'
+import { useRemoteState } from '../../../state/connection'
+import { ErrorState, SkeletonCard } from '../../../components'
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { AppText, Button, Card, Chip, EmptyState, Page, SelectCard, Tag, TextField, useToast } from '../../../components'
@@ -14,6 +16,23 @@ export function SearchChurchScreen() {
   const [q, setQ] = useState('')
   const [libras, setLibras] = useState(false)
   const results = searchDirectory(q, libras)
+  const remote = useRemoteState()
+  if (q.trim() && (!remote.online || remote.loading || remote.error)) {
+    return (
+      <Page title="Buscar igreja">
+        <TextField label="Nome, cidade ou CNPJ" value={q} onChangeText={setQ} placeholder="Ex.: Batista Central" autoCorrect={false} />
+        {remote.loading ? (
+          <>
+            <SkeletonCard lines={2} />
+            <SkeletonCard lines={2} />
+          </>
+        ) : (
+          <ErrorState message={remote.online ? 'Não foi possível buscar.' : 'A busca precisa de internet.'} onRetry={remote.retry} />
+        )}
+        <Button label="Cadastrar à mão" variant="outline" onPress={() => router.push('/igreja/cadastrar')} />
+      </Page>
+    )
+  }
   return (
     <Page title="Buscar igreja">
       <TextField label="Nome, cidade ou CNPJ" value={q} onChangeText={setQ} placeholder="Ex.: Batista Central" autoFocus autoCorrect={false} />

@@ -14,3 +14,11 @@ Nos fluxos novos, toda tela com lista precisa ter as três coisas: criar, estado
 | Avisos | Horário dos lembretes de leitura e oração, horário de silêncio | "Nenhum aviso por enquanto". Com avisos lidos e filtro Não lidas: "Tudo em dia". Avisos desligados no celular: cartão com "Permitir avisos" ou "Abrir ajustes do celular" |
 | Configurações | E-mail, número novo, denúncia, bloqueio | Sem e-mail: "Não cadastrado" e Baixar meus dados pede para cadastrar. Ninguém bloqueado. Dados guardados zerados: "Ainda não há nada guardado além do seu nome e telefone" |
 | Assinatura | Assinatura (mensal ou anual) | Conta nova começa no teste de 7 dias, com o aviso de início uma vez e o contador no Hoje e no Eu |
+
+## Estados gerais
+
+- Sem internet: faixa no topo de todas as telas. Quando volta, "Sincronizando" por alguns segundos. Chat e busca de igreja explicam que precisam de internet.
+- Erro: mensagem curta e "Tentar de novo" (Hoje, avisos, busca de igreja, culto e chat).
+- Carregando: esqueleto no lugar dos cartões (Hoje, avisos, busca de igreja).
+- Permissões: câmera com explicação antes do aviso do sistema e painel quando negada. Microfone no culto e avisos já tinham. A galeria usa o seletor do sistema, que não pede permissão.
+- Modo simplificado: em Aparência. No Hoje, esconde "Palavra para agora" e "Música do dia".
