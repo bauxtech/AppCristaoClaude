@@ -140,6 +140,8 @@ select tests.as_user('00000000-0000-0000-0000-00000000000a'); -- Ana, líder do 
 select tests.ok('nem o líder lê o diário de um membro', tests.rows($$select * from public.prayer_diary$$) = 0);
 select tests.ok('nem o líder lê os cultos de um membro', tests.rows($$select * from public.sermons$$) = 0);
 select tests.ok('nem o líder lê o chat de um membro', tests.rows($$select * from public.chat_conversations$$) = 0);
+select tests.ok('ninguém escreve mensagem na conversa de outro',
+  tests.denied($$insert into public.chat_messages (conversation_id, user_id, role, text) values ('50000000-0000-0000-0000-000000000001', auth.uid(), 'user', 'x')$$));
 select tests.ok('ninguém escreve no diário de outro', tests.denied($$insert into public.prayer_diary (user_id, text) values ('00000000-0000-0000-0000-00000000000b', 'x')$$));
 reset role;
 

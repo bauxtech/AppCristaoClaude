@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "test:db": "bash scripts/test-db.sh"
+    "test:db": "bash scripts/test-db.sh",
+    "test:functions": "cd web && npx vitest run --root ../supabase/functions"
   },
   "dependencies": {
     "@expo-google-fonts/figtree": "^0.4.1",

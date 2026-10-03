@@ -78,13 +78,18 @@ begin
   foreach t in array array[
     'bible_reads', 'bible_highlights', 'bible_favorites', 'bible_notes', 'reading_plans', 'plan_progress',
     'activity_days', 'notes', 'milestones', 'prayer_diary', 'prayer_campaigns', 'user_churches',
-    'courses', 'ministries', 'saved_events', 'sermons', 'chat_conversations', 'chat_messages',
+    'courses', 'ministries', 'saved_events', 'sermons', 'chat_conversations',
     'push_tokens'
   ] loop
     execute format($p$create policy owner_all on public.%I for all to authenticated
       using (user_id = auth.uid()) with check (user_id = auth.uid())$p$, t);
   end loop;
 end $$;
+
+-- Mensagens do chat: do dono e só dentro de conversa dele.
+create policy chat_messages_owner on public.chat_messages for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid() and exists (select 1 from public.chat_conversations c where c.id = conversation_id and c.user_id = auth.uid()));
 
 -- ─── Perfil ──────────────────────────────────────────────────────────────────
 -- A pessoa lê e edita só o próprio perfil. Nome e foto dos colegas de célula vêm por cell_member_cards().

@@ -48,15 +48,13 @@ begin
     case when p.show_birthday and p.birthday is not null then to_char(p.birthday, 'MM-DD') end,
     m.role, m.status,
     -- Quem não assinou fica na lista como inativo e sai da escala.
-    coalesce(s.status in ('trial', 'active', 'canceled_active', 'payment_failed') and
-      not (s.status = 'trial' and s.trial_start < now() - interval '7 days'), false),
+    public.has_access(m.user_id),
     p.show_books,
     case when p.show_books then (select count(distinct book)::int from public.bible_reads r where r.user_id = m.user_id) end,
     case when v_leader then p.phone end,
     m.user_id = auth.uid()
   from public.cell_members m
   join public.profiles p on p.id = m.user_id
-  left join public.subscriptions s on s.user_id = m.user_id
   where m.cell_id = p_cell and (m.status = 'approved' or v_leader);
 end $$;
 
