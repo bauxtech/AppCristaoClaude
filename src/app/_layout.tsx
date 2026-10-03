@@ -18,6 +18,7 @@ import { CellProvider } from '../features/cell/CellContext'
 import { ChurchProvider } from '../features/church/ChurchContext'
 import { PrayerProvider } from '../features/prayer/PrayerContext'
 import { SermonProvider } from '../features/sermon/SermonContext'
+import { ChatProvider } from '../features/chat/ChatContext'
 import { SessionProvider } from '../state/session'
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider'
 
@@ -67,11 +68,13 @@ export default function RootLayout() {
               <CellProvider>
                 <ChurchProvider>
                   <SermonProvider>
-                    <AudioProvider>
-                      <ToastProvider>
-                        <RootStack />
-                      </ToastProvider>
-                    </AudioProvider>
+                    <ChatProvider>
+                      <AudioProvider>
+                        <ToastProvider>
+                          <RootStack />
+                        </ToastProvider>
+                      </AudioProvider>
+                    </ChatProvider>
                   </SermonProvider>
                 </ChurchProvider>
               </CellProvider>
