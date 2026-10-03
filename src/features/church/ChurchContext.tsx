@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { getItem, setItem } from '../../lib/storage'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
-import { DIRECTORY, sampleCourses, sampleMinistries, type Church, type Course, type Ministry } from './data'
+import { DIRECTORY, sampleCourses, sampleMinistries, type Church, type ChurchEvent, type Course, type Ministry } from './data'
 
 interface ChurchState {
   churches: { church: Church; relation: 'frequento' | 'visito' }[]
@@ -19,6 +19,8 @@ interface ChurchValue extends ChurchState {
   setMain: (id: string) => void
   updateChurch: (id: string, fn: (c: Church) => Church) => void
   toggleEvent: (id: string) => void
+  /** A pessoa adiciona um evento da igreja à agenda dela. */
+  addEvent: (e: Omit<ChurchEvent, 'id'>) => void
   setMinistries: (fn: (m: Ministry[]) => Ministry[]) => void
   setCourses: (fn: (c: Course[]) => Course[]) => void
   updateCourse: (id: string, fn: (c: Course) => Course) => void
@@ -73,6 +75,12 @@ export function ChurchProvider({ children, initial }: { children: ReactNode; ini
       setMain: (id) => setState((s) => ({ ...s, mainId: id, churches: s.churches.map((x) => ({ ...x, relation: x.church.id === id ? 'frequento' : 'visito' })) })),
       updateChurch: (id, fn) => setState((s) => ({ ...s, churches: s.churches.map((x) => (x.church.id === id ? { ...x, church: fn(x.church) } : x)) })),
       toggleEvent: (id) => setState((s) => ({ ...s, savedEvents: s.savedEvents.includes(id) ? s.savedEvents.filter((e) => e !== id) : [...s.savedEvents, id] })),
+      addEvent: (e) =>
+        setState((s) => {
+          const id = `ev${Date.now().toString(36)}`
+          const mainId = s.mainId ?? s.churches[0]?.church.id
+          return { ...s, savedEvents: [...s.savedEvents, id], churches: s.churches.map((x) => (x.church.id === mainId ? { ...x, church: { ...x.church, events: [...x.church.events, { ...e, id }] } } : x)) }
+        }),
       setMinistries: (fn) => setState((s) => ({ ...s, ministries: fn(s.ministries) })),
       setCourses: (fn) => setState((s) => ({ ...s, courses: fn(s.courses) })),
       updateCourse: (id, fn) => setState((s) => ({ ...s, courses: s.courses.map((c) => (c.id === id ? fn(c) : c)) })),

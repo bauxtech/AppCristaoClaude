@@ -31,7 +31,7 @@ export function HomeScreen() {
   const church = useChurch()
   const totalDays = activeDays.length
   const unreadNotifications = sampleData ? 3 : 0
-  const commitments = upcomingCommitments({ cell, church: church.main, courses: church.main ? church.courses : [], ministries: church.main ? church.ministries : [] })
+  const commitments = upcomingCommitments({ cell, church: church.main, courses: church.main ? church.courses : [], ministries: church.main ? church.ministries : [], savedEvents: church.savedEvents })
   const cellPrayers = cell && can(cell.myRole, 'seePrayers') ? cell.prayers.filter((p) => !cell.hidden.includes(p.id)).length : null
   const [mood, setMood] = useState<string | null>(null)
   const [daysOpen, setDaysOpen] = useState(false)

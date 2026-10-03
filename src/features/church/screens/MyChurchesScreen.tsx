@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
-import { AppText, Button, Card, ConfirmCard, EmptyState, Page, SectionLabel, Tag, TapCard, useToast } from '../../../components'
+import { AppText, Button, Card, ConfirmCard, EmptyState, Page, SectionLabel, Tag, TapCard, TextField, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
-import { formatMeetingDay, formatTime } from '../../cell/meetings'
+import { formatMeetingDay, formatTime, isValidTime, maskTime } from '../../cell/meetings'
+import { brToISO, maskDate } from '../../prayer/dates'
 import { useChurch } from '../ChurchContext'
 
 export function MyChurchesScreen() {
@@ -57,7 +58,8 @@ export function EventsScreen() {
   const events = [...(main?.events ?? [])].sort((a, b) => (a.date > b.date ? 1 : -1))
   return (
     <Page title="Eventos">
-      {events.length === 0 ? <EmptyState text="Nenhum evento da igreja por enquanto." /> : null}
+      <Button label="Adicionar evento" icon="plus" variant="outline" onPress={() => router.push('/igreja/evento-novo')} />
+      {events.length === 0 ? <EmptyState text="Nenhum evento da igreja por enquanto. Adicione um evento que você quer lembrar." /> : null}
       {events.map((e) => (
         <TapCard
             key={e.id}
@@ -116,6 +118,37 @@ export function EventDetailScreen() {
         onPress={() => {
           toggleEvent(e.id)
           toast(saved ? 'Evento tirado da agenda' : 'Evento salvo na sua agenda')
+        }}
+      />
+    </Page>
+  )
+}
+
+export function NewEventScreen() {
+  const toast = useToast()
+  const { addEvent, main } = useChurch()
+  const [title, setTitle] = useState('')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [desc, setDesc] = useState('')
+  const [error, setError] = useState<string | undefined>()
+  return (
+    <Page title="Adicionar evento">
+      <AppText variant="body" tone="secondary">{`O evento fica na sua agenda${main ? `, em ${main.name}` : ''}. Só você vê.`}</AppText>
+      <TextField label="Nome do evento (obrigatório)" value={title} onChangeText={setTitle} placeholder="Ex.: Conferência de jovens" maxLength={80} />
+      <TextField label="Data (obrigatório)" value={date} onChangeText={(v) => (setDate(maskDate(v)), setError(undefined))} placeholder="DD/MM/AAAA" keyboardType="number-pad" error={error} />
+      <TextField label="Horário" value={time} onChangeText={(v) => setTime(maskTime(v))} placeholder="19:00" keyboardType="number-pad" />
+      <TextField label="Descrição" value={desc} onChangeText={setDesc} multiline maxLength={400} />
+      <Button
+        label="Salvar na minha agenda"
+        disabled={!title.trim() || date.length < 10}
+        onPress={() => {
+          const iso = brToISO(date)
+          if (!iso) return setError('Digite a data no formato DD/MM/AAAA.')
+          if (time && !isValidTime(time)) return setError('Digite o horário no formato 19:00.')
+          addEvent({ title: title.trim(), date: iso, time: time || undefined, desc: desc.trim() })
+          toast('Evento salvo na sua agenda')
+          router.back()
         }}
       />
     </Page>

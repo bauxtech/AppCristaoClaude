@@ -40,7 +40,7 @@ function nextService(church: Church, now: Date) {
 }
 
 /** Os próximos compromissos da pessoa, vindos de onde ela participa. Vazio em conta nova. */
-export function upcomingCommitments(input: { cell: Cell | null; church: Church | null; courses: Course[]; ministries: Ministry[] }, now = new Date(), limit = 4): Commitment[] {
+export function upcomingCommitments(input: { cell: Cell | null; church: Church | null; courses: Course[]; ministries: Ministry[]; savedEvents?: string[] }, now = new Date(), limit = 4): Commitment[] {
   const out: Commitment[] = []
   const pad = (n: number) => String(n).padStart(2, '0')
   const nowKey = `${iso(now)}${pad(now.getHours())}:${pad(now.getMinutes())}`
@@ -51,6 +51,9 @@ export function upcomingCommitments(input: { cell: Cell | null; church: Church |
   if (input.church) {
     const s = nextService(input.church, now)
     if (s) out.push({ icon: 'church', title: 'Culto', when: shortWhen(s.date, s.time, now), href: '/igreja', sortKey: s.date + s.time })
+  }
+  for (const e of input.church?.events.filter((x) => input.savedEvents?.includes(x.id) && x.date + (x.time ?? '23:59') > nowKey) ?? []) {
+    out.push({ icon: 'calendar', title: e.title, when: e.time ? shortWhen(e.date, e.time, now) : shortWhen(e.date, '00:00', now).split(',')[0], href: `/igreja/evento/${e.id}`, sortKey: e.date + (e.time ?? '00:00') })
   }
   for (const c of input.courses.filter((x) => !x.completedAt)) {
     const l = c.lessons.find((x) => x.date + x.time > nowKey)
