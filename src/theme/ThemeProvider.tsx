@@ -14,6 +14,9 @@ interface ThemeContextValue {
   setPreference: (p: AppearancePreference) => void
   /** Liga o alto contraste mesmo quando o celular não pede. */
   setHighContrastOverride: (v: boolean | null) => void
+  /** Fonte grande do app, somada ao tamanho de fonte do celular. */
+  largeText: boolean
+  setLargeText: (v: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
@@ -52,6 +55,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const systemHighContrast = useSystemHighContrast()
   const [preference, setPreference] = useState<AppearancePreference>('system')
   const [highContrastOverride, setHighContrastOverride] = useState<boolean | null>(null)
+  const [largeText, setLargeText] = useState(false)
 
   const value = useMemo<ThemeContextValue>(() => {
     const isDark = preference === 'system' ? scheme === 'dark' : preference === 'dark'
@@ -65,8 +69,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       preference,
       setPreference,
       setHighContrastOverride,
+      largeText,
+      setLargeText,
     }
-  }, [scheme, systemHighContrast, preference, highContrastOverride])
+  }, [scheme, systemHighContrast, preference, highContrastOverride, largeText])
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }

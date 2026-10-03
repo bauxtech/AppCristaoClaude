@@ -1,8 +1,9 @@
-import { router, Tabs } from 'expo-router'
+import { Redirect, router, Tabs } from 'expo-router'
 import { Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon, type IconName } from '../../components/Icon'
 import { MIN_TOUCH } from '../../components'
+import { useSession } from '../../state/session'
 import { useTheme } from '../../theme/ThemeProvider'
 import { fonts } from '../../theme/typography'
 
@@ -19,6 +20,9 @@ const TABS: { name: string; title: string; icon: IconName }[] = [
 export default function TabsLayout() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  const { onboarded } = useSession()
+
+  if (!onboarded) return <Redirect href="/bem-vindo" />
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>

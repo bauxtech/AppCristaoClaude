@@ -1,4 +1,4 @@
-import { Text, type TextProps, type TextStyle } from 'react-native'
+import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native'
 import { useTheme } from '../theme/ThemeProvider'
 import { fonts, maxFontScale, size } from '../theme/typography'
 
@@ -21,8 +21,11 @@ const variants: Record<Variant, TextStyle> = {
   bibleRef: { fontFamily: fonts.bible, fontSize: size.small, lineHeight: 20 },
 }
 
+/** Quanto a opção "Fonte grande" do app aumenta o texto. */
+export const LARGE_TEXT_FACTOR = 1.125
+
 export function AppText({ variant = 'body', tone = 'primary', style, ...rest }: Props) {
-  const { colors } = useTheme()
+  const { colors, largeText } = useTheme()
   const color = {
     primary: colors.text,
     secondary: colors.textSecondary,
@@ -31,5 +34,13 @@ export function AppText({ variant = 'body', tone = 'primary', style, ...rest }: 
     brand: colors.primary,
     onPrimary: colors.primaryText,
   }[tone]
-  return <Text maxFontSizeMultiplier={maxFontScale} style={[variants[variant], { color }, style]} {...rest} />
+  const flat = StyleSheet.flatten([variants[variant], { color }, style]) as TextStyle
+  const scaled: TextStyle = largeText
+    ? {
+        ...flat,
+        fontSize: flat.fontSize ? flat.fontSize * LARGE_TEXT_FACTOR : undefined,
+        lineHeight: flat.lineHeight ? flat.lineHeight * LARGE_TEXT_FACTOR : undefined,
+      }
+    : flat
+  return <Text maxFontSizeMultiplier={maxFontScale} style={scaled} {...rest} />
 }

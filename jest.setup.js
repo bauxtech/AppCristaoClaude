@@ -8,4 +8,4 @@ jest.mock('react-native-safe-area-context', () => {
     useSafeAreaInsets: () => inset,
   }
 })
-jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn() } }))
+jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() } }))

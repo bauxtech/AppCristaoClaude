@@ -12,6 +12,7 @@ import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ToastProvider } from '../components'
+import { SessionProvider } from '../state/session'
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -23,6 +24,7 @@ function RootStack() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="chat" options={{ presentation: 'modal' }} />
         <Stack.Screen name="oracao" options={{ presentation: 'modal' }} />
         <Stack.Screen name="componentes" />
@@ -52,9 +54,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <ToastProvider>
-          <RootStack />
-        </ToastProvider>
+        <SessionProvider>
+          <ToastProvider>
+            <RootStack />
+          </ToastProvider>
+        </SessionProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   )
