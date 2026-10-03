@@ -29,10 +29,10 @@ const empty: Profile = { name: '', phone: '', tradition: null, goal: null, time:
 
 const SessionContext = createContext<SessionValue | null>(null)
 
-export function SessionProvider({ children, initialOnboarded }: { children: ReactNode; initialOnboarded?: boolean }) {
+export function SessionProvider({ children, initialOnboarded, initialCellStatus }: { children: ReactNode; initialOnboarded?: boolean; initialCellStatus?: CellStatus }) {
   const [onboarded, setOnboarded] = useState<boolean>(() => initialOnboarded ?? getItem('onboarded', false))
   const [profile, setProfile] = useState<Profile>(() => getItem('profile', empty))
-  const [cellStatus, setCellStatusState] = useState<CellStatus>(() => getItem('cellStatus', 'none'))
+  const [cellStatus, setCellStatusState] = useState<CellStatus>(() => initialCellStatus ?? getItem('cellStatus', 'none'))
 
   const updateProfile = useCallback((p: Partial<Profile>) => {
     setProfile((prev) => {

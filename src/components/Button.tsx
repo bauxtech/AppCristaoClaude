@@ -4,7 +4,7 @@ import { fonts, size } from '../theme/typography'
 import { AppText } from './AppText'
 import { Icon, type IconName } from './Icon'
 
-export type ButtonVariant = 'primary' | 'soft' | 'outline' | 'text'
+export type ButtonVariant = 'primary' | 'soft' | 'outline' | 'text' | 'danger' | 'dangerSoft'
 
 interface Props {
   label: string
@@ -31,6 +31,8 @@ export function Button({ label, onPress, variant = 'primary', size: sz = 'md', i
     soft: { bg: colors.primarySoft, fg: colors.primary, border: colors.primarySoft },
     outline: { bg: 'transparent', fg: colors.primary, border: colors.lineStrong },
     text: { bg: 'transparent', fg: colors.primary, border: 'transparent' },
+    danger: { bg: colors.danger, fg: colors.dangerText, border: colors.danger },
+    dangerSoft: { bg: colors.dangerSoft, fg: colors.danger, border: colors.dangerSoft },
   }[variant]
 
   return (

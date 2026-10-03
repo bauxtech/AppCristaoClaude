@@ -33,7 +33,9 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
           "backgroundColor": "#F4F7FD",
-          "dark": { "backgroundColor": "#0D1117" }
+          "dark": {
+            "backgroundColor": "#0D1117"
+          }
         }
       ],
       [
@@ -41,6 +43,20 @@
         {
           "microphonePermission": "O microfone é usado para gravar o culto e transformar a pregação em texto para você.",
           "enableBackgroundRecording": true
+        }
+      ],
+      "expo-video",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "A câmera é usada para gravar seu pedido de oração em Libras.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O Face ID é usado para proteger o seu diário de oração."
         }
       ]
     ]

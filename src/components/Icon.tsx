@@ -43,6 +43,13 @@ export type IconName =
   | 'plus'
   | 'chevronDown'
   | 'qr'
+  | 'sun'
+  | 'moon'
+  | 'cup'
+  | 'file'
+  | 'video'
+  | 'flag'
+  | 'edit'
 
 interface Props {
   name: IconName
@@ -308,6 +315,51 @@ function paths(name: IconName, s: Record<string, unknown>, color: string) {
           <Rect x="14" y="3" width="7" height="7" rx="1" {...s} />
           <Rect x="3" y="14" width="7" height="7" rx="1" {...s} />
           <Path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 19h2M19 14h2" {...s} />
+        </>
+      )
+    case 'sun':
+      return (
+        <>
+          <Circle cx="12" cy="12" r="5" {...s} />
+          <Path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" {...s} />
+        </>
+      )
+    case 'moon':
+      return <Path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" {...s} />
+    case 'cup':
+      return (
+        <>
+          <Path d="M18 8h1a4 4 0 0 1 0 8h-1" {...s} />
+          <Path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" {...s} />
+          <Path d="M6 1v3M10 1v3M14 1v3" {...s} />
+        </>
+      )
+    case 'file':
+      return (
+        <>
+          <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" {...s} />
+          <Polyline points="14 2 14 8 20 8" {...s} />
+        </>
+      )
+    case 'video':
+      return (
+        <>
+          <Path d="M23 7l-7 5 7 5V7z" {...s} />
+          <Rect x="1" y="5" width="15" height="14" rx="2" {...s} />
+        </>
+      )
+    case 'flag':
+      return (
+        <>
+          <Path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" {...s} />
+          <Line x1="4" y1="22" x2="4" y2="15" {...s} />
+        </>
+      )
+    case 'edit':
+      return (
+        <>
+          <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" {...s} />
+          <Path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" {...s} />
         </>
       )
   }
