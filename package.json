@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "test:db": "bash scripts/test-db.sh"
   },
   "dependencies": {
     "@expo-google-fonts/figtree": "^0.4.1",
