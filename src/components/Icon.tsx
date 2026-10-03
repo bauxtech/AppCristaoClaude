@@ -64,6 +64,9 @@ export type IconName =
   | 'checkCircle'
   | 'users'
   | 'heartFilled'
+  | 'settings'
+  | 'download'
+  | 'logout'
 
 interface Props {
   name: IconName
@@ -461,6 +464,29 @@ function paths(name: IconName, s: Record<string, unknown>, color: string) {
         <>
           <Circle cx="12" cy="12" r="10" {...s} />
           <Polyline points="8 12 11 15 16 9" {...s} />
+        </>
+      )
+    case 'settings':
+      return (
+        <>
+          <Circle cx={12} cy={12} r={3} {...s} />
+          <Path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" {...s} />
+        </>
+      )
+    case 'download':
+      return (
+        <>
+          <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" {...s} />
+          <Polyline points="7 10 12 15 17 10" {...s} />
+          <Line x1={12} y1={15} x2={12} y2={3} {...s} />
+        </>
+      )
+    case 'logout':
+      return (
+        <>
+          <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" {...s} />
+          <Polyline points="16 17 21 12 16 7" {...s} />
+          <Line x1={21} y1={12} x2={9} y2={12} {...s} />
         </>
       )
     case 'heartFilled':

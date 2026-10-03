@@ -6,6 +6,8 @@ import { MIN_TOUCH } from '../../components'
 import { useAudio } from '../../features/audio/AudioContext'
 import { MiniPlayer } from '../../features/audio/MiniPlayer'
 import { useSession } from '../../state/session'
+import { useSubscription } from '../../features/subscription/SubscriptionContext'
+import { BlockedScreen, TrialIntroSheet } from '../../features/subscription/screens/SubscriptionScreens'
 import { useTheme } from '../../theme/ThemeProvider'
 import { fonts } from '../../theme/typography'
 
@@ -24,9 +26,12 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets()
   const { onboarded } = useSession()
   const { track } = useAudio()
+  const sub = useSubscription()
   const playerHeight = track ? 60 : 0
 
   if (!onboarded) return <Redirect href="/bem-vindo" />
+  // Teste terminou sem assinatura: nenhuma aba abre.
+  if (sub.status === 'blocked') return <BlockedScreen />
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -90,6 +95,7 @@ export default function TabsLayout() {
       >
         <Icon name="chat" size={20} color={colors.primaryText} />
       </Pressable>
+      <TrialIntroSheet />
     </View>
   )
 }

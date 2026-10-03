@@ -1,4 +1,5 @@
 import * as Speech from 'expo-speech'
+import { useSettings } from '../settings/SettingsContext'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 // Leitura em voz alta com a voz do próprio aparelho (funciona sem internet).
@@ -29,11 +30,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState<Speed>(1)
   const speedRef = useRef<Speed>(1)
+  const { voice } = useSettings()
+  const voiceRef = useRef(voice)
+  voiceRef.current = voice
 
   const speak = useCallback((t: Track, rate: Speed) => {
     Speech.stop()
     Speech.speak(t.text, {
       language: 'pt-BR',
+      voice: voiceRef.current ?? undefined,
       rate,
       onDone: () => setPlaying(false),
       onStopped: () => setPlaying(false),

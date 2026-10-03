@@ -57,7 +57,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "O Face ID é usado para proteger o seu diário de oração."
+          "faceIDPermission": "O Face ID é usado para proteger o seu diário de oração e as suas anotações."
         }
       ],
       [
@@ -67,7 +67,8 @@
           "cameraPermission": "A câmera é usada para gravar pedidos em Libras, ler o QR code da célula e fotografar a capa e os materiais."
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {

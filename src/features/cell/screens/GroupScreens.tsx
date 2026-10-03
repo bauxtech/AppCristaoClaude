@@ -9,6 +9,7 @@ import { onlyDigits } from '../../onboarding/validation'
 import { formatAgo } from '../../prayer/dates'
 import { usePrayer } from '../../prayer/PrayerContext'
 import { memberName, useCell } from '../CellContext'
+import { useBlockedIds } from '../../settings/SettingsContext'
 import type { Cell } from '../data'
 import { formatMeeting, nextMeeting } from '../meetings'
 import { CellGuard } from './Guard'
@@ -20,11 +21,12 @@ export function CellPrayersScreen() {
 }
 
 function CellPrayers({ cell }: { cell: Cell }) {
+  const blockedIds = useBlockedIds()
   const toast = useToast()
   const { update } = useCell()
   const prayer = usePrayer()
   const mine = prayer.requests.filter((r) => r.shared && !r.answeredAt)
-  const others = cell.prayers.filter((p) => !cell.hidden.includes(p.id))
+  const others = cell.prayers.filter((p) => !cell.hidden.includes(p.id) && !blockedIds.has(p.memberId))
 
   return (
     <Page title="Pedidos da célula">

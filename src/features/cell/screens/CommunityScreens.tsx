@@ -9,6 +9,7 @@ import { fonts } from '../../../theme/typography'
 import { formatAgo } from '../../prayer/dates'
 import { toISODate } from '../../prayer/data'
 import { memberName, useCell } from '../CellContext'
+import { useBlockedIds } from '../../settings/SettingsContext'
 import type { Cell, Poll } from '../data'
 import { can } from '../permissions'
 import { CellGuard } from './Guard'
@@ -37,6 +38,7 @@ export function BoardScreen() {
 }
 
 function Board({ cell }: { cell: Cell }) {
+  const blockedIds = useBlockedIds()
   const toast = useToast()
   const { update } = useCell()
   const post = can(cell.myRole, 'postBoard')
@@ -44,7 +46,7 @@ function Board({ cell }: { cell: Cell }) {
   const [pollOpen, setPollOpen] = useState(false)
   const [question, setQuestion] = useState('')
   const [options, setOptions] = useState(['', ''])
-  const notices = cell.board.filter((b) => !cell.hidden.includes(b.id))
+  const notices = cell.board.filter((b) => !cell.hidden.includes(b.id) && !blockedIds.has(b.authorId))
   const hide = (id: string) => update((c) => ({ ...c, hidden: [...c.hidden, id] }))
 
   return (

@@ -5,13 +5,25 @@ import { AppText, Button } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { usePrayer } from '../PrayerContext'
+import { useSettings } from '../../settings/SettingsContext'
 
 type Support = 'checking' | 'biometric' | 'codeOnly' | 'none' | 'web'
 
 /** Desbloqueio do diário com biometria ou com o código do celular. */
 export function DiaryLock() {
-  const { colors } = useTheme()
   const { setDiaryUnlocked } = usePrayer()
+  return <BiometricLock what="o diário" title="Diário protegido" onUnlock={() => setDiaryUnlocked(true)} />
+}
+
+/** Desbloqueio das anotações, quando a pessoa liga a trava em Configurações > Biometria. */
+export function NotesLock() {
+  const { setNotesUnlocked } = useSettings()
+  return <BiometricLock what="as anotações" title="Anotações protegidas" onUnlock={() => setNotesUnlocked(true)} />
+}
+
+export function BiometricLock({ what, title, onUnlock }: { what: string; title: string; onUnlock: () => void }) {
+  const { colors } = useTheme()
+  const setDiaryUnlocked = (v: boolean) => v && onUnlock()
   const [support, setSupport] = useState<Support>(Platform.OS === 'web' ? 'web' : 'checking')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -39,7 +51,7 @@ export function DiaryLock() {
     setMessage(null)
     try {
       const res = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Desbloquear o diário',
+        promptMessage: `Desbloquear ${what}`,
         cancelLabel: 'Cancelar',
         fallbackLabel: 'Usar o código do celular',
         disableDeviceFallback: !useCode,
@@ -60,14 +72,14 @@ export function DiaryLock() {
       </View>
       <View style={{ alignItems: 'center', gap: 8 }}>
         <AppText variant="title" accessibilityRole="header">
-          Diário protegido
+          {title}
         </AppText>
         <AppText variant="body" tone="secondary" style={{ textAlign: 'center' }}>
           {support === 'none'
-            ? 'Este celular não tem biometria nem código de bloqueio. Ative um deles nos ajustes do celular, ou desligue a proteção do diário.'
+            ? 'Este celular não tem biometria nem código de bloqueio. Ative um deles nos ajustes do celular, ou desligue a proteção em Configurações > Biometria.'
             : support === 'codeOnly'
-              ? 'Desbloqueie o diário com o código do celular'
-              : 'Desbloqueie o diário com biometria'}
+              ? `Desbloqueie ${what} com o código do celular`
+              : `Desbloqueie ${what} com biometria`}
         </AppText>
         {support === 'web' ? (
           <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>

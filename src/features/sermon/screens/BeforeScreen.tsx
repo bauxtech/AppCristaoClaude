@@ -9,6 +9,7 @@ import { useChurch } from '../../church/ChurchContext'
 import { AUDIO_DAYS, MONTHLY_LIMIT, usedThisMonth } from '../data'
 import { useSermons } from '../SermonContext'
 import { UsageCard } from './ListScreen'
+import { useSettings } from '../../settings/SettingsContext'
 
 /** Antes de gravar: aviso de uso pessoal, igreja, limite do mês, guardar áudio e permissão do microfone. */
 export function BeforeScreen() {
@@ -16,7 +17,8 @@ export function BeforeScreen() {
   const { main } = useChurch()
   const { sermons, setDraft } = useSermons()
   const [church, setChurch] = useState(main?.name ?? '')
-  const [keepAudio, setKeepAudio] = useState(false)
+  const { recordingDefault } = useSettings()
+  const [keepAudio, setKeepAudio] = useState(recordingDefault === 'audio')
   const [perm, setPerm] = useState<'ask' | 'explain' | 'denied'>('ask')
   const full = usedThisMonth(sermons) >= MONTHLY_LIMIT
 

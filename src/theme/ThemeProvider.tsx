@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AccessibilityInfo, Platform, useColorScheme } from 'react-native'
+import { getItem, setItem } from '../lib/storage'
 import { palettes, type Palette, type ThemeMode } from './colors'
 
 /** Escolha da pessoa. "system" segue o modo do celular. */
@@ -53,9 +54,15 @@ export function resolveMode(isDark: boolean, highContrast: boolean): ThemeMode {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const scheme = useColorScheme()
   const systemHighContrast = useSystemHighContrast()
-  const [preference, setPreference] = useState<AppearancePreference>('system')
-  const [highContrastOverride, setHighContrastOverride] = useState<boolean | null>(null)
-  const [largeText, setLargeText] = useState(false)
+  // A escolha da pessoa fica guardada no aparelho.
+  const [saved] = useState(() => getItem<{ preference?: AppearancePreference; highContrast?: boolean | null; largeText?: boolean }>('appearance', {}))
+  const [preference, setPreference] = useState<AppearancePreference>(saved.preference ?? 'system')
+  const [highContrastOverride, setHighContrastOverride] = useState<boolean | null>(saved.highContrast ?? null)
+  const [largeText, setLargeText] = useState(saved.largeText ?? false)
+
+  useEffect(() => {
+    setItem('appearance', { preference, highContrast: highContrastOverride, largeText })
+  }, [preference, highContrastOverride, largeText])
 
   const value = useMemo<ThemeContextValue>(() => {
     const isDark = preference === 'system' ? scheme === 'dark' : preference === 'dark'

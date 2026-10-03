@@ -36,3 +36,13 @@ jest.mock('expo-audio', () => ({
   useAudioRecorder: () => ({ prepareToRecordAsync: jest.fn(async () => {}), record: jest.fn(), pause: jest.fn(), stop: jest.fn(async () => {}), getStatus: () => ({ durationMillis: 0 }), uri: null }),
   useAudioRecorderState: () => ({ durationMillis: 0 }),
 }))
+jest.mock('expo-notifications', () => ({
+  AndroidImportance: { LOW: 2, DEFAULT: 3 },
+  SchedulableTriggerInputTypes: { DAILY: 'daily' },
+  setNotificationHandler: jest.fn(),
+  getPermissionsAsync: jest.fn(async () => ({ granted: false, canAskAgain: true })),
+  requestPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  setNotificationChannelAsync: jest.fn(async () => {}),
+  cancelAllScheduledNotificationsAsync: jest.fn(async () => {}),
+  scheduleNotificationAsync: jest.fn(async () => 'id'),
+}))

@@ -7,6 +7,7 @@ import { formatMeetingDay } from '../../cell/meetings'
 import { useChurch } from '../../church/ChurchContext'
 import { MONTHLY_LIMIT, usedThisMonth } from '../data'
 import { useSermons } from '../SermonContext'
+import { useSettings } from '../../settings/SettingsContext'
 
 export function UsageCard() {
   const { sermons } = useSermons()
@@ -31,6 +32,7 @@ export function UsageCard() {
 export function SermonListScreen() {
   const toast = useToast()
   const { sermons, setDraft } = useSermons()
+  const { recordingDefault } = useSettings()
   const { main } = useChurch()
   const full = usedThisMonth(sermons) >= MONTHLY_LIMIT
 
@@ -38,7 +40,7 @@ export function SermonListScreen() {
     if (full) return toast('Limite de 5 cultos neste mês atingido')
     const res = await DocumentPicker.getDocumentAsync({ type: 'audio/*', copyToCacheDirectory: true })
     if (res.canceled || !res.assets[0]) return
-    setDraft({ uri: res.assets[0].uri, durationSec: 0, notes: [], moments: [], keepAudio: false, source: 'importado', church: main?.name ?? '' })
+    setDraft({ uri: res.assets[0].uri, durationSec: 0, notes: [], moments: [], keepAudio: recordingDefault === 'audio', source: 'importado', church: main?.name ?? '' })
     router.push('/culto/ajustar')
   }
 

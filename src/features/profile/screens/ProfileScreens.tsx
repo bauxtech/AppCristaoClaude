@@ -2,9 +2,9 @@ import * as ImagePicker from 'expo-image-picker'
 import * as Print from 'expo-print'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as Sharing from 'expo-sharing'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Image, Pressable, View } from 'react-native'
-import { AppText, Avatar, Button, Card, Chip, ConfirmCard, EmptyState, Page, SectionLabel, Segmented, SelectCard, Sheet, Switch, Tag, TapCard, TextField, useToast } from '../../../components'
+import { AppText, Avatar, Button, Card, Chip, ConfirmCard, EmptyState, Page, SectionLabel, Segmented, SelectCard, Sheet, Switch, Tag, TapCard, TextField, TopBar, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { useSession } from '../../../state/session'
 import { useTheme } from '../../../theme/ThemeProvider'
@@ -17,6 +17,8 @@ import { useChurch } from '../../church/ChurchContext'
 import { brToISO, formatBR, formatDayMonth, maskDate } from '../../prayer/dates'
 import { usePrayer } from '../../prayer/PrayerContext'
 import { useSermons } from '../../sermon/SermonContext'
+import { NotesLock } from '../../prayer/screens/DiaryLock'
+import { useSettings } from '../../settings/SettingsContext'
 import { MILESTONE_TYPES, NOTE_SOURCES, useProfile, type NoteSource } from '../ProfileContext'
 import { TOTAL_CHAPTERS } from './ProfileHome'
 
@@ -253,7 +255,28 @@ export function useAllNotes(): NoteItem[] {
   return items.sort((a, b) => ((b.date ?? '') > (a.date ?? '') ? 1 : -1))
 }
 
+/** Trava das anotações, ligada em Configurações > Biometria. */
+function NotesGate({ title, children }: { title: string; children: ReactNode }) {
+  const { colors } = useTheme()
+  const s = useSettings()
+  if (!s.notesLock || s.notesUnlocked) return <>{children}</>
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <TopBar title={title} onBack={() => router.back()} />
+      <NotesLock />
+    </View>
+  )
+}
+
 export function NotesScreen() {
+  return (
+    <NotesGate title="Anotações">
+      <NotesList />
+    </NotesGate>
+  )
+}
+
+function NotesList() {
   const all = useAllNotes()
   const [filter, setFilter] = useState<'Todas' | NoteSource>('Todas')
   const [q, setQ] = useState('')
@@ -508,6 +531,14 @@ export function CellPreviewScreen() {
 
 /** Exporta as anotações escolhidas num PDF, feito no próprio aparelho. */
 export function ExportNotesScreen() {
+  return (
+    <NotesGate title="Exportar anotações">
+      <ExportNotesBody />
+    </NotesGate>
+  )
+}
+
+function ExportNotesBody() {
   const toast = useToast()
   const all = useAllNotes()
   const prayer = usePrayer()

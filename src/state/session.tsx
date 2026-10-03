@@ -13,6 +13,8 @@ export interface Profile {
   goal: string | null
   time: string | null
   church: string | null
+  /** Opcional. Usado para enviar o arquivo de Meus dados. */
+  email?: string
 }
 
 interface SessionValue {

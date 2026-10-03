@@ -1,4 +1,6 @@
 import { router } from 'expo-router'
+import { useSettings } from '../settings/SettingsContext'
+import { LastDayCard, PaymentFailedCard, TrialBanner } from '../subscription/screens/SubscriptionScreens'
 import { useState } from 'react'
 import { Linking, Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -31,7 +33,7 @@ export function HomeScreen() {
   const { cell } = useCell()
   const church = useChurch()
   const totalDays = activeDays.length
-  const unreadNotifications = sampleData ? 3 : 0
+  const { unreadCount: unreadNotifications } = useSettings()
   const commitments = upcomingCommitments({ cell, church: church.main, courses: church.main ? church.courses : [], ministries: church.main ? church.ministries : [], savedEvents: church.savedEvents })
   const cellPrayers = cell && can(cell.myRole, 'seePrayers') ? cell.prayers.filter((p) => !cell.hidden.includes(p.id)).length : null
   const [mood, setMood] = useState<string | null>(null)
@@ -78,6 +80,9 @@ export function HomeScreen() {
       </View>
 
       <View style={{ paddingHorizontal: 16, gap: 12 }}>
+        <TrialBanner />
+        <LastDayCard />
+        <PaymentFailedCard />
         {/* Passagem do dia */}
         <Card>
           <SectionLabel>Passagem do dia</SectionLabel>

@@ -13,6 +13,7 @@ import { TRANSLATIONS } from '../../onboarding/data'
 import { NotFound } from './NotFound'
 import { useSession } from '../../../state/session'
 import { SuggestedSong } from '../../music/screens/MusicScreens'
+import { useSettings } from '../../settings/SettingsContext'
 
 export function ChapterScreen() {
   const { colors, isDark } = useTheme()
@@ -24,6 +25,7 @@ export function ChapterScreen() {
   const focusVerse = params.v ? Number(params.v) : null
   const book = bookBySlug(slug)
   const bible = useBible()
+  const settings = useSettings()
   const [selected, setSelected] = useState<number | null>(null)
   const { addMinutes } = useSession()
 
@@ -123,7 +125,7 @@ export function ChapterScreen() {
                 backgroundColor: highlightBg(hl) ?? (focusVerse === v.v || selected === v.v ? colors.primarySoft : 'transparent'),
               }}
             >
-              <AppText style={{ fontFamily: fonts.bible, fontSize: bible.fontSize, lineHeight: bible.fontSize * 1.65, color: colors.text }}>
+              <AppText style={{ fontFamily: settings.bibleFont === 'sans' ? fonts.regular : fonts.bible, fontSize: bible.fontSize, lineHeight: bible.fontSize * 1.65, color: colors.text }}>
                 <AppText style={{ fontFamily: fonts.semibold, fontSize: 12, color: colors.textSecondary }}>{`${v.v}  `}</AppText>
                 {v.text}
               </AppText>

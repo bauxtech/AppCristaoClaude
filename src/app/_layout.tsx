@@ -20,6 +20,8 @@ import { PrayerProvider } from '../features/prayer/PrayerContext'
 import { SermonProvider } from '../features/sermon/SermonContext'
 import { ChatProvider } from '../features/chat/ChatContext'
 import { ProfileProvider } from '../features/profile/ProfileContext'
+import { SettingsProvider } from '../features/settings/SettingsContext'
+import { SubscriptionProvider } from '../features/subscription/SubscriptionContext'
 import { SessionProvider } from '../state/session'
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider'
 
@@ -36,6 +38,9 @@ function RootStack() {
         <Stack.Screen name="chat" options={{ presentation: 'modal' }} />
         <Stack.Screen name="oracao" options={{ presentation: 'modal' }} />
         <Stack.Screen name="culto" />
+        <Stack.Screen name="avisos" />
+        <Stack.Screen name="configuracoes" />
+        <Stack.Screen name="assinatura" />
         <Stack.Screen name="componentes" />
         <Stack.Screen name="teste-gravacao" />
       </Stack>
@@ -64,6 +69,8 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <SessionProvider>
+          <SettingsProvider>
+          <SubscriptionProvider>
           <BibleProvider>
             <PrayerProvider>
               <CellProvider>
@@ -83,6 +90,8 @@ export default function RootLayout() {
               </CellProvider>
             </PrayerProvider>
           </BibleProvider>
+          </SubscriptionProvider>
+          </SettingsProvider>
         </SessionProvider>
       </ThemeProvider>
     </SafeAreaProvider>

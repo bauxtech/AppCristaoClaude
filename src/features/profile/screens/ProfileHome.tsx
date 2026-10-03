@@ -13,6 +13,11 @@ import { bookProgress } from '../../bible/screens/BooksScreen'
 import { TileGrid } from '../../cell/screens/parts'
 import { useChurch } from '../../church/ChurchContext'
 import { useProfile } from '../ProfileContext'
+import { useCell } from '../../cell/CellContext'
+import { useSettings } from '../../settings/SettingsContext'
+import { longDate } from '../../settings/screens/AccountScreens'
+import { useSubscription } from '../../subscription/SubscriptionContext'
+import { PreviewSubTools, TrialBanner } from '../../subscription/screens/SubscriptionScreens'
 
 export const TOTAL_CHAPTERS = BOOKS.reduce((a, b) => a + b.chapters, 0)
 
@@ -24,6 +29,9 @@ export function ProfileHome() {
   const { readChapters } = useBible()
   const { main } = useChurch()
   const profile = useProfile()
+  const settings = useSettings()
+  const sub = useSubscription()
+  const { cell } = useCell()
   const read = new Set(readChapters).size
   const pct = Math.round((read / TOTAL_CHAPTERS) * 100)
   const booksDone = BOOKS.filter((b) => bookProgress(b, readChapters) === b.chapters).length
@@ -31,6 +39,16 @@ export function ProfileHome() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}>
+      {settings.deletionAt ? (
+        <Card style={{ gap: 8, borderColor: colors.danger }}>
+          <AppText variant="bodyStrong">Conta marcada para exclusão</AppText>
+          <AppText variant="small" tone="secondary">
+            {`Sua conta será excluída em ${longDate(settings.deletionAt)}.`}
+          </AppText>
+          <Button label="Cancelar exclusão" size="sm" variant="soft" onPress={() => router.push('/configuracoes/exclusao')} style={{ alignSelf: 'flex-start' }} />
+        </Card>
+      ) : null}
+      <TrialBanner />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 4, paddingBottom: 4 }}>
         {profile.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: 64, height: 64, borderRadius: 32 }} accessible={false} /> : <Avatar name={name} size={64} />}
         <View style={{ flex: 1 }}>
@@ -86,6 +104,23 @@ export function ProfileHome() {
         <ListRow label="O que a célula vê de mim" onPress={() => router.push('/eu/celula-ve')} />
       </Card>
 
+      <Card style={{ paddingVertical: 8 }}>
+        <ListRow
+          label="Meu plano"
+          sub={sub.status === 'trial' ? `Teste grátis, faltam ${sub.daysLeft} ${sub.daysLeft === 1 ? 'dia' : 'dias'}` : sub.status === 'paymentFailed' ? 'Pagamento falhou' : 'Assinatura e cobrança'}
+          onPress={() => router.push('/assinatura/meu-plano')}
+          divider
+        />
+        <ListRow label="Avisos" sub={settings.unreadCount ? `${settings.unreadCount} não ${settings.unreadCount === 1 ? 'lido' : 'lidos'}` : undefined} onPress={() => router.push('/avisos')} divider />
+        <ListRow label="Configurações" onPress={() => router.push('/configuracoes')} />
+      </Card>
+
+      <Card style={{ paddingVertical: 8 }}>
+        <ListRow label="Sair da conta" onPress={() => router.push('/configuracoes/sair')} divider />
+        {cell ? <ListRow label="Sair da célula" sub={cell.name} onPress={() => router.push('/celula/opcoes')} divider /> : null}
+        <ListRow label="Excluir conta" danger onPress={() => router.push('/configuracoes/excluir')} />
+      </Card>
+
       {IS_PREVIEW ? (
         <Card style={{ gap: 10 }}>
           <AppText variant="bodyStrong">Só na prévia</AppText>
@@ -94,6 +129,7 @@ export function ProfileHome() {
           </AppText>
           <Button label="Ver como conta nova" variant={session.sampleData ? 'primary' : 'outline'} onPress={() => (session.resetData(false), toast('Conta nova: tudo vazio'))} />
           <Button label="Carregar dados de exemplo" variant={session.sampleData ? 'outline' : 'primary'} onPress={() => (session.resetData(true), toast('Dados de exemplo carregados'))} />
+          <PreviewSubTools />
           <ListRow label="Componentes" sub="Ver todos no claro, escuro e alto contraste" onPress={() => router.push('/componentes')} divider />
           <ListRow label="Teste de gravação" sub="Gravar 60 minutos com a tela bloqueada" onPress={() => router.push('/teste-gravacao')} divider />
           <ListRow
@@ -106,12 +142,6 @@ export function ProfileHome() {
           />
         </Card>
       ) : null}
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, paddingTop: 4 }}>
-        <Icon name="info" size={14} color={colors.textSecondary} />
-        <AppText variant="small" tone="secondary">
-          Configurações, avisos e conta chegam no próximo fluxo.
-        </AppText>
-      </View>
     </ScrollView>
   )
 }

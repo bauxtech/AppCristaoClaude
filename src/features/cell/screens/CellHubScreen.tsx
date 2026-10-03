@@ -8,6 +8,7 @@ import { useSession } from '../../../state/session'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { memberName, useCell } from '../CellContext'
+import { useBlockedIds } from '../../settings/SettingsContext'
 import { WEEKDAYS_PLURAL, type Cell } from '../data'
 import { formatMeeting, formatTime, missedTwoWeeks, nextMeeting } from '../meetings'
 import { can, ROLE_LABEL } from '../permissions'
@@ -158,11 +159,12 @@ function PlanCard({ cell }: { cell: Cell }) {
 }
 
 function LeaderView({ cell }: { cell: Cell }) {
+  const blockedIds = useBlockedIds()
   const { colors } = useTheme()
   const active = cell.members.filter((m) => m.active)
   const absent = cell.members.filter((m) => !m.isMe && m.active && missedTwoWeeks(m.lastAttendance))
   const pendingSwaps = cell.swaps.filter((s) => s.status === 'pending')
-  const prayers = cell.prayers.filter((p) => !cell.hidden.includes(p.id))
+  const prayers = cell.prayers.filter((p) => !cell.hidden.includes(p.id) && !blockedIds.has(p.memberId))
   const isNew = cell.members.length === 1
   const scheduleEmpty = cell.schedule.every((s) => !s.memberId)
   const birthdaysThisMonth = cell.members.filter((m) => m.birthday && Number(m.birthday.slice(0, 2)) === new Date().getMonth() + 1).length
@@ -301,6 +303,7 @@ function LeaderView({ cell }: { cell: Cell }) {
 }
 
 function MemberView({ cell }: { cell: Cell }) {
+  const blockedIds = useBlockedIds()
   const toast = useToast()
   const { update } = useCell()
   const leader = cell.members.find((m) => m.role === 'lider')
@@ -358,7 +361,7 @@ function MemberView({ cell }: { cell: Cell }) {
       {!isVisitor ? (
         <TileGrid
           items={[
-            { label: 'Pedidos', sub: `${cell.prayers.filter((p) => !cell.hidden.includes(p.id)).length} na célula`, icon: 'chat', onPress: () => router.push('/celula/pedidos') },
+            { label: 'Pedidos', sub: `${cell.prayers.filter((p) => !cell.hidden.includes(p.id) && !blockedIds.has(p.memberId)).length} na célula`, icon: 'chat', onPress: () => router.push('/celula/pedidos') },
             { label: 'Carona', sub: 'Pedir ou oferecer', icon: 'car', onPress: () => router.push('/celula/carona') },
             { label: 'Minha escala', sub: myNext ? myNext.role : 'Sem função esta semana', icon: 'calendarCheck', onPress: () => router.push('/celula/escala') },
             { label: 'Membros', sub: `${cell.members.length} pessoas`, icon: 'people', onPress: () => router.push('/celula/membros') },
