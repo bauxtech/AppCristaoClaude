@@ -49,7 +49,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "A câmera é usada para gravar seu pedido de oração em Libras.",
+          "cameraPermission": "A câmera é usada para gravar pedidos em Libras, ler o QR code da célula e fotografar a capa e os materiais.",
           "recordAudioAndroid": false
         }
       ],
@@ -57,6 +57,13 @@
         "expo-local-authentication",
         {
           "faceIDPermission": "O Face ID é usado para proteger o seu diário de oração."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "As fotos são usadas para a capa da célula e para materiais que você escolher.",
+          "cameraPermission": "A câmera é usada para gravar pedidos em Libras, ler o QR code da célula e fotografar a capa e os materiais."
         }
       ]
     ]

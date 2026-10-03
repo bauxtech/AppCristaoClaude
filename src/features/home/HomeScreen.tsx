@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppText, Button, Card, Chip, Icon, IconButton, ListRow, MIN_TOUCH, ProgressBar, SectionLabel, Sheet, useToast } from '../../components'
 import { formatLongDate } from '../../lib/date'
 import { useSession } from '../../state/session'
+import { useCell } from '../cell/CellContext'
+import { can } from '../cell/permissions'
 import { useTheme } from '../../theme/ThemeProvider'
 import { fonts } from '../../theme/typography'
 import { useAudio } from '../audio/AudioContext'
@@ -12,7 +14,7 @@ import { useBible } from '../bible/BibleContext'
 import { slugify } from '../bible/books'
 import { planById } from '../bible/plans'
 import { verseText } from '../bible/text'
-import { activeDaysThisMonth, cellRequests, commitments, moods, passage, prayerOfDay, reflection, songOfDay, totalDays, unreadNotifications, wordForNow } from './data'
+import { activeDaysThisMonth, commitments, moods, passage, prayerOfDay, reflection, songOfDay, totalDays, unreadNotifications, wordForNow } from './data'
 
 const SOON = 'Disponível em breve'
 
@@ -23,6 +25,8 @@ export function HomeScreen() {
   const audio = useAudio()
   const { activePlanId } = useBible()
   const { cellStatus, profile } = useSession()
+  const { cell } = useCell()
+  const cellPrayers = cell && can(cell.myRole, 'seePrayers') ? cell.prayers.filter((p) => !cell.hidden.includes(p.id)).length : null
   const [mood, setMood] = useState<string | null>(null)
   const [daysOpen, setDaysOpen] = useState(false)
 
@@ -185,18 +189,20 @@ export function HomeScreen() {
               )}
             </Card>
 
-            {/* Pedidos da célula */}
+            {/* Pedidos da célula: só para quem tem célula e não é visitante */}
+            {cellPrayers !== null ? (
             <Card>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <SectionLabel>Pedidos da célula</SectionLabel>
                   <AppText variant="body" style={{ fontFamily: fonts.medium }}>
-                    {cellRequests.count === 0 ? 'Nenhum pedido novo desde ontem' : `${cellRequests.count} pedidos novos na sua célula`}
+                    {cellPrayers === 0 ? 'Nenhum pedido na sua célula' : `${cellPrayers} ${cellPrayers === 1 ? 'pedido' : 'pedidos'} na sua célula`}
                   </AppText>
                 </View>
                 <Button label="Ver pedidos" variant="outline" size="sm" onPress={() => router.push('/celula/pedidos')} />
               </View>
             </Card>
+            ) : null}
           </>
         )}
 

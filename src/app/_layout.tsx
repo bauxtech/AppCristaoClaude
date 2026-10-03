@@ -14,6 +14,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ToastProvider } from '../components'
 import { AudioProvider } from '../features/audio/AudioContext'
 import { BibleProvider } from '../features/bible/BibleContext'
+import { CellProvider } from '../features/cell/CellContext'
 import { PrayerProvider } from '../features/prayer/PrayerContext'
 import { SessionProvider } from '../state/session'
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider'
@@ -60,11 +61,13 @@ export default function RootLayout() {
         <SessionProvider>
           <BibleProvider>
             <PrayerProvider>
-              <AudioProvider>
-                <ToastProvider>
-                  <RootStack />
-                </ToastProvider>
-              </AudioProvider>
+              <CellProvider>
+                <AudioProvider>
+                  <ToastProvider>
+                    <RootStack />
+                  </ToastProvider>
+                </AudioProvider>
+              </CellProvider>
             </PrayerProvider>
           </BibleProvider>
         </SessionProvider>

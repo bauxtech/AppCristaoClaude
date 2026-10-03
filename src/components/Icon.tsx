@@ -50,6 +50,19 @@ export type IconName =
   | 'video'
   | 'flag'
   | 'edit'
+  | 'gift'
+  | 'copy'
+  | 'car'
+  | 'arrowUp'
+  | 'arrowDown'
+  | 'more'
+  | 'map'
+  | 'upload'
+  | 'calendar'
+  | 'star'
+  | 'award'
+  | 'checkCircle'
+  | 'users'
 
 interface Props {
   name: IconName
@@ -360,6 +373,102 @@ function paths(name: IconName, s: Record<string, unknown>, color: string) {
         <>
           <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" {...s} />
           <Path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" {...s} />
+        </>
+      )
+    case 'gift':
+      return (
+        <>
+          <Rect x="3" y="8" width="18" height="4" rx="1" {...s} />
+          <Path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" {...s} />
+          <Path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5" {...s} />
+        </>
+      )
+    case 'copy':
+      return (
+        <>
+          <Rect x="9" y="9" width="13" height="13" rx="2" {...s} />
+          <Path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" {...s} />
+        </>
+      )
+    case 'car':
+      return (
+        <>
+          <Path d="M5 17H3v-5l2-5h14l2 5v5h-2" {...s} />
+          <Line x1="3" y1="12" x2="21" y2="12" {...s} />
+          <Circle cx="7.5" cy="17" r="2" {...s} />
+          <Circle cx="16.5" cy="17" r="2" {...s} />
+          <Line x1="9.5" y1="17" x2="14.5" y2="17" {...s} />
+        </>
+      )
+    case 'arrowUp':
+      return (
+        <>
+          <Line x1="12" y1="19" x2="12" y2="5" {...s} />
+          <Polyline points="5 12 12 5 19 12" {...s} />
+        </>
+      )
+    case 'arrowDown':
+      return (
+        <>
+          <Line x1="12" y1="5" x2="12" y2="19" {...s} />
+          <Polyline points="19 12 12 19 5 12" {...s} />
+        </>
+      )
+    case 'more':
+      return (
+        <>
+          <Circle cx="12" cy="5" r="1.2" {...s} fill={color} />
+          <Circle cx="12" cy="12" r="1.2" {...s} fill={color} />
+          <Circle cx="12" cy="19" r="1.2" {...s} fill={color} />
+        </>
+      )
+    case 'map':
+      return (
+        <>
+          <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" {...s} />
+          <Circle cx="12" cy="10" r="3" {...s} />
+        </>
+      )
+    case 'upload':
+      return (
+        <>
+          <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" {...s} />
+          <Polyline points="17 8 12 3 7 8" {...s} />
+          <Line x1="12" y1="3" x2="12" y2="15" {...s} />
+        </>
+      )
+    case 'calendar':
+      return (
+        <>
+          <Rect x="3" y="4" width="18" height="18" rx="2" {...s} />
+          <Line x1="16" y1="2" x2="16" y2="6" {...s} />
+          <Line x1="8" y1="2" x2="8" y2="6" {...s} />
+          <Line x1="3" y1="10" x2="21" y2="10" {...s} />
+        </>
+      )
+    case 'star':
+      return <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" {...s} />
+    case 'award':
+      return (
+        <>
+          <Circle cx="12" cy="8" r="7" {...s} />
+          <Polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" {...s} />
+        </>
+      )
+    case 'checkCircle':
+      return (
+        <>
+          <Circle cx="12" cy="12" r="10" {...s} />
+          <Polyline points="8 12 11 15 16 9" {...s} />
+        </>
+      )
+    case 'users':
+      return (
+        <>
+          <Circle cx="9" cy="7" r="4" {...s} />
+          <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" {...s} />
+          <Line x1="19" y1="8" x2="19" y2="14" {...s} />
+          <Line x1="22" y1="11" x2="16" y2="11" {...s} />
         </>
       )
   }

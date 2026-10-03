@@ -26,7 +26,7 @@ export function CellStartScreen() {
       return
     }
     finishOnboarding()
-    router.replace(choice === 'create' ? '/celula' : '/')
+    router.replace(choice === 'create' ? '/celula/criar' : '/')
   }
 
   return (

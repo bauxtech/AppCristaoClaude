@@ -55,6 +55,8 @@ export function SessionProvider({ children, initialOnboarded, initialCellStatus 
   const signOut = useCallback(() => {
     setOnboarded(false)
     setItem('onboarded', false)
+    setCellStatusState('none')
+    setItem('cellStatus', 'none')
   }, [])
 
   const value = useMemo(
