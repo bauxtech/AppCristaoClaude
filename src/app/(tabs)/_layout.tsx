@@ -3,6 +3,8 @@ import { Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon, type IconName } from '../../components/Icon'
 import { MIN_TOUCH } from '../../components'
+import { useAudio } from '../../features/audio/AudioContext'
+import { MiniPlayer } from '../../features/audio/MiniPlayer'
 import { useSession } from '../../state/session'
 import { useTheme } from '../../theme/ThemeProvider'
 import { fonts } from '../../theme/typography'
@@ -21,6 +23,8 @@ export default function TabsLayout() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const { onboarded } = useSession()
+  const { track } = useAudio()
+  const playerHeight = track ? 60 : 0
 
   if (!onboarded) return <Redirect href="/bem-vindo" />
 
@@ -57,6 +61,10 @@ export default function TabsLayout() {
         ))}
       </Tabs>
 
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: TAB_HEIGHT + insets.bottom }}>
+        <MiniPlayer />
+      </View>
+
       {/* Botão do chat, só ícone, no canto inferior esquerdo, como no protótipo. */}
       <Pressable
         onPress={() => router.push('/chat')}
@@ -65,7 +73,7 @@ export default function TabsLayout() {
         style={({ pressed }) => ({
           position: 'absolute',
           left: 16,
-          bottom: TAB_HEIGHT + insets.bottom + 12,
+          bottom: TAB_HEIGHT + insets.bottom + playerHeight + 12,
           width: MIN_TOUCH,
           height: MIN_TOUCH,
           borderRadius: MIN_TOUCH / 2,

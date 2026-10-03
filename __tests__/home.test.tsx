@@ -1,22 +1,15 @@
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { fireEvent, screen } from '@testing-library/react-native'
 import { router } from 'expo-router'
-import { ToastProvider } from '../src/components'
 import { HomeScreen } from '../src/features/home/HomeScreen'
-import { ThemeProvider } from '../src/theme/ThemeProvider'
+import { renderApp } from '../test-utils/render'
 
 function renderHome() {
-  return render(
-    <ThemeProvider>
-      <ToastProvider>
-        <HomeScreen />
-      </ToastProvider>
-    </ThemeProvider>,
-  )
+  return renderApp(<HomeScreen />, { onboarded: true })
 }
 
 test('mostra as seções da Home do protótipo', async () => {
   await renderHome()
-  for (const t of ['Passagem do dia', 'Reflexão de hoje', 'Oração do dia', 'Continuar leitura', 'Próximos compromissos', 'Pedidos da célula', 'Música do dia']) {
+  for (const t of ['Passagem do dia', 'Reflexão de hoje', 'Oração do dia', 'Continuar leitura', 'Música do dia']) {
     expect(screen.getByRole('header', { name: t })).toBeTruthy()
   }
 })
@@ -32,7 +25,19 @@ test('Começar abre o painel de oração e Ler capítulo abre a Bíblia', async 
   await fireEvent.press(screen.getByRole('button', { name: 'Começar' }))
   expect(router.push).toHaveBeenCalledWith('/oracao')
   await fireEvent.press(screen.getByRole('button', { name: 'Ler capítulo' }))
-  expect(router.push).toHaveBeenCalledWith('/biblia')
+  expect(router.push).toHaveBeenCalledWith({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: 'salmos', capitulo: '23', v: '1' } })
+})
+
+test('quem ainda não tem célula nem igreja vê os atalhos para começar', async () => {
+  await renderHome()
+  expect(screen.getByRole('button', { name: /Criar ou entrar numa célula/ })).toBeTruthy()
+  expect(screen.queryByRole('header', { name: 'Pedidos da célula' })).toBeNull()
+})
+
+test('Música do dia tem Spotify e YouTube', async () => {
+  await renderHome()
+  expect(screen.getByRole('button', { name: 'Spotify' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'YouTube' })).toBeTruthy()
 })
 
 test('escolher um humor marca a opção e mostra o atalho para o chat', async () => {

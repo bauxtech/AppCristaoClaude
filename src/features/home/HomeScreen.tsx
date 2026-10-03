@@ -2,23 +2,17 @@ import { router } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AppText, Button, Card, Chip, Icon, IconButton, ListRow, MIN_TOUCH, SectionLabel, useToast } from '../../components'
-import { ProgressBar } from '../../components/ProgressBar'
+import { AppText, Button, Card, Chip, Icon, IconButton, ListRow, MIN_TOUCH, ProgressBar, SectionLabel, Sheet, useToast } from '../../components'
 import { formatLongDate } from '../../lib/date'
+import { useSession } from '../../state/session'
 import { useTheme } from '../../theme/ThemeProvider'
 import { fonts } from '../../theme/typography'
-import {
-  cellRequests,
-  commitments,
-  moods,
-  passage,
-  prayerOfDay,
-  readingPlan,
-  reflection,
-  songOfDay,
-  totalDays,
-  unreadNotifications,
-} from './data'
+import { useAudio } from '../audio/AudioContext'
+import { useBible } from '../bible/BibleContext'
+import { slugify } from '../bible/books'
+import { planById } from '../bible/plans'
+import { verseText } from '../bible/text'
+import { activeDaysThisMonth, cellRequests, commitments, moods, passage, prayerOfDay, reflection, songOfDay, totalDays, unreadNotifications, wordForNow } from './data'
 
 const SOON = 'Disponível em breve'
 
@@ -26,15 +20,18 @@ export function HomeScreen() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const toast = useToast()
+  const audio = useAudio()
+  const { activePlanId } = useBible()
+  const { cellStatus, profile } = useSession()
   const [mood, setMood] = useState<string | null>(null)
+  const [daysOpen, setDaysOpen] = useState(false)
 
-  const pct = Math.round((readingPlan.day / readingPlan.total) * 100)
+  const plan = activePlanId ? planById(activePlanId) : undefined
+  const isNewUser = cellStatus === 'none' && !profile.church
+  const word = mood ? wordForNow[mood] : null
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 96 }}
-    >
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 140 }}>
       {/* Cabeçalho */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 }}>
         <View style={{ flex: 1 }}>
@@ -46,9 +43,9 @@ export function HomeScreen() {
           </AppText>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <IconButton icon="bell" label="Avisos" badge={unreadNotifications} onPress={() => toast(SOON)} />
+          <IconButton icon="bell" label="Avisos" badge={unreadNotifications} onPress={() => router.push('/avisos')} />
           <Pressable
-            onPress={() => toast(SOON)}
+            onPress={() => setDaysOpen(true)}
             accessibilityRole="button"
             accessibilityLabel={`${totalDays} dias com leitura ou oração`}
             style={({ pressed }) => ({
@@ -76,12 +73,12 @@ export function HomeScreen() {
             {`"${passage.text}"`}
           </AppText>
           <AppText variant="bibleRef" tone="secondary" style={{ marginBottom: 20 }}>
-            {passage.reference}
+            {`${passage.reference} · Almeida`}
           </AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-            <Button label="Ler capítulo" onPress={() => router.push('/biblia')} style={{ flexGrow: 1, minWidth: 120 }} />
-            <Button label="Ouvir" icon="volume" variant="outline" onPress={() => toast(SOON)} />
-            <Button label="Perguntar sobre isso" variant="text" onPress={() => router.push('/chat')} />
+            <Button label="Ler capítulo" onPress={() => router.push({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: 'salmos', capitulo: '23', v: '1' } })} style={{ flexGrow: 1, minWidth: 120 }} />
+            <Button label="Ouvir" icon="volume" variant="outline" onPress={() => audio.play({ title: passage.reference, text: passage.text })} />
+            <Button label="Perguntar sobre isso" variant="text" onPress={() => router.push({ pathname: '/chat', params: { passagem: passage.reference } })} />
           </View>
         </Card>
 
@@ -97,12 +94,12 @@ export function HomeScreen() {
             </View>
           </View>
           <AppText variant="small" tone="secondary" numberOfLines={2} style={{ marginBottom: 16 }}>
-            {reflection.preview}
+            {reflection.paragraphs[0]}
           </AppText>
-          <Button label="Ler reflexão completa" variant="soft" onPress={() => toast(SOON)} />
+          <Button label="Ler reflexão completa" variant="soft" onPress={() => router.push('/reflexao')} />
         </Card>
 
-        {/* Como você está agora? */}
+        {/* Palavra para agora */}
         <Card>
           <AppText variant="bodyStrong" accessibilityRole="header" style={{ marginBottom: 12 }}>
             Como você está agora?
@@ -112,13 +109,20 @@ export function HomeScreen() {
               <Chip key={m} label={m} selected={mood === m} onPress={() => setMood(mood === m ? null : m)} />
             ))}
           </View>
-          {mood ? (
-            <Button
-              label={`Perguntar sobre ${mood.toLowerCase()} na Bíblia`}
-              variant="text"
-              onPress={() => router.push('/chat')}
-              style={{ alignSelf: 'flex-start', marginTop: 8 }}
-            />
+          {word && mood ? (
+            <View style={{ marginTop: 16, gap: 8 }} accessibilityLiveRegion="polite">
+              <View style={{ backgroundColor: colors.primarySoft, borderRadius: 12, padding: 14, gap: 6 }}>
+                <AppText variant="bible" style={{ fontSize: 17, lineHeight: 27 }}>{`"${verseText(word.book, word.chapter, word.verse)}"`}</AppText>
+                <AppText variant="bibleRef" tone="secondary">{`${word.book} ${word.chapter}:${word.verse}`}</AppText>
+              </View>
+              <AppText variant="body">{word.phrase}</AppText>
+              <Button
+                label={`Perguntar sobre ${mood.toLowerCase()} na Bíblia`}
+                variant="text"
+                onPress={() => router.push({ pathname: '/chat', params: { passagem: `${word.book} ${word.chapter}:${word.verse}` } })}
+                style={{ alignSelf: 'flex-start' }}
+              />
+            </View>
           ) : null}
         </Card>
 
@@ -136,50 +140,65 @@ export function HomeScreen() {
           </View>
         </Card>
 
-        {/* Continuar leitura */}
-        <Card>
-          <SectionLabel>Continuar leitura</SectionLabel>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-            <View style={{ flex: 1 }}>
-              <AppText variant="bodyStrong">{readingPlan.name}</AppText>
-              <AppText variant="small" tone="secondary">
-                Dia {readingPlan.day} de {readingPlan.total}
-              </AppText>
+        {/* Continuar leitura ou escolher plano */}
+        {plan ? (
+          <Card>
+            <SectionLabel>Continuar leitura</SectionLabel>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+              <View style={{ flex: 1 }}>
+                <AppText variant="bodyStrong">{plan.name}</AppText>
+                <AppText variant="small" tone="secondary">
+                  {`Dia ${plan.day} de ${plan.total} · Hoje: ${plan.todayReading}`}
+                </AppText>
+              </View>
+              <Button label="Continuar" variant="outline" size="sm" onPress={() => router.push(`/biblia/${slugify(plan.todayRef.book)}/${plan.todayRef.chapter}`)} />
             </View>
-            <Button label="Continuar" variant="outline" size="sm" onPress={() => router.push('/biblia')} />
-          </View>
-          <ProgressBar value={readingPlan.day} max={readingPlan.total} label={`Dia ${readingPlan.day} de ${readingPlan.total}, ${pct}% concluído`} />
-          <AppText variant="small" tone="secondary" style={{ marginTop: 6 }} importantForAccessibility="no" accessibilityElementsHidden>
-            {pct}% concluído
-          </AppText>
-        </Card>
-
-        {/* Próximos compromissos */}
-        <Card style={{ paddingBottom: 8 }}>
-          <SectionLabel>Próximos compromissos</SectionLabel>
-          {commitments.length === 0 ? (
-            <AppText variant="small" tone="secondary">
-              Nenhum compromisso por enquanto.
+            <ProgressBar value={plan.day} max={plan.total} label={`Dia ${plan.day} de ${plan.total}`} />
+            <AppText variant="small" tone="secondary" style={{ marginTop: 6 }} importantForAccessibility="no" accessibilityElementsHidden>
+              {`${Math.round((plan.day / plan.total) * 100)}% concluído`}
             </AppText>
-          ) : (
-            commitments.map((c, i) => (
-              <ListRow key={c.title} icon={c.icon} label={c.title} sub={c.when} onPress={() => toast(SOON)} divider={i < commitments.length - 1} />
-            ))
-          )}
-        </Card>
+          </Card>
+        ) : (
+          <Card style={{ paddingVertical: 8 }}>
+            <ListRow icon="book" label="Escolher um plano de leitura" sub="Novo Testamento em 90 dias, Bíblia em 1 ano e outros" onPress={() => router.push('/biblia/planos')} />
+          </Card>
+        )}
 
-        {/* Pedidos da célula */}
-        <Card>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <View style={{ flex: 1 }}>
-              <SectionLabel>Pedidos da célula</SectionLabel>
-              <AppText variant="body" style={{ fontFamily: fonts.medium }}>
-                {cellRequests.count} pedidos novos na sua célula
-              </AppText>
-            </View>
-            <Button label="Ver pedidos" variant="outline" size="sm" onPress={() => router.push('/celula')} />
-          </View>
-        </Card>
+        {isNewUser ? (
+          <Card style={{ borderStyle: 'dashed', borderWidth: 2, paddingVertical: 8 }}>
+            <ListRow icon="people" label="Criar ou entrar numa célula" sub="Conecte-se com pessoas da sua comunidade." onPress={() => router.push('/celula')} divider />
+            <ListRow icon="church" label="Cadastrar minha igreja" sub="Veja cultos, horários e acessibilidade." onPress={() => router.push('/igreja')} />
+          </Card>
+        ) : (
+          <>
+            {/* Próximos compromissos */}
+            <Card style={{ paddingBottom: 8 }}>
+              <SectionLabel>Próximos compromissos</SectionLabel>
+              {commitments.length === 0 ? (
+                <AppText variant="small" tone="secondary">
+                  Nenhum compromisso por enquanto.
+                </AppText>
+              ) : (
+                commitments.map((c, i) => (
+                  <ListRow key={c.title} icon={c.icon} label={c.title} sub={c.when} onPress={() => router.push(c.href as '/celula')} divider={i < commitments.length - 1} />
+                ))
+              )}
+            </Card>
+
+            {/* Pedidos da célula */}
+            <Card>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <SectionLabel>Pedidos da célula</SectionLabel>
+                  <AppText variant="body" style={{ fontFamily: fonts.medium }}>
+                    {cellRequests.count === 0 ? 'Nenhum pedido novo desde ontem' : `${cellRequests.count} pedidos novos na sua célula`}
+                  </AppText>
+                </View>
+                <Button label="Ver pedidos" variant="outline" size="sm" onPress={() => router.push('/celula/pedidos')} />
+              </View>
+            </Card>
+          </>
+        )}
 
         {/* Música do dia */}
         <Card>
@@ -196,11 +215,55 @@ export function HomeScreen() {
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Button label="Abrir no Spotify" icon="external" variant="soft" size="sm" onPress={() => toast('Abrindo o Spotify')} style={{ flex: 1 }} />
-            <Button label="Abrir no YouTube" icon="external" variant="soft" size="sm" onPress={() => toast('Abrindo o YouTube')} style={{ flex: 1 }} />
+            <Button label="Spotify" icon="external" variant="soft" size="sm" onPress={() => toast('Abrindo o Spotify')} accessibilityHint="Abre a música no Spotify" style={{ flex: 1 }} />
+            <Button label="YouTube" icon="external" variant="soft" size="sm" onPress={() => toast('Abrindo o YouTube')} accessibilityHint="Abre a música no YouTube" style={{ flex: 1 }} />
           </View>
         </Card>
       </View>
+
+      <TotalDaysSheet visible={daysOpen} onClose={() => setDaysOpen(false)} />
     </ScrollView>
+  )
+}
+
+/** Total de dias com leitura ou oração, com o mês marcado. Não existe sequência. */
+function TotalDaysSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { colors } = useTheme()
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = today.getMonth()
+  const first = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const cells = [...Array.from({ length: first }, () => 0), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
+  const monthName = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'][month]
+  return (
+    <Sheet visible={visible} onClose={onClose} title={`${totalDays} dias com leitura ou oração`}>
+      <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
+        Um dia conta quando você lê ou ora pelo app.
+      </AppText>
+      <AppText variant="label" tone="secondary">{`${monthName} de ${year}`}</AppText>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+        {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (
+          <View key={`h${i}`} style={{ width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4 }} importantForAccessibility="no" accessibilityElementsHidden>
+            <AppText variant="small" tone="secondary">
+              {d}
+            </AppText>
+          </View>
+        ))}
+        {cells.map((d, i) => {
+          const active = d > 0 && activeDaysThisMonth.includes(d)
+          return (
+            <View key={i} style={{ width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4 }} accessible={d > 0} accessibilityLabel={d > 0 ? `${d} de ${monthName}${active ? ', com leitura ou oração' : ''}` : undefined}>
+              {d > 0 ? (
+                <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? colors.primary : 'transparent' }}>
+                  {active ? <Icon name="check" size={14} color={colors.primaryText} strokeWidth={3} /> : <AppText variant="small">{d}</AppText>}
+                </View>
+              ) : null}
+            </View>
+          )
+        })}
+      </View>
+      <Button label="Fechar" variant="outline" onPress={onClose} />
+    </Sheet>
   )
 }
