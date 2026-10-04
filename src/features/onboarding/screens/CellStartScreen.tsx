@@ -33,6 +33,7 @@ export function CellStartScreen() {
     <OnboardingScaffold
       title="Célula"
       subtitle="A célula é o pequeno grupo que se reúne toda semana. Você pode entrar, criar ou deixar para depois."
+      step="celula"
       onBack={() => router.back()}
       footer={<Button label="Começar" onPress={start} disabled={!choice} accessibilityHint={choice ? undefined : 'Escolha uma opção para começar'} />}
     >

@@ -93,6 +93,7 @@ export function CodeScreen() {
     <OnboardingScaffold
       title="Código enviado"
       subtitle={`Enviamos um código de 6 números para ${phoneLabel} pelo ${channel}.`}
+      step="codigo"
       onBack={() => router.back()}
       footer={<Button label="Verificar" onPress={verify} />}
     >

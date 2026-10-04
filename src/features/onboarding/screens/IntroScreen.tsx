@@ -11,27 +11,27 @@ export const INTRO_STEPS = [
   {
     title: 'Leia a Bíblia todo dia',
     text: 'Plano de leitura, passagem do dia e o seu progresso nos 66 livros.',
-    art: 'Ilustração: uma pessoa sentada lendo um livro aberto, com a luz da manhã.',
+    art: 'Ilustração: uma Bíblia aberta e uma barra de progresso.',
   },
   {
     title: 'Tire dúvidas sobre a Bíblia',
     text: 'Pergunte sobre qualquer passagem e receba a resposta com os versículos.',
-    art: 'Ilustração: uma pessoa com o celular na mão e balões de conversa saindo de um livro aberto.',
+    art: 'Ilustração: um balão de pergunta e um balão de resposta com um versículo marcado.',
   },
   {
     title: 'Grave o culto e guarde o resumo',
     text: 'O app transcreve a pregação e separa os pontos principais e os versículos citados.',
-    art: 'Ilustração: pessoas sentadas vistas de costas e ondas de som que viram linhas de texto.',
+    art: 'Ilustração: um microfone ao lado de uma folha com o texto da pregação.',
   },
   {
     title: 'Ore com um guia e registre seus pedidos',
     text: 'Momentos de oração guiados, diário e pedidos que você marca como respondidos.',
-    art: 'Ilustração: uma pessoa de olhos fechados e mãos juntas, num lugar tranquilo ao ar livre.',
+    art: 'Ilustração: um coração ao lado de uma lista de pedidos, com o primeiro marcado como respondido.',
   },
   {
     title: 'Organize a sua célula',
     text: 'Convide as pessoas, monte a escala e o roteiro e acompanhe os pedidos do grupo.',
-    art: 'Ilustração: um grupo pequeno sentado em roda numa sala.',
+    art: 'Ilustração: cinco pessoas em volta de uma mesa.',
   },
 ]
 
@@ -39,9 +39,7 @@ export const INTRO_STEPS = [
 export function IntroScreen() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
-  const { width, height } = useWindowDimensions()
-  // A ilustração ocupa a metade de cima da tela.
-  const artH = Math.round(height / 2)
+  const { width } = useWindowDimensions()
   const { setDraft } = useOnboarding()
   const [index, setIndex] = useState(0)
   const scroll = useRef<ScrollView>(null)
@@ -70,7 +68,7 @@ export function IntroScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
       <ScrollView
         ref={scroll}
         horizontal
@@ -83,11 +81,16 @@ export function IntroScreen() {
         accessibilityLabel="Apresentação do app"
       >
         {INTRO_STEPS.map((s, i) => (
-          <View key={s.title} style={{ width, flex: 1 }} importantForAccessibility={i === index ? 'auto' : 'no-hide-descendants'} accessibilityElementsHidden={i !== index}>
-            <View accessible accessibilityRole="image" accessibilityLabel={s.art} style={{ width, height: artH }}>
-              <IntroArt step={i} width={width} height={artH} />
+          <View
+            key={s.title}
+            style={{ width, flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 24 }}
+            importantForAccessibility={i === index ? 'auto' : 'no-hide-descendants'}
+            accessibilityElementsHidden={i !== index}
+          >
+            <View accessible accessibilityRole="image" accessibilityLabel={s.art}>
+              <IntroArt step={i} />
             </View>
-            <View style={{ flex: 1, gap: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+            <View style={{ gap: 10, alignItems: 'center' }}>
               <AppText variant="screenTitle" accessibilityRole="header" style={{ textAlign: 'center' }}>
                 {s.title}
               </AppText>

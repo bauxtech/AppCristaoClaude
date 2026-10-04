@@ -130,20 +130,6 @@ export function Cover({ label, onPress, caption, info, progress, width, ...art }
   )
 }
 
-/** Capa tracejada para estado vazio, como "Escolher um plano". */
-export function CoverEmpty({ label, onPress, width, hint }: { label: string; onPress: () => void; width?: number; hint?: string }) {
-  const { colors } = useTheme()
-  return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} accessibilityHint={hint} style={({ pressed }) => ({ width, gap: 8, opacity: pressed ? 0.85 : 1 })}>
-      <View style={{ aspectRatio: 4 / 3, width: '100%', borderRadius: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-        <AppText variant="bodyStrong" style={{ color: colors.primary, textAlign: 'center' }}>
-          {label}
-        </AppText>
-      </View>
-    </Pressable>
-  )
-}
-
 /** Largura que deixa a próxima capa aparecendo pela metade na borda. */
 export function useCarouselItemWidth(gutter = 16, gap = 12) {
   const { width } = useWindowDimensions()

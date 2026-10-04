@@ -6,8 +6,25 @@ import { Button } from './Button'
 /**
  * Fileira de capas que rola para o lado, com a próxima aparecendo pela metade na borda.
  * Cabeçalho com o nome da seção e "Ver todos". `gutter` é a margem lateral da tela onde ele está.
+ * `empty`, quando vier, aparece no lugar da fileira.
  */
-export function Carousel({ title, onSeeAll, seeAllHint, tabs, children, gutter = 16 }: { title: string; onSeeAll?: () => void; seeAllHint?: string; tabs?: ReactNode; children: ReactNode; gutter?: number }) {
+export function Carousel({
+  title,
+  onSeeAll,
+  seeAllHint,
+  tabs,
+  children,
+  empty,
+  gutter = 16,
+}: {
+  title: string
+  onSeeAll?: () => void
+  seeAllHint?: string
+  tabs?: ReactNode
+  children?: ReactNode
+  empty?: ReactNode
+  gutter?: number
+}) {
   return (
     <View style={{ gap: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -17,9 +34,11 @@ export function Carousel({ title, onSeeAll, seeAllHint, tabs, children, gutter =
         {onSeeAll ? <Button label="Ver todos" variant="text" size="sm" onPress={onSeeAll} accessibilityHint={seeAllHint ?? `Abre ${title.toLowerCase()}`} /> : null}
       </View>
       {tabs}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -gutter }} contentContainerStyle={{ paddingHorizontal: gutter, gap: 12 }} accessibilityLabel={title}>
-        {children}
-      </ScrollView>
+      {empty ?? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -gutter }} contentContainerStyle={{ paddingHorizontal: gutter, gap: 12 }} accessibilityLabel={title}>
+          {children}
+        </ScrollView>
+      )}
     </View>
   )
 }

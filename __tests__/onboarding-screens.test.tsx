@@ -8,6 +8,7 @@ import { TraditionScreen } from '../src/features/onboarding/screens/TraditionScr
 import { IntroScreen, INTRO_STEPS } from '../src/features/onboarding/screens/IntroScreen'
 import { LoginScreen } from '../src/features/onboarding/screens/LoginScreen'
 import { Splash } from '../src/features/onboarding/Splash'
+import { PROGRESS_STEPS } from '../src/features/onboarding/data'
 import { OnboardingProvider, useOnboarding } from '../src/features/onboarding/OnboardingContext'
 import { act } from '@testing-library/react-native'
 import { useEffect } from 'react'
@@ -33,7 +34,7 @@ describe('abertura', () => {
     await renderApp(<IntroScreen />)
     expect(INTRO_STEPS).toHaveLength(5)
     expect(screen.getByText('Leia a Bíblia todo dia')).toBeTruthy()
-    expect(screen.getByLabelText('Ilustração: uma pessoa sentada lendo um livro aberto, com a luz da manhã.')).toBeTruthy()
+    expect(screen.getByLabelText('Ilustração: uma Bíblia aberta e uma barra de progresso.')).toBeTruthy()
     expect(screen.getAllByRole('tab')).toHaveLength(5)
     expect(screen.getByRole('tab', { name: 'Passo 1 de 5: Leia a Bíblia todo dia' }).props.accessibilityState.selected).toBe(true)
     await fireEvent.press(screen.getByRole('tab', { name: 'Passo 3 de 5: Grave o culto e guarde o resumo' }))
@@ -66,9 +67,14 @@ describe('abertura', () => {
     expect(screen.getAllByRole('header', { name: 'Entrar' }).length).toBeGreaterThan(0)
   })
 
-  test('o cadastro não tem barra de passos no topo', async () => {
+  test('a tela de acesso não conta na barra do cadastro', () => {
+    expect(PROGRESS_STEPS).toHaveLength(9)
+    expect(PROGRESS_STEPS[0]).toBe('celular')
+  })
+
+  test('o cadastro mostra uma barra de progresso contínua no topo', async () => {
     await renderApp(<PhoneScreen />)
-    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.getByRole('progressbar', { name: 'Passo 1 de 9' })).toBeTruthy()
   })
 })
 

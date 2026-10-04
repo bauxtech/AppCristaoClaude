@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { Carousel, Cover, CoverEmpty, coverStyle, Segmented, useCarouselItemWidth } from '../../components'
+import { Card, Carousel, Cover, coverStyle, ListRow, Segmented, useCarouselItemWidth } from '../../components'
 import { useBible } from '../bible/BibleContext'
 import { planState, type PlanDef } from '../bible/plans'
 import { THEMES } from '../prayer/data'
@@ -46,6 +46,13 @@ export function ReadingPlansSection() {
   const mine = plans.filter((p) => progress[p.id] || p.custom)
   const featured = plans.filter((p) => !p.custom)
   const [tab, setTab] = useState<'mine' | 'featured'>('mine')
+  // Sem plano começado, a aba Meus planos mostra a linha de escolher plano, como antes das capas.
+  const empty =
+    tab === 'mine' && !mine.length ? (
+      <Card style={{ paddingVertical: 8 }}>
+        <ListRow icon="book" label="Escolher um plano de leitura" sub="Escolha um plano do app ou crie o seu" onPress={() => router.push('/biblia/planos')} />
+      </Card>
+    ) : undefined
   return (
     <Carousel
       title="Planos de leitura"
@@ -62,16 +69,11 @@ export function ReadingPlansSection() {
           ]}
         />
       }
+      empty={empty}
     >
-      {tab === 'mine' ? (
-        mine.length ? (
-          mine.map((p) => <PlanCover key={p.id} plan={p} width={width} mine />)
-        ) : (
-          <CoverEmpty label="Escolher um plano" hint="Abre os planos de leitura" width={width} onPress={() => router.push('/biblia/planos')} />
-        )
-      ) : (
-        featured.map((p) => <PlanCover key={p.id} plan={p} width={width} />)
-      )}
+      {(tab === 'mine' ? mine : featured).map((p) => (
+        <PlanCover key={p.id} plan={p} width={width} mine={tab === 'mine'} />
+      ))}
     </Carousel>
   )
 }

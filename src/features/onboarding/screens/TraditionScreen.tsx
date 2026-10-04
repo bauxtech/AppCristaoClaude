@@ -23,6 +23,7 @@ export function TraditionScreen() {
     <OnboardingScaffold
       title="Tradição e Bíblia"
       subtitle="Ajuda a personalizar o conteúdo."
+      step="tradicao"
       onBack={() => router.back()}
       footer={
         <>

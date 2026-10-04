@@ -39,6 +39,7 @@ export function TermsScreen() {
     <OnboardingScaffold
       title="Termos e privacidade"
       subtitle="Leia e aceite para continuar."
+      step="termos"
       onBack={() => router.back()}
       footer={<Button label={draft.viaInvite ? 'Aceitar e pedir para entrar' : 'Aceitar e continuar'} onPress={next} />}
     >

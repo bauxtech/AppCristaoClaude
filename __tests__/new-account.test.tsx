@@ -19,7 +19,7 @@ describe('conta nova', () => {
     await renderApp(<HomeScreen />, fresh)
     expect(screen.getByRole('button', { name: '0 dias com leitura ou oração' })).toBeTruthy()
     // Meus planos vazio: capa tracejada. Momentos de oração aparecem também para conta nova.
-    expect(screen.getByRole('button', { name: 'Escolher um plano' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Escolher um plano de leitura/ })).toBeTruthy()
     expect(screen.getByRole('header', { name: 'Momentos de oração' })).toBeTruthy()
     expect(screen.getByRole('button', { name: /^Criar ou entrar numa célula/ })).toBeTruthy()
   })
