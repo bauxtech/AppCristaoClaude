@@ -43,7 +43,6 @@ export function PhoneScreen() {
     <OnboardingScaffold
       title="Seu celular"
       subtitle="Enviamos um código de verificação pelo canal que você escolher."
-      step="celular"
       onBack={() => router.back()}
       footer={<Button label={sending ? 'Enviando' : 'Enviar código'} disabled={sending} onPress={send} />}
     >

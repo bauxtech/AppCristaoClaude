@@ -27,7 +27,6 @@ export function NameScreen() {
     <OnboardingScaffold
       title="Como posso te chamar?"
       subtitle="Opcional. Você pode pular esta etapa."
-      step="nome"
       onBack={() => router.back()}
       footer={
         <>

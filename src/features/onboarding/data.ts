@@ -1,10 +1,5 @@
 // Dados de exemplo do primeiro acesso. Saem daqui quando o login real (Supabase) entrar.
 
-/** Telas que contam na barra de progresso, na ordem. */
-/** A tela de acesso (Criar conta ou Entrar) vem da apresentação e não conta na barra. */
-export const PROGRESS_STEPS = ['celular', 'codigo', 'termos', 'nome', 'tradicao', 'objetivo', 'horario', 'igreja', 'celula'] as const
-export type ProgressStep = (typeof PROGRESS_STEPS)[number]
-
 /** Na prévia, estes códigos simulam as respostas do servidor. */
 export const DEMO_CODES = { ok: '123456', expired: '000000', tooMany: '111111' }
 

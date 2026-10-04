@@ -14,7 +14,6 @@ export function GoalScreen() {
     <OnboardingScaffold
       title="Qual é o seu objetivo principal?"
       subtitle="Você pode ter mais de um, mas escolha o mais importante agora."
-      step="objetivo"
       onBack={() => router.back()}
       footer={
         <Button

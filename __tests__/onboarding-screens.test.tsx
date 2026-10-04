@@ -8,7 +8,6 @@ import { TraditionScreen } from '../src/features/onboarding/screens/TraditionScr
 import { IntroScreen, INTRO_STEPS } from '../src/features/onboarding/screens/IntroScreen'
 import { LoginScreen } from '../src/features/onboarding/screens/LoginScreen'
 import { Splash } from '../src/features/onboarding/Splash'
-import { PROGRESS_STEPS } from '../src/features/onboarding/data'
 import { OnboardingProvider, useOnboarding } from '../src/features/onboarding/OnboardingContext'
 import { act } from '@testing-library/react-native'
 import { useEffect } from 'react'
@@ -67,9 +66,9 @@ describe('abertura', () => {
     expect(screen.getAllByRole('header', { name: 'Entrar' }).length).toBeGreaterThan(0)
   })
 
-  test('a tela de acesso não conta na barra do cadastro', () => {
-    expect(PROGRESS_STEPS).toHaveLength(9)
-    expect(PROGRESS_STEPS[0]).toBe('celular')
+  test('o cadastro não tem barra de passos no topo', async () => {
+    await renderApp(<PhoneScreen />)
+    expect(screen.queryByRole('progressbar')).toBeNull()
   })
 })
 

@@ -15,7 +15,6 @@ export function TimeScreen() {
     <OnboardingScaffold
       title="Quando você prefere ler e orar?"
       subtitle="Usamos isso para enviar lembretes no momento certo."
-      step="horario"
       onBack={() => router.back()}
       footer={
         <>

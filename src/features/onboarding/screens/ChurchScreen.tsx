@@ -29,7 +29,6 @@ export function ChurchScreen() {
     <OnboardingScaffold
       title="Sua igreja"
       subtitle="Opcional. Vincula cultos, cursos e horários."
-      step="igreja"
       onBack={() => router.back()}
       footer={
         <>
