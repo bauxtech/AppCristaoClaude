@@ -10,6 +10,8 @@ interface Draft {
   viaInvite: boolean
   /** Entrou com Google ou Apple: não passa pelo código. */
   social: boolean
+  /** Veio de "Criar conta" ou de "Entrar" na apresentação. */
+  mode: 'create' | 'login'
 }
 
 interface Ctx {
@@ -20,7 +22,7 @@ interface Ctx {
 const OnboardingContext = createContext<Ctx | null>(null)
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
-  const [draft, set] = useState<Draft>({ ddd: '', number: '', channel: 'whatsapp', viaInvite: false, social: false })
+  const [draft, set] = useState<Draft>({ ddd: '', number: '', channel: 'whatsapp', viaInvite: false, social: false, mode: 'create' })
   const value = useMemo(() => ({ draft, setDraft: (d: Partial<Draft>) => set((prev) => ({ ...prev, ...d })) }), [draft])
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>
 }

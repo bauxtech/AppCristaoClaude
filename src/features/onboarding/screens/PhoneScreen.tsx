@@ -95,6 +95,11 @@ export function PhoneScreen() {
           <Chip label="SMS" selected={channel === 'sms'} onPress={() => setChannel('sms')} />
         </View>
       </View>
+      {draft.mode === 'login' && !IS_REMOTE ? (
+        <AppText variant="small" tone="secondary">
+          Na prévia, a conta de exemplo é (11) 98765-4321.
+        </AppText>
+      ) : null}
     </OnboardingScaffold>
   )
 }

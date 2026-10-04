@@ -4,18 +4,89 @@ import { CodeScreen } from '../src/features/onboarding/screens/CodeScreen'
 import { PhoneScreen } from '../src/features/onboarding/screens/PhoneScreen'
 import { TermsScreen } from '../src/features/onboarding/screens/TermsScreen'
 import { TraditionScreen } from '../src/features/onboarding/screens/TraditionScreen'
-import { WelcomeScreen } from '../src/features/onboarding/screens/WelcomeScreen'
+import { IntroScreen, INTRO_STEPS } from '../src/features/onboarding/screens/IntroScreen'
+import { LoginScreen } from '../src/features/onboarding/screens/LoginScreen'
+import { Splash } from '../src/features/onboarding/Splash'
+import { PROGRESS_STEPS } from '../src/features/onboarding/data'
+import { OnboardingProvider, useOnboarding } from '../src/features/onboarding/OnboardingContext'
+import { act } from '@testing-library/react-native'
+import { useEffect } from 'react'
 import { CellStartScreen } from '../src/features/onboarding/screens/CellStartScreen'
 import { renderApp } from '../test-utils/render'
 
 beforeEach(() => jest.clearAllMocks())
 
-test('boas-vindas: opções de acessibilidade são caixas marcáveis com nome', async () => {
-  await renderApp(<WelcomeScreen />)
-  const large = screen.getByRole('checkbox', { name: 'Fonte grande' })
-  expect(large).not.toBeChecked()
-  await fireEvent.press(large)
-  expect(screen.getByRole('checkbox', { name: 'Fonte grande' })).toBeChecked()
+describe('abertura', () => {
+  test('splash mostra o nome e passa sozinho em 2 segundos', async () => {
+    jest.useFakeTimers()
+    const done = jest.fn()
+    await renderApp(<Splash onDone={done} />)
+    expect(screen.getByRole('header', { name: 'App Cristão' })).toBeTruthy()
+    await act(async () => {
+      jest.advanceTimersByTime(2000)
+    })
+    expect(done).toHaveBeenCalled()
+    jest.useRealTimers()
+  })
+
+  test('apresentação: 5 passos com título, texto e ilustração descrita', async () => {
+    await renderApp(<IntroScreen />)
+    expect(INTRO_STEPS).toHaveLength(5)
+    expect(screen.getByText('Leia a Bíblia todo dia')).toBeTruthy()
+    expect(screen.getByLabelText('Ilustração: uma Bíblia aberta e uma barra de progresso.')).toBeTruthy()
+    expect(screen.getAllByRole('tab')).toHaveLength(5)
+    expect(screen.getByRole('tab', { name: 'Passo 1 de 5: Leia a Bíblia todo dia' }).props.accessibilityState.selected).toBe(true)
+    await fireEvent.press(screen.getByRole('tab', { name: 'Passo 3 de 5: Grave o culto e guarde o resumo' }))
+    expect(screen.getByRole('tab', { name: 'Passo 3 de 5: Grave o culto e guarde o resumo' }).props.accessibilityState.selected).toBe(true)
+  })
+
+  test('Criar conta e Entrar abrem a tela de acesso com o título certo', async () => {
+    function Both() {
+      return (
+        <>
+          <IntroScreen />
+          <LoginScreen />
+        </>
+      )
+    }
+    await renderApp(<Both />)
+    expect(screen.getByRole('header', { name: 'Criar conta' })).toBeTruthy()
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Entrar' })[0])
+    expect(router.push).toHaveBeenCalledWith('/entrar')
+    expect(screen.getAllByRole('header', { name: 'Entrar' }).length).toBeGreaterThan(0)
+  })
+
+  test('a tela de acesso não conta na barra do cadastro', () => {
+    expect(PROGRESS_STEPS).toHaveLength(9)
+    expect(PROGRESS_STEPS[0]).toBe('celular')
+  })
+})
+
+test('entrar: quem já tem conta vai direto para o Hoje', async () => {
+  function LoginMode() {
+    const { setDraft } = useOnboarding()
+    useEffect(() => setDraft({ mode: 'login', ddd: '11', number: '987654321' }), []) // eslint-disable-line react-hooks/exhaustive-deps
+    return <CodeScreen />
+  }
+  await renderApp(<LoginMode />)
+  await fireEvent.changeText(screen.getByLabelText('Código de 6 números'), '123456')
+  await fireEvent.press(screen.getByRole('button', { name: 'Verificar' }))
+  expect(router.replace).toHaveBeenCalledWith('/')
+  expect(router.push).not.toHaveBeenCalledWith('/termos')
+})
+
+test('entrar: número sem conta oferece criar conta', async () => {
+  function LoginMode() {
+    const { setDraft } = useOnboarding()
+    useEffect(() => setDraft({ mode: 'login', ddd: '21', number: '912345678' }), []) // eslint-disable-line react-hooks/exhaustive-deps
+    return <CodeScreen />
+  }
+  await renderApp(<LoginMode />)
+  await fireEvent.changeText(screen.getByLabelText('Código de 6 números'), '123456')
+  await fireEvent.press(screen.getByRole('button', { name: 'Verificar' }))
+  expect(screen.getByText('Não há conta com este número')).toBeTruthy()
+  await fireEvent.press(screen.getByRole('button', { name: 'Criar conta com este número' }))
+  expect(router.push).toHaveBeenCalledWith('/termos')
 })
 
 test('celular: número inválido mostra o erro em texto e não avança', async () => {

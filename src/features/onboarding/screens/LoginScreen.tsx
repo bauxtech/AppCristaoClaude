@@ -5,6 +5,7 @@ import { AppleIcon, GoogleIcon } from '../../../components/BrandIcon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { useOnboarding } from '../OnboardingContext'
+import { useSession } from '../../../state/session'
 import { OnboardingScaffold } from '../OnboardingScaffold'
 
 function LoginOption({ label, icon, onPress }: { label: string; icon: React.ReactNode; onPress: () => void }) {
@@ -39,13 +40,22 @@ export function LoginScreen() {
   const { colors } = useTheme()
   const { draft, setDraft } = useOnboarding()
 
+  const login = draft.mode === 'login'
+  const { finishOnboarding } = useSession()
+
   function social() {
     setDraft({ social: true })
+    // Na prévia, quem entra com Google ou Apple já tem conta. Com o servidor, isso vem do login.
+    if (login) {
+      finishOnboarding()
+      router.replace('/')
+      return
+    }
     router.push('/termos')
   }
 
   return (
-    <OnboardingScaffold title="Entrar" subtitle="Como você quer acessar sua conta?" step="entrar" onBack={() => router.back()}>
+    <OnboardingScaffold title={login ? 'Entrar' : 'Criar conta'} subtitle={login ? 'Como você quer acessar sua conta?' : 'Como você quer criar sua conta?'} onBack={() => router.back()}>
       <View style={{ gap: 12 }}>
         <LoginOption
           label="Número de celular, por SMS ou WhatsApp"
@@ -60,7 +70,7 @@ export function LoginScreen() {
       </View>
       <View style={{ gap: 4, alignItems: 'center' }}>
         <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-          Ao entrar, você concorda com os documentos abaixo.
+          {login ? 'Ao entrar, você concorda com os documentos abaixo.' : 'Ao criar a conta, você concorda com os documentos abaixo.'}
         </AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
           <Button label="Termos de Uso" variant="text" size="sm" onPress={() => router.push('/termos-completos')} />

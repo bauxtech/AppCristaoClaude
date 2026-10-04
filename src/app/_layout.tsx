@@ -9,12 +9,13 @@ import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ConnectionFrame, ToastProvider } from '../components'
 import { ConnectionProvider } from '../state/connection'
 import { watchSession } from '../lib/supabase'
 import { configureStore } from '../lib/store'
+import { Splash } from '../features/onboarding/Splash'
 import { AudioProvider } from '../features/audio/AudioContext'
 import { BibleProvider } from '../features/bible/BibleContext'
 import { CellProvider } from '../features/cell/CellContext'
@@ -34,9 +35,12 @@ function RootStack() {
   const { colors, isDark } = useTheme()
   // Com o servidor ligado, a loja (RevenueCat) usa o id da pessoa logada.
   useEffect(() => watchSession(configureStore), [])
+  // Splash de 2 segundos ao abrir. Logado cai no Hoje; sem login, na apresentação.
+  const [splash, setSplash] = useState(true)
+  const endSplash = useCallback(() => setSplash(false), [])
   return (
     <>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style={splash ? (isDark ? 'dark' : 'light') : isDark ? 'light' : 'dark'} />
       <ConnectionFrame>
         <Stack
           screenOptions={{
@@ -56,6 +60,7 @@ function RootStack() {
           <Stack.Screen name="teste-gravacao" />
         </Stack>
       </ConnectionFrame>
+      {splash ? <Splash onDone={endSplash} /> : null}
     </>
   )
 }

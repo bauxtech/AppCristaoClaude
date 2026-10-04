@@ -3,7 +3,7 @@ import { hasProfileName, IS_REMOTE, sendLoginCode, verifyLoginCode } from '../..
 import { configureStore } from '../../../lib/store'
 import { useEffect, useRef, useState } from 'react'
 import { TextInput, View } from 'react-native'
-import { AppText, Button, useToast } from '../../../components'
+import { AppText, Button, Card, useToast } from '../../../components'
 import { useSession } from '../../../state/session'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -17,10 +17,11 @@ const RESEND_SECONDS = 30
 export function CodeScreen() {
   const { colors } = useTheme()
   const toast = useToast()
-  const { draft } = useOnboarding()
-  const { updateProfile } = useSession()
+  const { draft, setDraft } = useOnboarding()
+  const { updateProfile, finishOnboarding } = useSession()
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
+  const [noAccount, setNoAccount] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const inputRef = useRef<TextInput>(null)
 
@@ -42,7 +43,7 @@ export function CodeScreen() {
       setError('')
       configureStore(uid)
       updateProfile({ phone: phoneLabel })
-      router.push((await hasProfileName(uid)) ? '/bem-vindo-de-volta' : '/termos')
+      afterCode(await hasProfileName(uid))
     } catch {
       // O servidor limita as tentativas. A mensagem não diz se o número existe.
       setError(CODE_MESSAGES.wrong)
@@ -63,6 +64,19 @@ export function CodeScreen() {
     setError('')
     updateProfile({ phone: phoneLabel })
     const existing = draft.ddd === DEMO_EXISTING_PHONE.ddd && draft.number === DEMO_EXISTING_PHONE.number
+    if (existing && !IS_REMOTE) updateProfile({ name: DEMO_EXISTING_PHONE.name })
+    afterCode(existing)
+  }
+
+  /** Entrar: quem tem conta vai direto para o Hoje. Criar conta: segue o cadastro. */
+  function afterCode(existing: boolean) {
+    if (draft.mode === 'login') {
+      if (existing) {
+        finishOnboarding()
+        router.replace('/')
+      } else setNoAccount(true)
+      return
+    }
     router.push(existing ? '/bem-vindo-de-volta' : '/termos')
   }
 
@@ -83,6 +97,23 @@ export function CodeScreen() {
       onBack={() => router.back()}
       footer={<Button label="Verificar" onPress={verify} />}
     >
+      {noAccount ? (
+        <Card style={{ gap: 8 }} accessibilityLiveRegion="polite">
+          <AppText variant="bodyStrong">Não há conta com este número</AppText>
+          <AppText variant="small" tone="secondary">
+            Confira o número ou crie uma conta nova com ele.
+          </AppText>
+          <Button
+            label="Criar conta com este número"
+            size="sm"
+            onPress={() => {
+              setDraft({ mode: 'create' })
+              router.push('/termos')
+            }}
+          />
+          <Button label="Corrigir o número" variant="text" size="sm" onPress={() => router.back()} />
+        </Card>
+      ) : null}
       <View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {digits.map((d, i) => (
