@@ -18,8 +18,9 @@ describe('conta nova', () => {
   test('Home sem dias, sem plano e sem compromissos', async () => {
     await renderApp(<HomeScreen />, fresh)
     expect(screen.getByRole('button', { name: '0 dias com leitura ou oração' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /^Escolher um plano de leitura/ })).toBeTruthy()
-    expect(screen.queryByRole('header', { name: 'Continuar leitura' })).toBeNull()
+    // Meus planos vazio: capa tracejada. Momentos de oração aparecem também para conta nova.
+    expect(screen.getByRole('button', { name: 'Escolher um plano' })).toBeTruthy()
+    expect(screen.getByRole('header', { name: 'Momentos de oração' })).toBeTruthy()
     expect(screen.getByRole('button', { name: /^Criar ou entrar numa célula/ })).toBeTruthy()
   })
 
@@ -32,7 +33,7 @@ describe('conta nova', () => {
     await renderApp(<PlansScreen />, fresh)
     expect(screen.getByText('Você ainda não começou nenhum plano. Escolha um abaixo ou crie o seu.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Criar meu plano' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /^Bíblia em 1 ano/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Plano Bíblia em 1 ano, 365 dias' })).toBeTruthy()
   })
 
   test('oração sem pedidos e sem campanha em andamento', async () => {

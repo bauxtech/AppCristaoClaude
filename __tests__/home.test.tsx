@@ -9,7 +9,7 @@ function renderHome() {
 
 test('mostra as seções da Home do protótipo', async () => {
   await renderHome()
-  for (const t of ['Passagem do dia', 'Reflexão de hoje', 'Oração do dia', 'Continuar leitura', 'Música do dia']) {
+  for (const t of ['Passagem do dia', 'Reflexão de hoje', 'Momentos de oração', 'Planos de leitura', 'Música do dia']) {
     expect(screen.getByRole('header', { name: t })).toBeTruthy()
   }
 })
@@ -20,10 +20,26 @@ test('mostra o total de dias, sem sequência', async () => {
   expect(screen.queryByText(/seguidos/)).toBeNull()
 })
 
-test('Começar abre o painel de oração e Ler capítulo abre a Bíblia', async () => {
+test('Momentos de oração: a primeira é a de hoje e Ver todos abre o painel', async () => {
+  const { themeOfDay } = require('../src/features/home/HomeSections')
   await renderHome()
-  await fireEvent.press(screen.getByRole('button', { name: 'Começar' }))
+  const today = themeOfDay()
+  expect(screen.getByRole('button', { name: new RegExp(`^Momento de oração ${today.label}, oração de hoje`) })).toBeTruthy()
+  await fireEvent.press(screen.getAllByRole('button', { name: 'Ver todos' }).find((b) => b.props.accessibilityHint === 'Abre o painel de oração')!)
   expect(router.push).toHaveBeenCalledWith('/oracao')
+})
+
+test('Planos de leitura: Meus planos mostra o dia e Em destaque a duração', async () => {
+  await renderHome()
+  expect(screen.getByRole('button', { name: /^Plano Novo Testamento em 90 dias, dia \d+ de 90$/ })).toBeTruthy()
+  await fireEvent.press(screen.getByRole('tab', { name: 'Em destaque' }))
+  expect(screen.getByRole('button', { name: 'Plano Bíblia em 1 ano, 365 dias' })).toBeTruthy()
+  await fireEvent.press(screen.getByRole('button', { name: 'Plano Bíblia em 1 ano, 365 dias' }))
+  expect(router.push).toHaveBeenCalledWith('/biblia/plano/biblia-1-ano')
+})
+
+test('Ler capítulo abre a Bíblia', async () => {
+  await renderHome()
   await fireEvent.press(screen.getByRole('button', { name: 'Ler capítulo' }))
   expect(router.push).toHaveBeenCalledWith({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: 'salmos', capitulo: '23', v: '1' } })
 })

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
-import { AppText, Button, Card, ConfirmCard, Page, ProgressBar, Segmented, useToast } from '../../../components'
+import { AppText, Button, Card, ConfirmCard, CoverArt, coverStyle, Page, ProgressBar, Segmented, useToast } from '../../../components'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { useSession } from '../../../state/session'
 import { useBible } from '../BibleContext'
@@ -27,6 +27,7 @@ export function PlanDetailScreen() {
 
   return (
     <Page title={plan.name}>
+      <CoverArt title={plan.name} large {...coverStyle(plan.id)} />
       <StatusTags plan={plan} />
       <AppText variant="small" tone="secondary">{`${plan.total} dias · ${plan.books.length === 1 ? plan.books[0] : `${plan.books[0]} a ${plan.books[plan.books.length - 1]}`}`}</AppText>
       {started ? (

@@ -66,10 +66,10 @@ describe('campanhas', () => {
 test('a oração mostra os 5 temas e os pedidos ativos', async () => {
   await renderApp(<PrayerHomeScreen />, { onboarded: true })
   for (const t of ['Manhã', 'Noite', 'Ansiedade', 'Gratidão', 'Família']) {
-    expect(screen.getByRole('button', { name: new RegExp(`^${t},`) })).toBeTruthy()
+    expect(screen.getByRole('button', { name: new RegExp(`^Momento de oração ${t}`) })).toBeTruthy()
   }
   expect(screen.getByRole('button', { name: 'Pedidos, 4 ativos' })).toBeTruthy()
-  await fireEvent.press(screen.getByRole('button', { name: 'Gratidão, 3, 5 ou 10 minutos' }))
+  await fireEvent.press(screen.getByRole('button', { name: /^Momento de oração Gratidão.*3, 5 ou 10 minutos$/ }))
   expect(router.push).toHaveBeenCalledWith({ pathname: '/oracao/momento/[tema]', params: { tema: 'gratidao' } })
 })
 

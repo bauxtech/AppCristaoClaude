@@ -22,7 +22,8 @@ import { useChurch } from '../church/ChurchContext'
 import { upcomingCommitments } from './commitments'
 import { SERVICES, songUrl } from '../music/catalog'
 import { verseText } from '../bible/text'
-import { moods, passage, prayerOfDay, reflection, songOfDay, wordForNow } from './data'
+import { moods, passage, reflection, songOfDay, wordForNow } from './data'
+import { PrayerMomentsSection, ReadingPlansSection } from './HomeSections'
 
 const SOON = 'Disponível em breve'
 
@@ -249,58 +250,11 @@ export function HomeScreen() {
           </>
         ) : null}
 
-        {/* Oração do dia */}
-        <Card>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <SectionLabel>Oração do dia</SectionLabel>
-              <AppText variant="bodyStrong">{prayerOfDay.title}</AppText>
-              <AppText variant="small" tone="secondary">
-                {prayerOfDay.meta}
-              </AppText>
-            </View>
-            <Button label="Começar" variant="soft" onPress={() => router.push('/oracao')} accessibilityHint="Abre o momento de oração" />
-          </View>
-        </Card>
+        {/* Momentos de oração (aparece também para conta nova) */}
+        <PrayerMomentsSection />
 
-        {/* Continuar leitura ou escolher plano */}
-        {plan && plan.status !== 'done' ? (
-          <Card>
-            <SectionLabel>Continuar leitura</SectionLabel>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                marginBottom: 12,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <AppText variant="bodyStrong">{plan.def.name}</AppText>
-                <AppText variant="small" tone="secondary">
-                  {`Dia ${plan.day} de ${plan.total} · Hoje: ${plan.todayLabel}`}
-                </AppText>
-              </View>
-              <Button label="Continuar" variant="outline" size="sm" onPress={() => router.push(`/biblia/${slugify(plan.today[0].book)}/${plan.today[0].from}`)} />
-            </View>
-            <ProgressBar value={plan.done} max={plan.total} label={`${plan.done} de ${plan.total} dias lidos`} />
-            <AppText variant="small" tone="secondary" style={{ marginTop: 6 }} importantForAccessibility="no" accessibilityElementsHidden>
-              {`${Math.round((plan.done / plan.total) * 100)}% concluído`}
-            </AppText>
-          </Card>
-        ) : (
-          <Card style={{ paddingVertical: 8 }}>
-            <ListRow icon="book" label="Escolher um plano de leitura" sub="Escolha um plano do app ou crie o seu" onPress={() => router.push('/biblia/planos')} />
-          </Card>
-        )}
+        {/* Planos de leitura */}
+        <ReadingPlansSection />
 
         {isNewUser ? (
           <Card

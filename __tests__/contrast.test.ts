@@ -1,5 +1,6 @@
 import { palettes, type Palette, type ThemeMode } from '../src/theme/colors'
 import { contrastRatio } from '../src/theme/contrast'
+import { COVER_TONES } from '../src/components/Cover'
 
 // Regra do projeto: texto 4,5 para 1; bordas e ícones 3 para 1. Vale para todos os modos.
 
@@ -34,6 +35,10 @@ describe.each(Object.keys(palettes) as ThemeMode[])('contraste no modo %s', (mod
   const p = palettes[mode]
   test.each(pairs)('%s sobre %s', (fg, bg, min) => {
     expect(contrastRatio(p[fg], p[bg])).toBeGreaterThanOrEqual(min)
+  })
+
+  test.each(COVER_TONES)('texto da capa: fundo %s com texto %s', (bg, fg) => {
+    expect(contrastRatio(p[fg], p[bg])).toBeGreaterThanOrEqual(TEXT)
   })
 
   test('texto branco do aviso sobre a superfície escura', () => {
