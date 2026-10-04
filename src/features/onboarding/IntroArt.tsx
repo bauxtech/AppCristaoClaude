@@ -9,16 +9,17 @@ const VB_W = 360
 const VB_H = 300
 
 function useSceneColors() {
-  const c = useTheme().colors
+  const { colors: c, isDark } = useTheme()
+  // No escuro, papel e luz ficam claros e o cabelo fica escuro, para a cena não se inverter.
   return {
     sky: c.primarySoft,
     ground: c.line,
     cloth: c.primary,
     cloth2: c.lineStrong,
     skin: c.accent,
-    hair: c.text,
-    paper: c.card,
-    light: c.bg,
+    hair: isDark ? c.bg : c.text,
+    paper: isDark ? c.text : c.card,
+    light: isDark ? c.lineStrong : c.bg,
   }
 }
 
