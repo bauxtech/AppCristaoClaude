@@ -1,3 +1,4 @@
+import { Dimensions } from 'react-native'
 import { fireEvent, screen } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { CodeScreen } from '../src/features/onboarding/screens/CodeScreen'
@@ -33,11 +34,21 @@ describe('abertura', () => {
     await renderApp(<IntroScreen />)
     expect(INTRO_STEPS).toHaveLength(5)
     expect(screen.getByText('Leia a Bíblia todo dia')).toBeTruthy()
-    expect(screen.getByLabelText('Ilustração: uma Bíblia aberta e uma barra de progresso.')).toBeTruthy()
+    expect(screen.getByLabelText('Ilustração: uma pessoa sentada lendo um livro aberto, com a luz da manhã.')).toBeTruthy()
     expect(screen.getAllByRole('tab')).toHaveLength(5)
     expect(screen.getByRole('tab', { name: 'Passo 1 de 5: Leia a Bíblia todo dia' }).props.accessibilityState.selected).toBe(true)
     await fireEvent.press(screen.getByRole('tab', { name: 'Passo 3 de 5: Grave o culto e guarde o resumo' }))
     expect(screen.getByRole('tab', { name: 'Passo 3 de 5: Grave o culto e guarde o resumo' }).props.accessibilityState.selected).toBe(true)
+  })
+
+  test('apresentação: o ponto ativo acompanha o arraste', async () => {
+    await renderApp(<IntroScreen />)
+    const pager = screen.getByLabelText('Apresentação do app')
+    const { width } = Dimensions.get('window')
+    await fireEvent.scroll(pager, { nativeEvent: { contentOffset: { x: width * 2, y: 0 } } })
+    expect(screen.getByRole('tab', { name: 'Passo 3 de 5: Grave o culto e guarde o resumo' }).props.accessibilityState.selected).toBe(true)
+    await fireEvent.scroll(pager, { nativeEvent: { contentOffset: { x: width * 4, y: 0 } } })
+    expect(screen.getByRole('tab', { name: 'Passo 5 de 5: Organize a sua célula' }).props.accessibilityState.selected).toBe(true)
   })
 
   test('Criar conta e Entrar abrem a tela de acesso com o título certo', async () => {

@@ -11,27 +11,27 @@ export const INTRO_STEPS = [
   {
     title: 'Leia a Bíblia todo dia',
     text: 'Plano de leitura, passagem do dia e o seu progresso nos 66 livros.',
-    art: 'Ilustração: uma Bíblia aberta e uma barra de progresso.',
+    art: 'Ilustração: uma pessoa sentada lendo um livro aberto, com a luz da manhã.',
   },
   {
     title: 'Tire dúvidas sobre a Bíblia',
     text: 'Pergunte sobre qualquer passagem e receba a resposta com os versículos.',
-    art: 'Ilustração: um balão de pergunta e um balão de resposta com um versículo marcado.',
+    art: 'Ilustração: uma pessoa com o celular na mão e balões de conversa saindo de um livro aberto.',
   },
   {
     title: 'Grave o culto e guarde o resumo',
     text: 'O app transcreve a pregação e separa os pontos principais e os versículos citados.',
-    art: 'Ilustração: um microfone ao lado de uma folha com o texto da pregação.',
+    art: 'Ilustração: pessoas sentadas vistas de costas e ondas de som que viram linhas de texto.',
   },
   {
     title: 'Ore com um guia e registre seus pedidos',
     text: 'Momentos de oração guiados, diário e pedidos que você marca como respondidos.',
-    art: 'Ilustração: um coração ao lado de uma lista de pedidos, com o primeiro marcado como respondido.',
+    art: 'Ilustração: uma pessoa de olhos fechados e mãos juntas, num lugar tranquilo ao ar livre.',
   },
   {
     title: 'Organize a sua célula',
     text: 'Convide as pessoas, monte a escala e o roteiro e acompanhe os pedidos do grupo.',
-    art: 'Ilustração: cinco pessoas em volta de uma mesa.',
+    art: 'Ilustração: um grupo pequeno sentado em roda numa sala.',
   },
 ]
 
@@ -39,17 +39,27 @@ export const INTRO_STEPS = [
 export function IntroScreen() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
-  const { width } = useWindowDimensions()
+  const { width, height } = useWindowDimensions()
+  // A ilustração ocupa a metade de cima da tela.
+  const artH = Math.round(height / 2)
   const { setDraft } = useOnboarding()
   const [index, setIndex] = useState(0)
   const scroll = useRef<ScrollView>(null)
+  // Passo pedido pelo toque num ponto: enquanto a rolagem anima, os passos do meio não acendem.
+  const target = useRef<number | null>(null)
 
-  function onScrollEnd(e: NativeSyntheticEvent<NativeScrollEvent>) {
-    const i = Math.round(e.nativeEvent.contentOffset.x / Math.max(width, 1))
-    if (i !== index) setIndex(Math.max(0, Math.min(INTRO_STEPS.length - 1, i)))
+  // onScroll em vez de onMomentumScrollEnd: no arraste da web o fim do momento nem sempre dispara.
+  function onScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    const i = Math.max(0, Math.min(INTRO_STEPS.length - 1, Math.round(e.nativeEvent.contentOffset.x / Math.max(width, 1))))
+    if (target.current !== null) {
+      if (i === target.current) target.current = null
+      return
+    }
+    if (i !== index) setIndex(i)
   }
 
   function goTo(i: number) {
+    target.current = i === index ? null : i
     setIndex(i)
     scroll.current?.scrollTo({ x: i * width, animated: true })
   }
@@ -60,22 +70,24 @@ export function IntroScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
         ref={scroll}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onScrollEnd}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        onScrollBeginDrag={() => (target.current = null)}
         style={{ flex: 1 }}
         accessibilityLabel="Apresentação do app"
       >
         {INTRO_STEPS.map((s, i) => (
-          <View key={s.title} style={{ width, flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 24 }} importantForAccessibility={i === index ? 'auto' : 'no-hide-descendants'} accessibilityElementsHidden={i !== index}>
-            <View accessible accessibilityRole="image" accessibilityLabel={s.art}>
-              <IntroArt step={i} />
+          <View key={s.title} style={{ width, flex: 1 }} importantForAccessibility={i === index ? 'auto' : 'no-hide-descendants'} accessibilityElementsHidden={i !== index}>
+            <View accessible accessibilityRole="image" accessibilityLabel={s.art} style={{ width, height: artH }}>
+              <IntroArt step={i} width={width} height={artH} />
             </View>
-            <View style={{ gap: 10, alignItems: 'center' }}>
+            <View style={{ flex: 1, gap: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
               <AppText variant="screenTitle" accessibilityRole="header" style={{ textAlign: 'center' }}>
                 {s.title}
               </AppText>

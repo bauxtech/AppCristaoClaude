@@ -5,7 +5,7 @@ import { NotesLockedInline, useNotesLocked } from '../../settings/NotesLock'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Image, Linking, Pressable, View } from 'react-native'
-import { AppText, Button, Card, Chip, ConfirmCard, EmptyState, IconButton, Page, ProgressBar, SectionLabel, Switch, Tag, TapCard, TextField, useToast } from '../../../components'
+import { AppText, Button, Card, Chip, ConfirmCard, Cover, CoverGrid, EmptyState, IconButton, Page, ProgressBar, SectionLabel, Switch, Tag, TapCard, TextField, useGridItemWidth, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -28,41 +28,58 @@ function courseStats(c: Course, today = toISODate(new Date())) {
   }
 }
 
+/** A cor da capa vem do tipo do curso. Tipo fora da lista usa a última cor. */
+export function courseTone(type: string) {
+  const i = COURSE_TYPES.indexOf(type)
+  return i >= 0 ? i : COURSE_TYPES.length
+}
+
 export function CoursesScreen() {
-  const { colors } = useTheme()
   const { courses } = useChurch()
+  const gridWidth = useGridItemWidth()
   const active = courses.filter((c) => !c.completedAt)
   const done = courses.filter((c) => c.completedAt)
   return (
     <Page title="Cursos">
       {courses.length === 0 ? <EmptyState text="Nenhum curso cadastrado. Adicione pela foto do cronograma ou à mão." /> : null}
-      {active.map((c) => {
-        const s = courseStats(c)
-        return (
-          <TapCard key={c.id} label={`${c.name}, em andamento. Aula ${s.done} de ${s.total}${s.attendance !== null ? `, presença ${s.attendance} por cento` : ''}`} onPress={() => router.push({ pathname: '/igreja/curso/[id]', params: { id: c.id } })}>
-            <View style={{ alignItems: 'flex-start', gap: 6 }}>
-              <Tag label="Em andamento" />
-              <AppText variant="bodyStrong">{c.name}</AppText>
-              <AppText variant="small" tone="secondary">{`Aula ${s.done} de ${s.total}${s.attendance !== null ? ` · Presença: ${s.attendance}%` : ''}`}</AppText>
-            </View>
-            <View style={{ marginTop: 8 }}>
-              <ProgressBar value={s.done} max={s.total} label={`Aula ${s.done} de ${s.total}`} />
-            </View>
-          </TapCard>
-        )
-      })}
+      {active.length ? (
+        <CoverGrid>
+          {active.map((c) => {
+            const s = courseStats(c)
+            return (
+              <Cover
+                key={c.id}
+                title={c.name}
+                tone={courseTone(c.type)}
+                graphic="arcs"
+                info={`Aula ${s.done} de ${s.total}${s.attendance !== null ? ` · ${s.attendance}%` : ''}`}
+                progress={{ value: s.done, max: s.total }}
+                label={`Curso ${c.name}, em andamento. Aula ${s.done} de ${s.total}${s.attendance !== null ? `, presença ${s.attendance} por cento` : ''}`}
+                width={gridWidth}
+                onPress={() => router.push({ pathname: '/igreja/curso/[id]', params: { id: c.id } })}
+              />
+            )
+          })}
+        </CoverGrid>
+      ) : null}
       {done.length ? <SectionLabel>Concluídos</SectionLabel> : null}
-      {done.map((c) => (
-        <TapCard key={c.id} label={`${c.name}, concluído em ${formatBR(c.completedAt!)}`} onPress={() => router.push({ pathname: '/igreja/curso/[id]', params: { id: c.id } })}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Icon name="award" size={18} color={colors.primary} />
-            <AppText variant="bodyStrong" style={{ flex: 1 }}>
-              {c.name}
-            </AppText>
-            <Tag label="Concluído" tone="neutral" />
-          </View>
-        </TapCard>
-      ))}
+      {done.length ? (
+        <CoverGrid>
+          {done.map((c) => (
+            <Cover
+              key={c.id}
+              title={c.name}
+              tone={courseTone(c.type)}
+              graphic="arcs"
+              tag="Concluído"
+              info={`Concluído em ${formatBR(c.completedAt!)}`}
+              label={`Curso ${c.name}, concluído em ${formatBR(c.completedAt!)}`}
+              width={gridWidth}
+              onPress={() => router.push({ pathname: '/igreja/curso/[id]', params: { id: c.id } })}
+            />
+          ))}
+        </CoverGrid>
+      ) : null}
       <Button label="Curso pela foto do cronograma" icon="camera" variant="outline" onPress={() => router.push('/igreja/curso-foto')} />
       <Button label="Adicionar curso à mão" icon="plus" variant="outline" onPress={() => router.push('/igreja/curso-novo')} />
     </Page>

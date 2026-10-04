@@ -1,90 +1,150 @@
-import Svg, { Circle, Line, Path, Rect } from 'react-native-svg'
+import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg'
 import { useTheme } from '../../theme/ThemeProvider'
 
-// Ilustrações de exemplo da apresentação, em formas simples e nas cores da paleta.
-// O Thiago troca pelas finais depois. A descrição para o leitor de tela fica em INTRO_STEPS.
+// Ilustrações de cena da apresentação (provisórias): formas arredondadas, cores chapadas da paleta,
+// sem contorno, pessoas simples e sem rosto detalhado. O Thiago troca pelas finais depois.
+// A descrição para o leitor de tela fica em INTRO_STEPS.
 
-const W = 240
-const H = 180
+const VB_W = 360
+const VB_H = 300
 
-export function IntroArt({ step }: { step: number }) {
-  const { colors } = useTheme()
-  const soft = colors.primarySoft
-  const main = colors.primary
-  const accent = colors.accent
-  const card = colors.card
-  const line = colors.lineStrong
+function useSceneColors() {
+  const c = useTheme().colors
+  return {
+    sky: c.primarySoft,
+    ground: c.line,
+    cloth: c.primary,
+    cloth2: c.lineStrong,
+    skin: c.accent,
+    hair: c.text,
+    paper: c.card,
+    light: c.bg,
+  }
+}
+
+/** Pessoa sentada de frente, sem rosto. x, y: centro da cabeça. */
+function Seated({ x, y, s = 1, cloth, skin, hair, eyesClosed, lines }: { x: number; y: number; s?: number; cloth: string; skin: string; hair: string; eyesClosed?: boolean; lines?: string }) {
+  const k = (n: number) => n * s
   return (
-    <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} accessible={false}>
-      <Circle cx={120} cy={90} r={84} fill={soft} />
+    <>
+      <Path d={`M${x - k(34)} ${y + k(92)} Q${x - k(36)} ${y + k(28)} ${x} ${y + k(24)} Q${x + k(36)} ${y + k(28)} ${x + k(34)} ${y + k(92)} Z`} fill={cloth} />
+      <Ellipse cx={x} cy={y + k(92)} rx={k(52)} ry={k(14)} fill={cloth} />
+      <Circle cx={x} cy={y} r={k(20)} fill={skin} />
+      <Path
+        d={`M${x - k(20)} ${y - k(2)} Q${x - k(18)} ${y - k(24)} ${x} ${y - k(23)} Q${x + k(18)} ${y - k(24)} ${x + k(20)} ${y - k(2)} Q${x + k(8)} ${y - k(12)} ${x - k(20)} ${y - k(2)} Z`}
+        fill={hair}
+      />
+      {eyesClosed && lines ? (
+        <>
+          <Path d={`M${x - k(10)} ${y + k(2)} Q${x - k(6)} ${y + k(6)} ${x - k(2)} ${y + k(2)}`} stroke={lines} strokeWidth={k(2.4)} fill="none" strokeLinecap="round" />
+          <Path d={`M${x + k(2)} ${y + k(2)} Q${x + k(6)} ${y + k(6)} ${x + k(10)} ${y + k(2)}`} stroke={lines} strokeWidth={k(2.4)} fill="none" strokeLinecap="round" />
+        </>
+      ) : null}
+    </>
+  )
+}
+
+/** Pessoa vista de costas (cabelo e ombros). */
+function Back({ x, y, s = 1, cloth, hair }: { x: number; y: number; s?: number; cloth: string; hair: string }) {
+  const k = (n: number) => n * s
+  return (
+    <>
+      <Path d={`M${x - k(30)} ${y + k(60)} Q${x - k(30)} ${y + k(20)} ${x} ${y + k(18)} Q${x + k(30)} ${y + k(20)} ${x + k(30)} ${y + k(60)} Z`} fill={cloth} />
+      <Circle cx={x} cy={y} r={k(17)} fill={hair} />
+    </>
+  )
+}
+
+export function IntroArt({ step, width, height }: { step: number; width: number; height: number }) {
+  const c = useSceneColors()
+  return (
+    <Svg width={width} height={height} viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid slice" accessible={false}>
+      <Rect x={0} y={0} width={VB_W} height={VB_H} fill={c.sky} />
       {step === 0 ? (
         <>
-          {/* Bíblia aberta e barra de progresso */}
-          <Path d="M50 58 Q85 48 118 60 L118 132 Q85 120 50 130 Z" fill={card} stroke={main} strokeWidth={3} />
-          <Path d="M190 58 Q155 48 122 60 L122 132 Q155 120 190 130 Z" fill={card} stroke={main} strokeWidth={3} />
-          <Line x1={62} y1={76} x2={106} y2={72} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Line x1={62} y1={90} x2={106} y2={86} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Line x1={134} y1={72} x2={178} y2={76} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Line x1={134} y1={86} x2={178} y2={90} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Rect x={70} y={146} width={100} height={10} rx={5} fill={card} stroke={main} strokeWidth={2} />
-          <Rect x={70} y={146} width={46} height={10} rx={5} fill={accent} />
+          {/* Manhã: sol nascendo, pessoa sentada lendo */}
+          <Circle cx={278} cy={92} r={58} fill={c.light} />
+          <Circle cx={278} cy={92} r={34} fill={c.skin} />
+          <Path d="M0 236 Q90 214 180 228 T360 220 L360 300 L0 300 Z" fill={c.ground} />
+          <Path d="M54 236 Q40 196 64 168 Q70 204 60 236 Z" fill={c.cloth2} />
+          <Path d="M66 236 Q78 190 100 176 Q88 210 76 236 Z" fill={c.cloth2} />
+          <Seated x={170} y={130} cloth={c.cloth} skin={c.skin} hair={c.hair} />
+          <Path d="M136 186 Q153 176 170 186 L170 210 Q153 200 136 210 Z" fill={c.paper} />
+          <Path d="M204 186 Q187 176 170 186 L170 210 Q187 200 204 210 Z" fill={c.paper} />
+          <Ellipse cx={134} cy={204} rx={9} ry={7} fill={c.skin} />
+          <Ellipse cx={206} cy={204} rx={9} ry={7} fill={c.skin} />
         </>
       ) : null}
       {step === 1 ? (
         <>
-          {/* Pergunta e resposta com versículo */}
-          <Rect x={46} y={40} width={110} height={44} rx={16} fill={card} stroke={line} strokeWidth={2} />
-          <Line x1={62} y1={56} x2={136} y2={56} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Line x1={62} y1={70} x2={112} y2={70} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Rect x={84} y={96} width={112} height={56} rx={16} fill={main} />
-          <Line x1={100} y1={114} x2={180} y2={114} stroke={card} strokeWidth={3} strokeLinecap="round" />
-          <Line x1={100} y1={128} x2={160} y2={128} stroke={card} strokeWidth={3} strokeLinecap="round" />
-          <Rect x={100} y={138} width={36} height={8} rx={4} fill={accent} />
+          {/* Pessoa com o celular e balões saindo de um livro */}
+          <Path d="M0 244 Q120 226 220 240 T360 236 L360 300 L0 300 Z" fill={c.ground} />
+          <Path d="M40 236 Q80 222 116 236 L116 262 Q80 248 40 262 Z" fill={c.paper} />
+          <Path d="M192 236 Q152 222 116 236 L116 262 Q152 248 192 262 Z" fill={c.paper} />
+          <Rect x={58} y={150} width={92} height={40} rx={20} fill={c.paper} />
+          <Circle cx={92} cy={200} r={6} fill={c.paper} />
+          <Circle cx={104} cy={216} r={4} fill={c.paper} />
+          <Rect x={74} y={164} width={48} height={6} rx={3} fill={c.cloth2} />
+          <Rect x={74} y={176} width={30} height={6} rx={3} fill={c.cloth2} />
+          <Rect x={110} y={88} width={104} height={44} rx={22} fill={c.cloth} />
+          <Rect x={128} y={104} width={60} height={6} rx={3} fill={c.light} />
+          <Rect x={128} y={116} width={40} height={6} rx={3} fill={c.skin} />
+          <Circle cx={150} cy={142} r={5} fill={c.cloth} />
+          {/* pessoa em pé à direita */}
+          <Path d="M250 244 Q246 170 272 160 Q300 170 296 244 Z" fill={c.cloth2} />
+          <Circle cx={273} cy={138} r={20} fill={c.skin} />
+          <Path d="M253 136 Q255 112 274 114 Q293 116 293 136 Q280 124 253 136 Z" fill={c.hair} />
+          <Rect x={240} y={176} width={18} height={30} rx={5} fill={c.hair} />
+          <Ellipse cx={252} cy={204} rx={9} ry={7} fill={c.skin} />
         </>
       ) : null}
       {step === 2 ? (
         <>
-          {/* Microfone e texto transcrito */}
-          <Rect x={62} y={40} width={36} height={60} rx={18} fill={main} />
-          <Path d="M52 84 Q52 116 80 116 Q108 116 108 84" fill="none" stroke={main} strokeWidth={4} strokeLinecap="round" />
-          <Line x1={80} y1={116} x2={80} y2={136} stroke={main} strokeWidth={4} strokeLinecap="round" />
-          <Line x1={64} y1={138} x2={96} y2={138} stroke={main} strokeWidth={4} strokeLinecap="round" />
-          <Rect x={124} y={48} width={74} height={94} rx={12} fill={card} stroke={line} strokeWidth={2} />
-          <Line x1={136} y1={68} x2={186} y2={68} stroke={accent} strokeWidth={4} strokeLinecap="round" />
-          <Line x1={136} y1={86} x2={186} y2={86} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Line x1={136} y1={100} x2={176} y2={100} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Line x1={136} y1={114} x2={182} y2={114} stroke={line} strokeWidth={3} strokeLinecap="round" />
+          {/* Culto: pessoas de costas, ondas de som que viram linhas de texto */}
+          <Path d="M64 70 Q80 54 64 38" stroke={c.cloth} strokeWidth={7} fill="none" strokeLinecap="round" />
+          <Path d="M92 84 Q118 54 92 24" stroke={c.cloth} strokeWidth={7} fill="none" strokeLinecap="round" />
+          <Path d="M120 98 Q156 54 120 10" stroke={c.cloth} strokeWidth={7} fill="none" strokeLinecap="round" />
+          <Rect x={160} y={30} width={150} height={9} rx={4.5} fill={c.cloth} />
+          <Rect x={160} y={50} width={120} height={9} rx={4.5} fill={c.skin} />
+          <Rect x={160} y={70} width={140} height={9} rx={4.5} fill={c.cloth2} />
+          <Rect x={0} y={150} width={VB_W} height={150} fill={c.ground} />
+          <Back x={70} y={150} s={0.9} cloth={c.cloth2} hair={c.hair} />
+          <Back x={150} y={150} s={0.9} cloth={c.cloth} hair={c.hair} />
+          <Back x={230} y={150} s={0.9} cloth={c.skin} hair={c.hair} />
+          <Back x={310} y={150} s={0.9} cloth={c.cloth2} hair={c.hair} />
+          <Rect x={0} y={202} width={VB_W} height={12} rx={6} fill={c.cloth2} />
+          <Back x={110} y={226} s={1.2} cloth={c.cloth} hair={c.hair} />
+          <Back x={250} y={226} s={1.2} cloth={c.cloth2} hair={c.hair} />
         </>
       ) : null}
       {step === 3 ? (
         <>
-          {/* Coração e lista de pedidos com marcação de respondido */}
-          <Path d="M84 80 C64 58 34 74 46 98 C54 114 84 132 84 132 C84 132 114 114 122 98 C134 74 104 58 84 80 Z" fill={main} />
-          <Rect x={136} y={46} width={66} height={96} rx={12} fill={card} stroke={line} strokeWidth={2} />
-          <Circle cx={152} cy={68} r={7} fill={accent} />
-          <Path d="M148 68 L151 71 L156 65" stroke={card} strokeWidth={2} fill="none" strokeLinecap="round" />
-          <Line x1={166} y1={68} x2={192} y2={68} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Circle cx={152} cy={94} r={7} fill="none" stroke={line} strokeWidth={2} />
-          <Line x1={166} y1={94} x2={192} y2={94} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Circle cx={152} cy={120} r={7} fill="none" stroke={line} strokeWidth={2} />
-          <Line x1={166} y1={120} x2={188} y2={120} stroke={line} strokeWidth={3} strokeLinecap="round" />
+          {/* Oração: olhos fechados, mãos juntas, lugar tranquilo */}
+          <Circle cx={88} cy={78} r={30} fill={c.light} />
+          <Path d="M0 210 Q70 170 150 196 Q230 220 360 180 L360 300 L0 300 Z" fill={c.cloth2} opacity={0.35} />
+          <Path d="M0 240 Q100 218 190 232 T360 226 L360 300 L0 300 Z" fill={c.ground} />
+          <Path d="M300 236 Q292 176 316 140 Q326 190 312 236 Z" fill={c.cloth2} />
+          <Path d="M316 236 Q330 186 352 170 Q338 210 324 236 Z" fill={c.cloth2} />
+          <Seated x={180} y={128} cloth={c.cloth} skin={c.skin} hair={c.hair} eyesClosed lines={c.hair} />
+          <Path d="M180 166 Q170 182 174 198 Q180 204 186 198 Q190 182 180 166 Z" fill={c.skin} />
         </>
       ) : null}
       {step === 4 ? (
         <>
-          {/* Pessoas em volta de uma mesa */}
-          <Circle cx={120} cy={100} r={30} fill={card} stroke={main} strokeWidth={3} />
-          {[
-            [120, 46],
-            [170, 78],
-            [160, 136],
-            [80, 136],
-            [70, 78],
-          ].map(([x, y], i) => (
-            <Circle key={i} cx={x} cy={y} r={14} fill={i === 0 ? accent : main} />
-          ))}
-          <Line x1={106} y1={96} x2={134} y2={96} stroke={line} strokeWidth={3} strokeLinecap="round" />
-          <Line x1={110} y1={108} x2={130} y2={108} stroke={line} strokeWidth={3} strokeLinecap="round" />
+          {/* Célula: grupo pequeno em roda numa sala */}
+          <Rect x={36} y={30} width={84} height={70} rx={10} fill={c.light} />
+          <Rect x={76} y={30} width={4} height={70} fill={c.sky} />
+          <Rect x={36} y={63} width={84} height={4} fill={c.sky} />
+          <Rect x={292} y={60} width={6} height={110} rx={3} fill={c.cloth2} />
+          <Path d="M272 70 Q295 34 318 70 Z" fill={c.skin} />
+          <Rect x={0} y={170} width={VB_W} height={130} fill={c.ground} />
+          <Ellipse cx={180} cy={232} rx={150} ry={46} fill={c.paper} />
+          <Seated x={110} y={150} s={0.62} cloth={c.cloth2} skin={c.skin} hair={c.hair} />
+          <Seated x={180} y={136} s={0.62} cloth={c.cloth} skin={c.skin} hair={c.hair} />
+          <Seated x={250} y={150} s={0.62} cloth={c.skin} skin={c.skin} hair={c.hair} />
+          <Ellipse cx={180} cy={226} rx={34} ry={14} fill={c.skin} />
+          <Back x={130} y={226} s={1} cloth={c.cloth} hair={c.hair} />
+          <Back x={230} y={226} s={1} cloth={c.cloth2} hair={c.hair} />
         </>
       ) : null}
     </Svg>

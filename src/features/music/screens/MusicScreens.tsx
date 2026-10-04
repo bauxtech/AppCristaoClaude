@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { Linking, Pressable, View } from 'react-native'
-import { AppText, Button, Card, EmptyState, Page, SectionLabel, Tag, useToast } from '../../../components'
+import { AppText, Button, Card, Cover, CoverArt, CoverGrid, EmptyState, Page, SectionLabel, Tag, useGridItemWidth, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { useCell } from '../../cell/CellContext'
@@ -63,24 +63,24 @@ export function MusicScreen() {
   const { colors } = useTheme()
   const { cell } = useCell()
   const { favoriteSongs } = useProfile()
+  const gridWidth = useGridItemWidth()
   return (
     <Page title="Música">
       <SectionLabel>Por momento</SectionLabel>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4 }}>
-        {MOMENTS.map((m) => (
-          <View key={m.id} style={{ width: '33.33%', padding: 4 }}>
-            <Pressable
-              onPress={() => router.push({ pathname: '/eu/musica/[momento]', params: { momento: m.id } })}
-              accessibilityRole="button"
-              accessibilityLabel={`Músicas para ${m.label.toLowerCase()}`}
-              style={({ pressed }) => ({ minHeight: 80, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', gap: 6, opacity: pressed ? 0.8 : 1 })}
-            >
-              <Icon name={m.icon} size={20} color={colors.primary} />
-              <AppText variant="small">{m.label}</AppText>
-            </Pressable>
-          </View>
+      <CoverGrid>
+        {MOMENTS.map((m, i) => (
+          <Cover
+            key={m.id}
+            title={m.label}
+            tone={i}
+            graphic={(['waves', 'rays', 'arcs'] as const)[i % 3]}
+            info={`${PLAYLISTS[m.id].length} músicas`}
+            label={`Playlist para ${m.label.toLowerCase()}, ${PLAYLISTS[m.id].length} músicas`}
+            width={gridWidth}
+            onPress={() => router.push({ pathname: '/eu/musica/[momento]', params: { momento: m.id } })}
+          />
         ))}
-      </View>
+      </CoverGrid>
       <Button label={`Minhas favoritas (${favoriteSongs.length})`} icon="heart" variant="outline" onPress={() => router.push('/eu/musica/favoritas')} />
       {cell ? <Button label="Playlist da semana da célula" icon="people" variant="outline" onPress={() => router.push('/celula/playlist')} /> : null}
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
@@ -96,6 +96,7 @@ export function PlaylistScreen() {
   if (!m) return <Page title="Música"><EmptyState text="Playlist não encontrada." /></Page>
   return (
     <Page title={`Para ${m.label.toLowerCase()}`}>
+      <CoverArt title={m.label} tone={MOMENTS.indexOf(m)} graphic={(['waves', 'rays', 'arcs'] as const)[MOMENTS.indexOf(m) % 3]} large />
       {PLAYLISTS[m.id as MomentId].map((s) => (
         <SongCard key={s.title} song={s} />
       ))}
