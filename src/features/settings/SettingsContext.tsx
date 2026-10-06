@@ -6,6 +6,7 @@ import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { sampleNotices, type Notice } from './notices'
 import { defaultNotificationPrefs, type NotificationPrefs } from './prefs'
+import { pushFaithConsent } from '../../lib/account'
 
 export const DELETE_DAYS = 30
 export const REPORT_REASONS = ['Conteúdo impróprio', 'Assédio', 'Spam', 'Outro']
@@ -108,7 +109,10 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
       dismissNotice: (id) => setState((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) })),
       setNotif: (p) => setState((s) => ({ ...s, notif: { ...s.notif, ...p } })),
       setType: (k, v) => setState((s) => ({ ...s, notif: { ...s.notif, types: { ...s.notif.types, [k]: v } } })),
-      update: (p) => setState((s) => ({ ...s, ...p })),
+      update: (p) => {
+        if (p.faithConsent !== undefined && p.faithConsent !== state.faithConsent) pushFaithConsent(p.faithConsent)
+        setState((s) => ({ ...s, ...p }))
+      },
       block: (id, name) => setState((s) => (s.blocked.some((b) => b.id === id) ? s : { ...s, blocked: [...s.blocked, { id, name }] })),
       unblock: (id) => setState((s) => ({ ...s, blocked: s.blocked.filter((b) => b.id !== id) })),
       isBlocked: (name) => state.blocked.some((b) => b.name === name),

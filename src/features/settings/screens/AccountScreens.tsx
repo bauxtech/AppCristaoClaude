@@ -16,6 +16,8 @@ import { usePrayer } from '../../prayer/PrayerContext'
 import { useProfile } from '../../profile/ProfileContext'
 import { useSermons } from '../../sermon/SermonContext'
 import { DELETE_DAYS, REPORT_REASONS, useSettings } from '../SettingsContext'
+import { clearOutbox } from '../../../lib/sync'
+import { cancelDeletionRemote, requestDeletionRemote } from '../../../lib/account'
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 export const longDate = (iso: string) => {
@@ -415,6 +417,8 @@ export function SignOutScreen() {
           if (wipe) deleteLocalFiles([...sermons.map((s) => s.audioUri), ...prayer.requests.map((r) => r.videoUri), profile.photoUri])
           // Os lembretes deste aparelho param junto com a conta.
           cancelAllReminders()
+          // O que ainda estava para enviar era da conta que saiu.
+          clearOutbox()
           signOutRemote()
           session.signOut()
           router.replace('/entrar')
@@ -432,6 +436,7 @@ export function DeleteAccountScreen() {
   const s = useSettings()
   const [step, setStep] = useState<1 | 2>(1)
   const [phrase, setPhrase] = useState('')
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const required = 'excluir minha conta'
   const me = cell?.members.find((m) => m.isMe)
   const othersActive = (cell?.members ?? []).filter((m) => !m.isMe && m.active).length
@@ -444,7 +449,7 @@ export function DeleteAccountScreen() {
     return (
       <Page title="Confirmar exclusão" onBack={() => setStep(1)}>
         <AppText variant="body">{`Para confirmar, digite "${required}" no campo abaixo.`}</AppText>
-        <TextField label="Frase de confirmação" value={phrase} onChangeText={setPhrase} placeholder={required} autoCapitalize="none" autoCorrect={false} />
+        <TextField label="Frase de confirmação" value={phrase} onChangeText={setPhrase} placeholder={required} autoCapitalize="none" autoCorrect={false} error={deleteError ?? undefined} />
         <AppText variant="small" tone="secondary">
           {`Seus dados serão apagados em até ${DELETE_DAYS} dias. Gravações, anotações, histórico de leitura e pedidos de oração serão perdidos permanentemente.`}
         </AppText>
@@ -452,7 +457,10 @@ export function DeleteAccountScreen() {
           label="Excluir conta permanentemente"
           variant="danger"
           disabled={!ok}
-          onPress={() => {
+          onPress={async () => {
+            // O servidor marca a exclusão e confere a liderança da célula.
+            const r = await requestDeletionRemote()
+            if (!r.ok) return setDeleteError(r.message)
             s.scheduleDeletion()
             router.replace('/configuracoes/exclusao')
           }}
@@ -520,7 +528,8 @@ export function AccountDeletedScreen() {
       </Card>
       <Button
         label="Cancelar exclusão"
-        onPress={() => {
+        onPress={async () => {
+          if (!(await cancelDeletionRemote())) return toast('Não foi possível cancelar agora. Confira a internet e tente de novo.')
           s.cancelDeletion()
           toast('Exclusão cancelada')
           router.replace('/eu')

@@ -14,6 +14,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ConnectionFrame, ToastProvider } from '../components'
 import { ConnectionProvider } from '../state/connection'
 import { watchSession } from '../lib/supabase'
+import { startSync } from '../lib/sync'
 import { configureStore } from '../lib/store'
 import { Splash } from '../features/onboarding/Splash'
 import { AudioProvider } from '../features/audio/AudioContext'
@@ -35,6 +36,8 @@ function RootStack() {
   const { colors, isDark } = useTheme()
   // Com o servidor ligado, a loja (RevenueCat) usa o id da pessoa logada.
   useEffect(() => watchSession(configureStore), [])
+  // Fila de sincronização com o banco: acompanha o login e a volta da internet.
+  useEffect(() => startSync(), [])
   // Splash de 2 segundos ao abrir. Logado cai no Hoje; sem login, na apresentação.
   const [splash, setSplash] = useState(true)
   const endSplash = useCallback(() => setSplash(false), [])

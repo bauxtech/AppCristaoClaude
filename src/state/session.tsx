@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../lib/storage'
+import { pushProfile } from '../lib/account'
 
 // Estado da conta enquanto o login real (Supabase) não entra.
 // Tudo aqui é de exemplo e fica só no aparelho.
@@ -21,7 +22,8 @@ interface SessionValue {
   onboarded: boolean
   profile: Profile
   cellStatus: CellStatus
-  updateProfile: (p: Partial<Profile>) => void
+  /** Grava no aparelho e manda para o banco. Com fromServer, só grava no aparelho (veio do banco). */
+  updateProfile: (p: Partial<Profile>, opts?: { fromServer?: boolean }) => void
   setCellStatus: (s: CellStatus) => void
   finishOnboarding: () => void
   signOut: () => void
@@ -95,7 +97,8 @@ export function SessionProvider({
   const [profile, setProfile] = useState<Profile>(() => getItem('profile', empty))
   const [cellStatus, setCellStatusState] = useState<CellStatus>(() => initialCellStatus ?? getItem('cellStatus', 'none'))
 
-  const updateProfile = useCallback((p: Partial<Profile>) => {
+  const updateProfile = useCallback((p: Partial<Profile>, opts?: { fromServer?: boolean }) => {
+    if (!opts?.fromServer) pushProfile(p)
     setProfile((prev) => {
       const next = { ...prev, ...p }
       setItem('profile', next)

@@ -7,12 +7,15 @@ import { useTheme } from '../../../theme/ThemeProvider'
 import { useOnboarding } from '../OnboardingContext'
 import { OnboardingScaffold } from '../OnboardingScaffold'
 import { missingConsents, type TermsState } from '../validation'
+import { pushConsents } from '../../../lib/account'
+import { useSettings } from '../../settings/SettingsContext'
 
 /** Termos, consentimento separado para dados de fé (LGPD art. 11) e confirmação de 18 anos. */
 export function TermsScreen() {
   const { colors } = useTheme()
   const { draft } = useOnboarding()
   const { setCellStatus } = useSession()
+  const settings = useSettings()
   const [state, setState] = useState<TermsState>({ terms: false, faith: false, adult: false })
   const [missing, setMissing] = useState<string[]>([])
 
@@ -25,6 +28,8 @@ export function TermsScreen() {
     const m = missingConsents(state)
     setMissing(m)
     if (m.length) return
+    pushConsents(state)
+    settings.update({ faithConsent: state.faith })
     if (draft.viaInvite) {
       setCellStatus('pending')
       router.replace('/aguardando-aprovacao')

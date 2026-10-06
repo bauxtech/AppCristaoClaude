@@ -1,5 +1,6 @@
 import { router } from 'expo-router'
-import { hasProfileName, IS_REMOTE, sendLoginCode, verifyLoginCode } from '../../../lib/supabase'
+import { IS_REMOTE, sendLoginCode, verifyLoginCode } from '../../../lib/supabase'
+import { fetchProfile } from '../../../lib/account'
 import { configureStore } from '../../../lib/store'
 import { useEffect, useRef, useState } from 'react'
 import { TextInput, View } from 'react-native'
@@ -11,6 +12,7 @@ import { DEMO_CODES, DEMO_EXISTING_PHONE } from '../data'
 import { useOnboarding } from '../OnboardingContext'
 import { OnboardingScaffold } from '../OnboardingScaffold'
 import { checkCode, CODE_MESSAGES, formatPhoneNumber, onlyDigits } from '../validation'
+import { useSettings } from '../../settings/SettingsContext'
 
 const RESEND_SECONDS = 30
 
@@ -19,6 +21,7 @@ export function CodeScreen() {
   const toast = useToast()
   const { draft, setDraft } = useOnboarding()
   const { updateProfile, finishOnboarding } = useSession()
+  const settings = useSettings()
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [noAccount, setNoAccount] = useState(false)
@@ -42,8 +45,15 @@ export function CodeScreen() {
       if (!uid) throw new Error('sem usuário')
       setError('')
       configureStore(uid)
-      updateProfile({ phone: phoneLabel })
-      afterCode(await hasProfileName(uid))
+      // Quem já tem conta recupera o perfil do banco, mesmo num celular novo.
+      const remote = await fetchProfile(uid)
+      const existing = !!remote?.profile.name
+      if (remote && existing) {
+        updateProfile({ ...remote.profile, phone: remote.profile.phone || phoneLabel }, { fromServer: true })
+        settings.update({ faithConsent: remote.faithConsent })
+      }
+      if (!remote?.profile.phone) updateProfile({ phone: phoneLabel })
+      afterCode(existing)
     } catch {
       // O servidor limita as tentativas. A mensagem não diz se o número existe.
       setError(CODE_MESSAGES.wrong)
