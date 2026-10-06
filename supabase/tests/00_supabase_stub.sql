@@ -39,3 +39,7 @@ grant usage on schema auth, storage to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
 grant all on storage.objects to authenticated, service_role;
 grant select on storage.buckets to anon, authenticated, service_role;
+
+-- O Supabase dá todos os privilégios nas tabelas novas de public para anon e authenticated.
+-- As migrações precisam tirar o que não deve existir.
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;

@@ -334,3 +334,12 @@ select tests.ok('limite: a 20ª pergunta ainda passa', (select min(r) from (sele
 select tests.ok('limite: a 21ª pergunta é recusada', public.consume_usage('00000000-0000-0000-0000-00000000000a', 'chat_day', '2026-10-04', 20) = -1);
 select public.refund_usage('00000000-0000-0000-0000-00000000000a', 'chat_day', '2026-10-04');
 select tests.ok('resposta que falha devolve a pergunta', public.consume_usage('00000000-0000-0000-0000-00000000000a', 'chat_day', '2026-10-04', 20) = 0);
+
+-- ─── Privilégios nas tabelas ─────────────────────────────────────────────────
+
+select tests.ok('anon não tem privilégio em nenhuma tabela de public',
+  not exists (select 1 from information_schema.role_table_grants where grantee = 'anon' and table_schema = 'public'));
+select tests.ok('authenticated não pode esvaziar tabela (TRUNCATE não passa pelo RLS)',
+  not exists (select 1 from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = 'public' and privilege_type = 'TRUNCATE'));
+select tests.ok('authenticated só lê o texto bíblico',
+  not has_table_privilege('authenticated', 'public.bible_verses', 'insert,update,delete'));
