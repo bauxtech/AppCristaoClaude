@@ -14,3 +14,6 @@ expo-env.d.ts
 /ios
 /android
 coverage/
+
+# Arquivos temporários do CLI do Supabase
+supabase/.temp/
