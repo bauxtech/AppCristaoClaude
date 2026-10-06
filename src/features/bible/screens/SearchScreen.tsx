@@ -27,9 +27,10 @@ export function SearchScreen() {
             ))}
           </View>
         ) : null}
-        {query.trim().length >= 2 && results.length === 0 ? (
+        {/* Só anuncia "nenhum resultado" depois que a busca do texto digitado terminou. */}
+        {query === deferred && deferred.trim().length >= 2 && results.length === 0 ? (
           <Card accessibilityLiveRegion="polite" style={{ gap: 4 }}>
-            <AppText variant="bodyStrong">{`Nenhum resultado para "${query}"`}</AppText>
+            <AppText variant="bodyStrong">{`Nenhum resultado para "${deferred}"`}</AppText>
             <AppText variant="body" tone="secondary">
               Confira a grafia ou tente uma palavra só.
             </AppText>

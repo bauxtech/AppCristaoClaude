@@ -108,7 +108,7 @@ describe('tela do capítulo', () => {
 
   test('o fim do capítulo mostra o crédito da tradução, que abre a licença', async () => {
     await renderApp(<ChapterScreen />, { onboarded: true })
-    await fireEvent.press(screen.getByRole('button', { name: /^Bíblia Livre · Creative Commons Atribuição/ }))
+    await fireEvent.press(screen.getByRole('button', { name: /^Bíblia Livre · CC BY 3.0 BR/ }))
     expect(router.push).toHaveBeenCalledWith('/biblia/sobre-traducao')
     await renderApp(<TranslationInfoScreen />, { onboarded: true })
     expect(screen.getByText(/Diego Santos, Mario Sérgio e Marco Teles/)).toBeTruthy()

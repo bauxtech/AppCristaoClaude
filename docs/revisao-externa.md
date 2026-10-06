@@ -37,9 +37,11 @@ O app guarda dado de fé e pedido de oração, que são dados sensíveis pela LG
 - `supabase/migrations/`: tabelas, regras de acesso (RLS) e funções.
 - `supabase/functions/`: funções do servidor.
 - `src/lib/supabase.ts` e `src/lib/store.ts`: como o app fala com o servidor e com a loja.
+- `src/lib/sync.ts`: fila que guarda as mudanças no aparelho e envia ao banco.
+- Pendente antes da loja: a fila e o estado do app (diário, pedidos de oração, notas) ficam no aparelho em texto aberto, num arquivo da pasta do app. Precisam ser criptografados com chave no armazenamento seguro do celular (expo-secure-store). Na versão web, ficam no localStorage do navegador.
 
 **Testes de permissão**
-- Rodam num Postgres local com `npm run test:db`. Hoje são 86 testes.
+- Rodam num Postgres local com `npm run test:db`. Hoje são 107 testes.
 - A lista completa fica em `supabase/tests/10_permissions.sql`.
 - Exemplos:
   - outra célula tenta ler pedido, telefone, presença e diário, e falha;

@@ -1,13 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { pushConsents, pushFaithConsent, pushProfile } from '../src/lib/account'
-import { clearOutbox, enqueue, flush, pendingOps, setSyncClient } from '../src/lib/sync'
+import { clearOutbox, droppedOps, enqueue, flush, isTransient, pendingOps, setSyncClient } from '../src/lib/sync'
 
 type Call = { table: string; op: string; payload?: unknown; match?: unknown; onConflict?: string }
 
 /** Cliente falso do Supabase: guarda as chamadas e devolve o erro que o teste mandar. */
 function fakeClient(errors: ({ message: string; status?: number } | null)[] = []) {
   const calls: Call[] = []
-  const next = () => Promise.resolve({ error: errors.length ? errors.shift()! : null })
+  const next = () => {
+    const e = errors.length ? errors.shift()! : null
+    return Promise.resolve({ error: e, status: e ? (e.status ?? 0) : 200 })
+  }
   const client = {
     from: (table: string) => ({
       upsert: (payload: unknown, opts?: { onConflict?: string }) => {
@@ -97,4 +100,50 @@ test('sair da conta limpa a fila', () => {
   pushProfile({ name: 'Ana' })
   clearOutbox()
   expect(pendingOps()).toEqual([])
+})
+
+test('servidor fora do ar, sessão vencida ou limite de chamadas: a operação espera na fila', async () => {
+  for (const status of [500, 503, 401, 429, 408]) {
+    const { client } = fakeClient([{ message: 'erro', status }])
+    setSyncClient(client, 'u1')
+    clearOutbox()
+    enqueue({ kind: 'upsert', table: 'prayer_diary', row: { id: 'x', user_id: '$uid', text: 'Agradeci' } })
+    await flush()
+    expect(pendingOps()).toHaveLength(1)
+  }
+  expect(isTransient({ error: { message: 'new row violates row-level security policy', code: '42501' }, status: 403 })).toBe(false)
+  expect(isTransient({ error: { message: 'duplicate key', code: '23505' }, status: 409 })).toBe(false)
+})
+
+test('recusa definitiva fica registrada para poder avisar a pessoa', async () => {
+  const before = droppedOps().length
+  const { client } = fakeClient([{ message: 'violates check constraint', status: 400 }])
+  setSyncClient(client, 'u1')
+  enqueue({ kind: 'upsert', table: 'prayer_requests', row: { id: 'y', user_id: '$uid', text: '' } })
+  await flush()
+  expect(pendingOps()).toEqual([])
+  expect(droppedOps().length).toBe(Math.min(before + 1, 50))
+})
+
+test('o que a conta A fez sem internet não vai para a conta B que entrou depois', async () => {
+  const offline = fakeClient([{ message: 'Network request failed' }])
+  setSyncClient(offline.client, 'conta-a')
+  enqueue({ kind: 'upsert', table: 'prayer_diary', row: { id: 'z', user_id: '$uid', text: 'Diário da A' } })
+  await flush()
+  expect(pendingOps()).toHaveLength(1)
+  const online = fakeClient()
+  setSyncClient(online.client, 'conta-b')
+  await flush()
+  expect(online.calls).toEqual([])
+  expect(pendingOps()).toEqual([])
+})
+
+test('o que foi feito antes do primeiro login (cadastro) vai para quem entrar', async () => {
+  const { client, calls } = fakeClient()
+  setSyncClient(client, null)
+  pushProfile({ name: 'Ana' })
+  setSyncClient(client, 'u1')
+  await flush()
+  expect(calls).toHaveLength(1)
+  expect(calls[0].match).toEqual({ id: 'u1' })
 })

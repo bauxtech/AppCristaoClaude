@@ -53,7 +53,8 @@ interface SettingsValue extends SettingsState {
   dismissNotice: (id: string) => void
   setNotif: (p: Partial<NotificationPrefs>) => void
   setType: (k: keyof NotificationPrefs['types'], v: boolean) => void
-  update: (p: Partial<Pick<SettingsState, 'recordingDefault' | 'captions' | 'libras' | 'simple' | 'notesLock' | 'bibleFont' | 'voice' | 'faithConsent'>>) => void
+  /** Com fromServer, o valor veio do banco e não é enviado de volta (não muda a data do consentimento). */
+  update: (p: Partial<Pick<SettingsState, 'recordingDefault' | 'captions' | 'libras' | 'simple' | 'notesLock' | 'bibleFont' | 'voice' | 'faithConsent'>>, opts?: { fromServer?: boolean }) => void
   block: (id: string, name: string) => void
   unblock: (id: string) => void
   isBlocked: (name: string) => boolean
@@ -109,8 +110,8 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
       dismissNotice: (id) => setState((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) })),
       setNotif: (p) => setState((s) => ({ ...s, notif: { ...s.notif, ...p } })),
       setType: (k, v) => setState((s) => ({ ...s, notif: { ...s.notif, types: { ...s.notif.types, [k]: v } } })),
-      update: (p) => {
-        if (p.faithConsent !== undefined && p.faithConsent !== state.faithConsent) pushFaithConsent(p.faithConsent)
+      update: (p, opts) => {
+        if (!opts?.fromServer && p.faithConsent !== undefined && p.faithConsent !== state.faithConsent) pushFaithConsent(p.faithConsent)
         setState((s) => ({ ...s, ...p }))
       },
       block: (id, name) => setState((s) => (s.blocked.some((b) => b.id === id) ? s : { ...s, blocked: [...s.blocked, { id, name }] })),

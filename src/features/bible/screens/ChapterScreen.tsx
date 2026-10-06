@@ -170,7 +170,7 @@ export function ChapterScreen() {
             </View>
           ) : null}
           {/* Crédito exigido pela licença do texto. */}
-          <Button label={`${translation.name} · ${translation.licenseName}`} variant="text" size="sm" onPress={() => router.push('/biblia/sobre-traducao')} accessibilityHint="Abre o crédito e a licença da tradução" />
+          <Button label={`${translation.name} · ${translation.licenseShort}`} variant="text" size="sm" onPress={() => router.push('/biblia/sobre-traducao')} accessibilityHint={`Licença ${translation.licenseName}. Abre o crédito da tradução`} />
         </View>
       </ScrollView>
 

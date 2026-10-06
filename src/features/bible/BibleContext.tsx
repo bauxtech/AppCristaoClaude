@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
-import { enqueue, flush, useUserId } from '../../lib/sync'
+import { enqueue, flush, pendingOps, useUserId } from '../../lib/sync'
+import { isUuid } from '../../lib/uuid'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { BOOKS, slugify } from './books'
 import { CATALOG, readingsForDay, sampleProgress, type PlanDef, type PlanProgress } from './plans'
-import { bibleDiffOps, newPlanId, pullBible } from './sync'
+import { bibleDiffOps, newPlanId, pullBible, type SyncedBible } from './sync'
 
 // Marcações da pessoa na Bíblia. Ficam no aparelho e funcionam sem internet.
 // Com o servidor ligado, cada mudança vai para o banco (só a diferença) e, ao entrar, o app traz o que está lá.
@@ -75,6 +76,8 @@ export function bibleInitial(sample: boolean): BibleState {
 
 const BibleContext = createContext<BibleValue | null>(null)
 
+const EMPTY_SYNC: SyncedBible = { readChapters: [], highlights: {}, favorites: [], notes: {}, activePlanId: null, customPlans: [], progress: {} }
+
 export const FONT_MIN = 16
 export const FONT_MAX = 28
 
@@ -114,14 +117,24 @@ export function BibleProvider({ children, initial }: { children: ReactNode; init
   useEffect(() => {
     if (!uid || sampleData || initial) return
     let alive = true
+    // Primeira vez desta conta neste aparelho: manda antes o que já estava marcado aqui.
+    const flag = `bibleSynced:${uid}`
+    if (!getItem(flag, false)) enqueue(...bibleDiffOps(EMPTY_SYNC, current.current))
     flush()
-      .then(() => pullBible(uid))
+      // Se algo não foi enviado (sem internet), o aparelho está à frente do banco: não troca nada agora.
+      .then(() => (pendingOps().length ? null : pullBible(uid)))
       .then((remote) => {
-        if (!alive || !remote) return
-        const next = { ...current.current, ...remote }
+        // Algo novo entrou na fila durante a leitura: o aparelho segue à frente, troca na próxima vez.
+        if (!alive || !remote || pendingOps().length) return
+        const local = current.current
+        // Planos antigos (id que não é uuid) ficam só no aparelho e continuam aparecendo.
+        const oldPlans = local.customPlans.filter((p) => !isUuid(p.id))
+        const oldProgress = Object.fromEntries(Object.entries(local.progress).filter(([id]) => oldPlans.some((p) => p.id === id)))
+        const next = { ...local, ...remote, customPlans: [...remote.customPlans, ...oldPlans], progress: { ...remote.progress, ...oldProgress } }
         current.current = next
         setState(next)
         setItem('bible', next)
+        setItem(flag, true)
       })
       .catch(() => {})
     return () => {

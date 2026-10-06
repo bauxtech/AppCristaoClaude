@@ -29,7 +29,8 @@ export function TermsScreen() {
     setMissing(m)
     if (m.length) return
     pushConsents(state)
-    settings.update({ faithConsent: state.faith })
+    // Os consentimentos já foram enviados acima, com a data do aceite.
+    settings.update({ faithConsent: state.faith }, { fromServer: true })
     if (draft.viaInvite) {
       setCellStatus('pending')
       router.replace('/aguardando-aprovacao')

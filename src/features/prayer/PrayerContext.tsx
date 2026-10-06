@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useRelockOnBackground } from '../../lib/relock'
 import { getItem, setItem } from '../../lib/storage'
-import { enqueue, flush, useUserId } from '../../lib/sync'
+import { enqueue, flush, pendingOps, useUserId } from '../../lib/sync'
 import { uuid } from '../../lib/uuid'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
@@ -92,13 +92,19 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
   useEffect(() => {
     if (!uid || sample || initial) return
     let alive = true
+    // Primeira vez desta conta neste aparelho: manda antes o que já estava aqui (itens com id uuid).
+    const flag = `prayerSynced:${uid}`
+    if (!getItem(flag, false)) enqueue(...prayerDiffOps({ diary: [], requests: [], campaigns: [] }, current.current))
     flush()
-      .then(() => pullPrayer(uid))
+      // Se algo não foi enviado (sem internet), o aparelho está à frente do banco: não troca nada agora.
+      .then(() => (pendingOps().length ? null : pullPrayer(uid)))
       .then((remote) => {
-        if (!alive || !remote) return
+        // Algo novo entrou na fila durante a leitura: o aparelho segue à frente, troca na próxima vez.
+        if (!alive || !remote || pendingOps().length) return
         const next = { ...current.current, ...mergePrayer(current.current, remote) }
         current.current = next
         setState(next)
+        setItem(flag, true)
       })
       .catch(() => {})
     return () => {

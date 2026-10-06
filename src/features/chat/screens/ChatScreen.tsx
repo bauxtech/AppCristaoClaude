@@ -288,6 +288,16 @@ function Bubble({ m, onRetry, onListen, onDivided }: { m: Message; onRetry: () =
             <AppText style={{ fontFamily: fonts.bible, fontSize: size.body, color: colors.text, lineHeight: 24 }}>{v.text}</AppText>
           </Pressable>
         ))}
+        {m.answer?.verses.length ? (
+          <Button
+            label={`Texto: ${getTranslation().name} · ${getTranslation().licenseShort}`}
+            variant="text"
+            size="sm"
+            onPress={() => router.push('/biblia/sobre-traducao')}
+            accessibilityHint={`Licença ${getTranslation().licenseName}. Abre o crédito da tradução`}
+            style={{ alignSelf: 'flex-start' }}
+          />
+        ) : null}
         {m.answer?.divided ? <Button label="Igrejas pensam diferente sobre isso" variant="text" size="sm" onPress={onDivided} style={{ alignSelf: 'flex-start' }} /> : null}
         {m.answer?.preview ? (
           <AppText variant="small" tone="secondary">

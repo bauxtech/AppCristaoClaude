@@ -13,6 +13,8 @@ export interface Translation {
   /** Identificador da licença. Domínio público só quando for de fato. */
   license: 'cc-by-3.0-br' | 'public-domain' | 'licensed'
   licenseName: string
+  /** Nome curto da licença, para linhas de crédito pequenas. */
+  licenseShort: string
   licenseUrl: string
   /** Crédito exigido pela licença. Aparece na Bíblia e em Sobre a tradução. */
   attribution: string
@@ -30,6 +32,7 @@ export const TRANSLATIONS_DATA: Translation[] = [
     language: 'pt-BR',
     license: 'cc-by-3.0-br',
     licenseName: 'Creative Commons Atribuição 3.0 Brasil',
+    licenseShort: 'CC BY 3.0 BR',
     licenseUrl: 'https://creativecommons.org/licenses/by/3.0/br/',
     attribution: 'Bíblia Livre. Atualização da tradução de João Ferreira de Almeida (1819). Diego Santos, Mario Sérgio e Marco Teles.',
     source: 'Arquivo PorBLivre do repositório scrollmapper/bible_databases (github.com/scrollmapper/bible_databases).',
@@ -40,6 +43,11 @@ export const TRANSLATIONS_DATA: Translation[] = [
 ]
 
 export const DEFAULT_TRANSLATION = 'biblia-livre'
+
+/** Crédito completo para levar junto quando o texto sai do app (compartilhar). A licença pede o endereço dela. */
+export function creditLine(t: Translation = getTranslation()) {
+  return `${t.attribution} Licença ${t.licenseName}: ${t.licenseUrl}`
+}
 
 export function getTranslation(id?: string | null): Translation {
   return TRANSLATIONS_DATA.find((t) => t.id === id) ?? TRANSLATIONS_DATA.find((t) => t.id === DEFAULT_TRANSLATION)!

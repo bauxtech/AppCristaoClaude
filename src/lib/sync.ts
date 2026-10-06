@@ -9,12 +9,17 @@ import { supabase } from './supabase'
 // Quem garante que ninguém grava dado de outra pessoa são as regras de acesso do banco.
 // Nas operações, '$uid' é trocado pelo id de quem está logado no momento do envio.
 
-export type SyncOp =
+export type SyncOp = (
   | { kind: 'upsert'; table: string; row: Record<string, unknown> | Record<string, unknown>[]; onConflict?: string }
   | { kind: 'update'; table: string; values: Record<string, unknown>; match: Record<string, unknown> }
   | { kind: 'delete'; table: string; match: Record<string, unknown> }
+) & {
+  /** Conta logada quando a operação entrou na fila. Sem dono: feita antes do primeiro login (cadastro). */
+  owner?: string
+}
 
 const KEY = 'syncOutbox'
+const DROPPED = 'syncDropped'
 const UID = '$uid'
 
 let client: SupabaseClient | null = supabase
@@ -78,8 +83,22 @@ export function pendingOps(): SyncOp[] {
 
 export function enqueue(...ops: SyncOp[]) {
   if (!syncEnabled() || !ops.length) return
-  save([...load(), ...ops])
+  // Cada operação leva a conta logada agora. Se outra conta entrar depois, ela não recebe o que não é dela.
+  const owner = userId ?? undefined
+  save([...load(), ...ops.map((op) => (owner ? { ...op, owner } : op))])
   void flush()
+}
+
+/** Operações recusadas de vez pelo servidor (regra de acesso, dado inválido). Guardadas para poder avisar a pessoa. */
+export function droppedOps(): SyncOp[] {
+  return getItem<SyncOp[]>(DROPPED, [])
+}
+
+/** Tira da fila o que pertence a outra conta. */
+function dropOtherOwners(uid: string) {
+  const q = load()
+  const kept = q.filter((op) => !op.owner || op.owner === uid)
+  if (kept.length !== q.length) save(kept)
 }
 
 /** Ao sair da conta: o que estava na fila era da conta que saiu. */
@@ -94,16 +113,24 @@ function fill<T>(v: T, uid: string): T {
   return v
 }
 
-/** Erro de rede: a operação fica na fila para a próxima tentativa. Outros erros (regra de acesso, dado inválido) descartam a operação. */
-function isNetworkError(e: { message?: string; status?: number; code?: string } | null) {
-  if (!e) return false
-  return e.status === 0 || /fetch|network|timeout|offline/i.test(e.message ?? '')
+type RunResult = { error: { message?: string; code?: string } | null; status?: number }
+
+/**
+ * Falha passageira: a operação fica na fila. Sem internet, sessão vencida (401), demora (408),
+ * muitas chamadas (429) ou servidor fora do ar (5xx).
+ * Recusa definitiva (400, 403, regra de acesso 42501, restrição 23xxx) tira a operação da fila.
+ */
+export function isTransient(r: RunResult) {
+  const s = r.status ?? 0
+  if (s === 0 || s === 401 || s === 408 || s === 429 || s >= 500) return true
+  if (r.error?.code === 'PGRST301' || r.error?.code === 'PGRST303') return true
+  return /fetch|network|timeout|offline|jwt/i.test(r.error?.message ?? '')
 }
 
-async function run(c: SupabaseClient, op: SyncOp, uid: string) {
-  if (op.kind === 'upsert') return (await c.from(op.table).upsert(fill(op.row, uid), op.onConflict ? { onConflict: op.onConflict } : undefined)).error
-  if (op.kind === 'update') return (await c.from(op.table).update(fill(op.values, uid)).match(fill(op.match, uid))).error
-  return (await c.from(op.table).delete().match(fill(op.match, uid))).error
+async function run(c: SupabaseClient, op: SyncOp, uid: string): Promise<RunResult> {
+  if (op.kind === 'upsert') return await c.from(op.table).upsert(fill(op.row, uid), op.onConflict ? { onConflict: op.onConflict } : undefined)
+  if (op.kind === 'update') return await c.from(op.table).update(fill(op.values, uid)).match(fill(op.match, uid))
+  return await c.from(op.table).delete().match(fill(op.match, uid))
 }
 
 /** Envia a fila em ordem. Para no primeiro erro de rede. */
@@ -116,16 +143,20 @@ export function flush(): Promise<void> {
       const c = client
       const uid = userId
       if (!c || !uid) return
+      dropOtherOwners(uid)
       while (load().length) {
         const op = load()[0]
-        let err: Awaited<ReturnType<typeof run>> | Error | null = null
+        let r: RunResult
         try {
-          err = await run(c, op, uid)
+          r = await run(c, op, uid)
         } catch (e) {
-          err = e as Error
+          r = { error: { message: String((e as Error)?.message ?? e) }, status: 0 }
         }
-        if (err && isNetworkError(err as { message?: string })) break
-        if (err) console.warn('Sincronização: operação recusada pelo servidor', op.table, (err as { message?: string }).message)
+        if (r.error && isTransient(r)) break
+        if (r.error) {
+          console.warn('Sincronização: operação recusada pelo servidor', op.table, r.error.message)
+          setItem(DROPPED, [...droppedOps(), op].slice(-50))
+        }
         // Tira a operação enviada. O que entrou na fila durante o envio continua lá.
         save(load().filter((x) => x !== op))
       }
@@ -150,6 +181,7 @@ export function startSync() {
     const next = session?.user.id ?? null
     if (next === userId) return
     userId = next
+    if (next) dropOtherOwners(next)
     emit()
     void flush()
   })

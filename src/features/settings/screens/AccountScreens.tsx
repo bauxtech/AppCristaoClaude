@@ -5,7 +5,7 @@ import { AppText, Avatar, Button, Card, Chip, ConfirmCard, EmptyState, Icon, Lis
 import { File } from 'expo-file-system'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { cancelAllReminders } from '../../../lib/reminders'
-import { signOutRemote } from '../../../lib/supabase'
+import { IS_REMOTE, signOutRemote } from '../../../lib/supabase'
 import { useSession } from '../../../state/session'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -16,7 +16,7 @@ import { usePrayer } from '../../prayer/PrayerContext'
 import { useProfile } from '../../profile/ProfileContext'
 import { useSermons } from '../../sermon/SermonContext'
 import { DELETE_DAYS, REPORT_REASONS, useSettings } from '../SettingsContext'
-import { clearOutbox } from '../../../lib/sync'
+import { clearOutbox, flush, pendingOps } from '../../../lib/sync'
 import { cancelDeletionRemote, requestDeletionRemote } from '../../../lib/account'
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
@@ -398,32 +398,54 @@ export function SignOutScreen() {
   const prayer = usePrayer()
   const profile = useProfile()
   const [wipe, setWipe] = useState(false)
+  const [busy, setBusy] = useState(false)
+  // Itens ainda não enviados ao banco (sem internet). Sair agora perde esses itens.
+  const [unsent, setUnsent] = useState(0)
+
+  function leave() {
+    if (wipe) deleteLocalFiles([...sermons.map((s) => s.audioUri), ...prayer.requests.map((r) => r.videoUri), profile.photoUri])
+    // Os lembretes deste aparelho param junto com a conta.
+    cancelAllReminders()
+    // O que ainda estava para enviar era da conta que saiu.
+    clearOutbox()
+    signOutRemote()
+    session.signOut()
+    router.replace('/entrar')
+  }
+
+  async function trySignOut() {
+    setBusy(true)
+    // Antes de sair, tenta enviar o que falta.
+    await flush().catch(() => {})
+    setBusy(false)
+    const left = pendingOps().length
+    if (left) return setUnsent(left)
+    leave()
+  }
+
   return (
     <Page title="Sair da conta">
       <AppText variant="body" tone="secondary">
         Você será desconectado deste aparelho. Seus dados ficam salvos na nuvem.
       </AppText>
-      {IS_PREVIEW ? (
+      {IS_PREVIEW && !IS_REMOTE ? (
         <AppText variant="small" tone="secondary">
           Na prévia ainda não há nuvem: sair apaga os dados de exemplo e os que você criou neste aparelho.
         </AppText>
       ) : null}
       <SelectCard kind="checkbox" label="Apagar dados baixados neste aparelho" description="Gravações de culto guardadas no aparelho serão removidas. A Bíblia offline fica." selected={wipe} onPress={() => setWipe((v) => !v)} />
-      <Button
-        label="Sair da conta"
-        variant="outline"
-        icon="logout"
-        onPress={() => {
-          if (wipe) deleteLocalFiles([...sermons.map((s) => s.audioUri), ...prayer.requests.map((r) => r.videoUri), profile.photoUri])
-          // Os lembretes deste aparelho param junto com a conta.
-          cancelAllReminders()
-          // O que ainda estava para enviar era da conta que saiu.
-          clearOutbox()
-          signOutRemote()
-          session.signOut()
-          router.replace('/entrar')
-        }}
-      />
+      {unsent ? (
+        <Card style={{ gap: 8 }} accessibilityLiveRegion="polite">
+          <AppText variant="bodyStrong">{unsent === 1 ? '1 mudança ainda não foi salva na nuvem' : `${unsent} mudanças ainda não foram salvas na nuvem`}</AppText>
+          <AppText variant="small" tone="secondary">
+            Conecte-se à internet e tente de novo. Se sair agora, essas mudanças se perdem.
+          </AppText>
+          <Button label="Tentar de novo" size="sm" onPress={trySignOut} disabled={busy} />
+          <Button label="Sair mesmo assim" variant="dangerSoft" size="sm" onPress={leave} />
+        </Card>
+      ) : (
+        <Button label={busy ? 'Salvando mudanças' : 'Sair da conta'} variant="outline" icon="logout" disabled={busy} onPress={trySignOut} />
+      )}
     </Page>
   )
 }
@@ -437,6 +459,7 @@ export function DeleteAccountScreen() {
   const [step, setStep] = useState<1 | 2>(1)
   const [phrase, setPhrase] = useState('')
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const required = 'excluir minha conta'
   const me = cell?.members.find((m) => m.isMe)
   const othersActive = (cell?.members ?? []).filter((m) => !m.isMe && m.active).length
@@ -456,10 +479,12 @@ export function DeleteAccountScreen() {
         <Button
           label="Excluir conta permanentemente"
           variant="danger"
-          disabled={!ok}
+          disabled={!ok || deleting}
           onPress={async () => {
-            // O servidor marca a exclusão e confere a liderança da célula.
+            // O servidor marca a exclusão e confere a liderança da célula. Um toque só por vez.
+            setDeleting(true)
             const r = await requestDeletionRemote()
+            setDeleting(false)
             if (!r.ok) return setDeleteError(r.message)
             s.scheduleDeletion()
             router.replace('/configuracoes/exclusao')

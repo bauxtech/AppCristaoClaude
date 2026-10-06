@@ -22,6 +22,7 @@ export function CodeScreen() {
   const { draft, setDraft } = useOnboarding()
   const { updateProfile, finishOnboarding } = useSession()
   const settings = useSettings()
+  const [loadFailed, setLoadFailed] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [noAccount, setNoAccount] = useState(false)
@@ -45,19 +46,41 @@ export function CodeScreen() {
       if (!uid) throw new Error('sem usuário')
       setError('')
       configureStore(uid)
-      // Quem já tem conta recupera o perfil do banco, mesmo num celular novo.
-      const remote = await fetchProfile(uid)
-      const existing = !!remote?.profile.name
-      if (remote && existing) {
-        updateProfile({ ...remote.profile, phone: remote.profile.phone || phoneLabel }, { fromServer: true })
-        settings.update({ faithConsent: remote.faithConsent })
-      }
-      if (!remote?.profile.phone) updateProfile({ phone: phoneLabel })
-      afterCode(existing)
+      await loadAccount(uid)
     } catch {
       // O servidor limita as tentativas. A mensagem não diz se o número existe.
       setError(CODE_MESSAGES.wrong)
     }
+  }
+
+  /** Código certo: traz a conta do banco. Se a leitura falha, não trata como conta nova (o cadastro refeito apagaria o que existe). */
+  async function loadAccount(uid: string) {
+    const remote = await fetchProfile(uid)
+    if (remote === 'failed') {
+      setLoadFailed(uid)
+      return
+    }
+    setLoadFailed(null)
+    const existing = remote !== 'missing' && !!remote.profile.name
+    if (remote !== 'missing' && existing) {
+      updateProfile({ ...remote.profile, phone: remote.profile.phone || phoneLabel }, { fromServer: true })
+      settings.update({ faithConsent: remote.faithConsent }, { fromServer: true })
+      // Exclusão pedida em outro celular: mostra o prazo e o botão de cancelar.
+      if (remote.deletionRequestedAt) {
+        settings.scheduleDeletion(new Date(remote.deletionRequestedAt))
+        finishOnboarding()
+        router.replace('/configuracoes/exclusao')
+        return
+      }
+      // Conta com nome mas sem termos aceitos passa pelos termos.
+      if (!remote.termsAccepted) {
+        setDraft({ mode: 'create' })
+        router.push('/termos')
+        return
+      }
+    }
+    if (remote === 'missing' || !remote.profile.phone) updateProfile({ phone: phoneLabel })
+    afterCode(existing)
   }
 
   function verify() {
@@ -107,6 +130,15 @@ export function CodeScreen() {
       onBack={() => router.back()}
       footer={<Button label="Verificar" onPress={verify} />}
     >
+      {loadFailed ? (
+        <Card style={{ gap: 8 }} accessibilityLiveRegion="polite">
+          <AppText variant="bodyStrong">Não foi possível carregar sua conta</AppText>
+          <AppText variant="small" tone="secondary">
+            O código está certo. Confira a internet e tente de novo.
+          </AppText>
+          <Button label="Tentar de novo" size="sm" onPress={() => loadAccount(loadFailed)} />
+        </Card>
+      ) : null}
       {noAccount ? (
         <Card style={{ gap: 8 }} accessibilityLiveRegion="polite">
           <AppText variant="bodyStrong">Não há conta com este número</AppText>
