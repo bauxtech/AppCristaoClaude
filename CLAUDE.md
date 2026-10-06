@@ -44,7 +44,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Visitante: vê reunião, endereço e roteiro. Não vê os pedidos de oração.
 - Página web da célula: mostra só o bairro. O endereço completo aparece depois de a pessoa deixar nome e telefone.
 - Idade: só maiores de 18 no lançamento.
-- Bíblia: tradução de domínio público no lançamento. As licenciadas entram depois.
+- Bíblia: Bíblia Livre no lançamento (licença Creative Commons Atribuição, uso comercial permitido, crédito obrigatório no app). Não é domínio público. As licenciadas entram depois. Origem e licença registradas em src/features/bible/translations.ts e na tabela bible_translations.
 - Teste grátis: 7 dias controlados pelo app, sem forma de pagamento.
 - Depois do teste: bloqueia tudo para quem não assina. Um plano só, mensal ou anual. A tela de bloqueio mantém Restaurar compra, Baixar meus dados, Sair da conta, Excluir conta e Ajuda.
 - Limites do plano: 5 cultos por mês e 20 perguntas por dia no chat.

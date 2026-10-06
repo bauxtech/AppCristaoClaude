@@ -98,7 +98,7 @@ Os valores são os mesmos do passo 1.
 
 ## O que ainda depende de decisão
 
-- **Texto bíblico completo:** uma fonte de Almeida de domínio público, confirmada por alguém de fora. Eu preparo a importação.
+- **Texto bíblico completo:** Bíblia Livre (CC BY 3.0 BR), decidida pelo Thiago. O texto está em supabase/seed/bible_biblia-livre.sql. O advogado confere a licença e o crédito antes do lançamento.
 - **Preço do plano.**
 - **Quem revisa o conteúdo do dia:** por enquanto ele nasce como rascunho. O segredo `DAILY_AUTO_PUBLISH=true` publica direto.
 - **Quem edita os horários de culto e a acessibilidade da igreja.**
