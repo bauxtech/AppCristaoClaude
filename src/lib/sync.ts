@@ -13,6 +13,8 @@ export type SyncOp = (
   | { kind: 'upsert'; table: string; row: Record<string, unknown> | Record<string, unknown>[]; onConflict?: string }
   | { kind: 'update'; table: string; values: Record<string, unknown>; match: Record<string, unknown> }
   | { kind: 'delete'; table: string; match: Record<string, unknown> }
+  /** Função do banco que confere a permissão antes de gravar (ex.: create_cell, mark_attendance). */
+  | { kind: 'rpc'; fn: string; args: Record<string, unknown>; table?: undefined }
 ) & {
   /** Conta logada quando a operação entrou na fila. Sem dono: feita antes do primeiro login (cadastro). */
   owner?: string
@@ -130,6 +132,7 @@ export function isTransient(r: RunResult) {
 async function run(c: SupabaseClient, op: SyncOp, uid: string): Promise<RunResult> {
   if (op.kind === 'upsert') return await c.from(op.table).upsert(fill(op.row, uid), op.onConflict ? { onConflict: op.onConflict } : undefined)
   if (op.kind === 'update') return await c.from(op.table).update(fill(op.values, uid)).match(fill(op.match, uid))
+  if (op.kind === 'rpc') return await c.rpc(op.fn, fill(op.args, uid))
   return await c.from(op.table).delete().match(fill(op.match, uid))
 }
 
@@ -154,7 +157,7 @@ export function flush(): Promise<void> {
         }
         if (r.error && isTransient(r)) break
         if (r.error) {
-          console.warn('Sincronização: operação recusada pelo servidor', op.table, r.error.message)
+          console.warn('Sincronização: operação recusada pelo servidor', op.kind === 'rpc' ? op.fn : op.table, r.error.message)
           setItem(DROPPED, [...droppedOps(), op].slice(-50))
         }
         // Tira a operação enviada. O que entrou na fila durante o envio continua lá.

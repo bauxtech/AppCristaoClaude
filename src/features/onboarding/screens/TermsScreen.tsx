@@ -2,6 +2,7 @@ import { router } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { AppText, Button, Card, Icon, SelectCard } from '../../../components'
+import { IS_REMOTE } from '../../../lib/supabase'
 import { useSession } from '../../../state/session'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { useOnboarding } from '../OnboardingContext'
@@ -31,7 +32,8 @@ export function TermsScreen() {
     pushConsents(state)
     // Os consentimentos já foram enviados acima, com a data do aceite.
     settings.update({ faithConsent: state.faith }, { fromServer: true })
-    if (draft.viaInvite) {
+    // Convite por link ainda é só da prévia. Com servidor, o código é digitado na tela da célula.
+    if (draft.viaInvite && !IS_REMOTE) {
       setCellStatus('pending')
       router.replace('/aguardando-aprovacao')
     } else {

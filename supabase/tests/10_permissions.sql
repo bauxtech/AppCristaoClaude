@@ -296,6 +296,52 @@ select tests.as_user('00000000-0000-0000-0000-00000000000a');
 select tests.ok('o contato da página chega ao líder', tests.rows($$select * from public.cell_leads$$) = 1);
 reset role;
 
+-- ─── Célula ligada ao app: roteiro, presença por função, confirmação ─────────
+
+select tests.as_user('00000000-0000-0000-0000-00000000000c'); -- Caio, auxiliar
+select tests.ok('auxiliar registra presença pela função',
+  tests.allowed($$select 1 from (select public.mark_attendance('10000000-0000-0000-0000-000000000001', current_date + 7, '{"00000000-0000-0000-0000-00000000000b": true, "00000000-0000-0000-0000-00000000000e": true}'::jsonb)) q$$));
+select tests.ok('presença registrada só para membro da célula (Edu é de outra)',
+  tests.rows($$select * from public.cell_attendance a join public.cell_meetings m on m.id = a.meeting_id where m.date = current_date + 7$$) = 1);
+select tests.ok('auxiliar não muda o roteiro da célula', tests.denied($$update public.cells set plan = '{"title": "x"}' where id = '10000000-0000-0000-0000-000000000001'$$));
+reset role;
+
+select tests.as_user('00000000-0000-0000-0000-00000000000b'); -- Beto, membro
+select tests.ok('membro não registra presença', tests.denied($$select public.mark_attendance('10000000-0000-0000-0000-000000000001', current_date + 7, '{"00000000-0000-0000-0000-00000000000b": false}'::jsonb)$$));
+select tests.ok('membro confirma a própria presença',
+  tests.allowed($$insert into public.cell_rsvps (cell_id, meeting_date, user_id, going) values ('10000000-0000-0000-0000-000000000001', current_date + 7, auth.uid(), true) on conflict (cell_id, meeting_date, user_id) do update set going = excluded.going$$));
+select tests.ok('membro não confirma no nome de outra pessoa',
+  tests.denied($$insert into public.cell_rsvps (cell_id, meeting_date, user_id, going) values ('10000000-0000-0000-0000-000000000001', current_date + 7, '00000000-0000-0000-0000-00000000000a', true)$$));
+reset role;
+
+select tests.as_user('00000000-0000-0000-0000-00000000000d'); -- Dani, visitante
+select tests.ok('visitante vê quantos confirmaram, sem saber quem', public.cell_rsvp_count('10000000-0000-0000-0000-000000000001', current_date + 7) = 1
+  and tests.rows($$select * from public.cell_rsvps$$) = 0);
+select tests.ok('visitante lê o roteiro da célula', tests.rows($$select plan from public.cells where id = '10000000-0000-0000-0000-000000000001'$$) = 1);
+reset role;
+
+select tests.as_user('00000000-0000-0000-0000-00000000000e'); -- Edu, outra célula
+select tests.ok('outra célula não vê a contagem de confirmados', tests.denied($$select public.cell_rsvp_count('10000000-0000-0000-0000-000000000001', current_date + 7)$$));
+select tests.ok('outra célula não confirma presença na célula 1',
+  tests.denied($$insert into public.cell_rsvps (cell_id, meeting_date, user_id, going) values ('10000000-0000-0000-0000-000000000001', current_date + 7, auth.uid(), true)$$));
+reset role;
+
+select tests.as_user('00000000-0000-0000-0000-00000000000a'); -- Ana, líder
+select tests.ok('líder muda o roteiro, o tamanho máximo e cancela reunião',
+  tests.allowed($$update public.cells set plan = '{"title": "Propósito", "ref": "João 15", "sections": []}', max_size = 12 where id = '10000000-0000-0000-0000-000000000001'$$)
+  and tests.allowed($$insert into public.cell_meetings (cell_id, date, cancelled) values ('10000000-0000-0000-0000-000000000001', current_date + 14, true) on conflict (cell_id, date) do update set cancelled = excluded.cancelled$$));
+reset role;
+
+select tests.as_user('00000000-0000-0000-0000-000000000011'); -- Gil, sem célula
+select tests.ok('criar célula com id do aparelho e reenviar não duplica',
+  (select id from public.create_cell('Nova', 'Mista', 2, '20:00', 'Rua A, 1', '', 'Centro', '40000000-0000-0000-0000-000000000001')) = '40000000-0000-0000-0000-000000000001'
+  and (select id from public.create_cell('Nova', 'Mista', 2, '20:00', 'Rua A, 1', '', 'Centro', '40000000-0000-0000-0000-000000000001')) = '40000000-0000-0000-0000-000000000001'
+  and tests.rows($$select * from public.cell_members where cell_id = '40000000-0000-0000-0000-000000000001'$$) = 1);
+reset role;
+select tests.as_user('00000000-0000-0000-0000-00000000000e');
+select tests.ok('ninguém toma uma célula de outro reenviando o id dela', tests.denied($$select public.create_cell('Roubo', null, 1, '20:00', '', '', '', '10000000-0000-0000-0000-000000000001')$$));
+reset role;
+
 -- ─── Exclusão de conta ───────────────────────────────────────────────────────
 
 select tests.as_user('00000000-0000-0000-0000-00000000000a');

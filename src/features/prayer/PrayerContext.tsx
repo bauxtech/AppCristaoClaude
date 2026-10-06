@@ -6,6 +6,7 @@ import { uuid } from '../../lib/uuid'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { sampleData, toISODate, type Campaign, type CampaignType, type DiaryEntry, type PrayerRequest } from './data'
+import { currentCellId } from '../cell/current'
 import { mergePrayer, prayerDiffOps, pullPrayer } from './sync'
 
 interface PrayerState {
@@ -82,7 +83,7 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
       if (next === prev) return
       current.current = next
       setState(next)
-      if (!isSample.current && !initial) enqueue(...prayerDiffOps(prev, next))
+      if (!isSample.current && !initial) enqueue(...prayerDiffOps(prev, next, new Date(), currentCellId()))
     },
     [initial],
   )
@@ -94,7 +95,7 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
     let alive = true
     // Primeira vez desta conta neste aparelho: manda antes o que já estava aqui (itens com id uuid).
     const flag = `prayerSynced:${uid}`
-    if (!getItem(flag, false)) enqueue(...prayerDiffOps({ diary: [], requests: [], campaigns: [] }, current.current))
+    if (!getItem(flag, false)) enqueue(...prayerDiffOps({ diary: [], requests: [], campaigns: [] }, current.current, new Date(), currentCellId()))
     flush()
       // Se algo não foi enviado (sem internet), o aparelho está à frente do banco: não troca nada agora.
       .then(() => (pendingOps().length ? null : pullPrayer(uid)))

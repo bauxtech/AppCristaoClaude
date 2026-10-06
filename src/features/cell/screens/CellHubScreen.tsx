@@ -1,4 +1,5 @@
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
+import { useCallback } from 'react'
 import { Image, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppText, Avatar, Button, Card, IconButton, SectionLabel, Tag, useToast } from '../../../components'
@@ -18,7 +19,13 @@ export function CellHubScreen() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const { cellStatus } = useSession()
-  const { cell } = useCell()
+  const { cell, refresh } = useCell()
+  // Com servidor, a célula vem do banco de novo cada vez que a aba abre.
+  useFocusEffect(
+    useCallback(() => {
+      void refresh()
+    }, [refresh]),
+  )
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}>

@@ -40,7 +40,7 @@ export function JoinRequestsScreen() {
                     update((c) => ({
                       ...c,
                       pendingJoins: c.pendingJoins.filter((x) => x.id !== j.id),
-                      members: [...c.members, { id: `u${j.id}`, name: j.name, role: 'membro', phone: j.phone, since: new Date().toISOString().slice(0, 10), active: true, lastAttendance: [] }],
+                      members: [...c.members, { id: j.id, name: j.name, role: 'membro', phone: j.phone, since: new Date().toISOString().slice(0, 10), active: true, lastAttendance: [] }],
                     }))
                     toast(`${j.name} entrou na célula`)
                   }}

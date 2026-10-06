@@ -90,7 +90,8 @@ export interface Cell {
   members: Member[]
   pendingJoins: { id: string; name: string; phone: string; requestedAt: string }[]
   visitors: { id: string; name: string; phone: string; date: string; notes: string; followUpAt: string }[]
-  schedule: { role: string; memberId: string | null }[]
+  /** id: linha da escala no banco (uuid). */
+  schedule: { id?: string; role: string; memberId: string | null }[]
   plan: PlanSection[]
   planTitle: string
   planRef: string

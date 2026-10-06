@@ -2,7 +2,9 @@ import { router } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { Button, SelectCard, TextField } from '../../../components'
+import { IS_REMOTE } from '../../../lib/supabase'
 import { useSession } from '../../../state/session'
+import { useCell } from '../../cell/CellContext'
 import { DEMO_INVITE_CODE } from '../data'
 import { OnboardingScaffold } from '../OnboardingScaffold'
 import { normalizeInvite } from '../validation'
@@ -14,8 +16,20 @@ export function CellStartScreen() {
   const [choice, setChoice] = useState<Choice | null>(null)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const { requestJoin } = useCell()
 
-  function start() {
+  async function start() {
+    if (choice === 'join' && IS_REMOTE) {
+      // Com servidor: o pedido vai para o líder, que aprova a entrada.
+      setBusy(true)
+      const r = await requestJoin(normalizeInvite(code))
+      setBusy(false)
+      if (r === 'invalid') return setError('Código inválido ou vencido. Confira com quem te convidou.')
+      if (r === 'failed') return setError('Não foi possível enviar o pedido. Confira a internet e tente de novo.')
+      router.replace('/aguardando-aprovacao')
+      return
+    }
     if (choice === 'join') {
       if (normalizeInvite(code) !== DEMO_INVITE_CODE) {
         setError('Código inválido ou vencido. Confira com quem te convidou.')
@@ -35,7 +49,7 @@ export function CellStartScreen() {
       subtitle="A célula é o pequeno grupo que se reúne toda semana. Você pode entrar, criar ou deixar para depois."
       step="celula"
       onBack={() => router.back()}
-      footer={<Button label="Começar" onPress={start} disabled={!choice} accessibilityHint={choice ? undefined : 'Escolha uma opção para começar'} />}
+       footer={<Button label={busy ? 'Enviando pedido' : 'Começar'} onPress={start} disabled={!choice || busy} accessibilityHint={choice ? undefined : 'Escolha uma opção para começar'} />}
     >
       <View style={{ gap: 12 }}>
         <SelectCard kind="radio" label="Entrar por convite" description="Tenho um código ou link de convite." selected={choice === 'join'} onPress={() => setChoice('join')} />
