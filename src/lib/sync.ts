@@ -10,7 +10,7 @@ import { supabase } from './supabase'
 // Nas operações, '$uid' é trocado pelo id de quem está logado no momento do envio.
 
 export type SyncOp =
-  | { kind: 'upsert'; table: string; row: Record<string, unknown>; onConflict?: string }
+  | { kind: 'upsert'; table: string; row: Record<string, unknown> | Record<string, unknown>[]; onConflict?: string }
   | { kind: 'update'; table: string; values: Record<string, unknown>; match: Record<string, unknown> }
   | { kind: 'delete'; table: string; match: Record<string, unknown> }
 

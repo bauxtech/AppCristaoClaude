@@ -1,5 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../lib/storage'
+import { enqueue, useUserId } from '../lib/sync'
+import { supabase } from '../lib/supabase'
 import { pushProfile } from '../lib/account'
 
 // Estado da conta enquanto o login real (Supabase) não entra.
@@ -93,6 +95,8 @@ export function SessionProvider({
   const [minutes, setMinutes] = useState<Record<string, { reading: number; prayer: number }>>(() =>
     initialSampleData !== undefined ? (initialSampleData ? sampleMinutes() : {}) : getItem('minutes', {}),
   )
+  const activeDaysRef = useRef(activeDays)
+  activeDaysRef.current = activeDays
   const [onboarded, setOnboarded] = useState<boolean>(() => initialOnboarded ?? getItem('onboarded', false))
   const [profile, setProfile] = useState<Profile>(() => getItem('profile', empty))
   const [cellStatus, setCellStatusState] = useState<CellStatus>(() => initialCellStatus ?? getItem('cellStatus', 'none'))
@@ -128,26 +132,65 @@ export function SessionProvider({
     setDataEpoch((e) => e + 1)
   }, [])
 
-  const markActiveToday = useCallback(() => {
-    setActiveDays((prev) => {
-      const t = todayISO()
-      if (prev.includes(t)) return prev
-      const next = [...prev, t]
-      setItem('activeDays', next)
-      return next
-    })
+  // Dia com leitura ou oração e os minutos do dia vão para activity_days. Dados de exemplo não vão.
+  const sample = useRef(sampleData)
+  sample.current = sampleData
+  const minutesRef = useRef(minutes)
+  minutesRef.current = minutes
+  const pushDay = useCallback((day: string, m: { reading: number; prayer: number }) => {
+    if (sample.current) return
+    enqueue({ kind: 'upsert', table: 'activity_days', row: { user_id: '$uid', day, reading_minutes: m.reading, prayer_minutes: m.prayer }, onConflict: 'user_id,day' })
   }, [])
 
-  const addMinutes = useCallback((kind: 'reading' | 'prayer', mins: number) => {
-    if (mins <= 0) return
-    setMinutes((prev) => {
+  const markActiveToday = useCallback(() => {
+    const t = todayISO()
+    if (activeDaysRef.current.includes(t)) return
+    const next = [...activeDaysRef.current, t]
+    activeDaysRef.current = next
+    setActiveDays(next)
+    setItem('activeDays', next)
+    pushDay(t, minutesRef.current[t] ?? { reading: 0, prayer: 0 })
+  }, [pushDay])
+
+  const addMinutes = useCallback(
+    (kind: 'reading' | 'prayer', mins: number) => {
+      if (mins <= 0) return
       const t = todayISO()
-      const cur = prev[t] ?? { reading: 0, prayer: 0 }
-      const next = { ...prev, [t]: { ...cur, [kind]: cur[kind] + mins } }
+      const cur = minutesRef.current[t] ?? { reading: 0, prayer: 0 }
+      const day = { ...cur, [kind]: cur[kind] + mins }
+      const next = { ...minutesRef.current, [t]: day }
+      minutesRef.current = next
+      setMinutes(next)
       setItem('minutes', next)
-      return next
-    })
-  }, [])
+      pushDay(t, day)
+    },
+    [pushDay],
+  )
+
+  // Ao entrar: traz do banco os dias com leitura ou oração, para o total aparecer em qualquer celular.
+  const uid = useUserId()
+  useEffect(() => {
+    if (!uid || sampleData || !supabase) return
+    let alive = true
+    supabase
+      .from('activity_days')
+      .select('day, reading_minutes, prayer_minutes')
+      .eq('user_id', uid)
+      .then(({ data, error }) => {
+        if (!alive || error || !data) return
+        const days = [...new Set([...data.map((d) => d.day as string), ...activeDaysRef.current])].sort()
+        setActiveDays(days)
+        setItem('activeDays', days)
+        const mins = { ...minutesRef.current }
+        for (const d of data) mins[d.day] = { reading: Math.max(d.reading_minutes, mins[d.day]?.reading ?? 0), prayer: Math.max(d.prayer_minutes, mins[d.day]?.prayer ?? 0) }
+        minutesRef.current = mins
+        setMinutes(mins)
+        setItem('minutes', mins)
+      })
+    return () => {
+      alive = false
+    }
+  }, [uid, sampleData])
 
   const signOut = useCallback(() => {
     setOnboarded(false)

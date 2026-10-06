@@ -309,6 +309,28 @@ update public.profiles set deletion_requested_at = now() - interval '31 days' wh
 select tests.ok('a limpeza apaga a conta depois de 30 dias', (select accounts from public.purge_expired()) = 1);
 select tests.ok('os dados da conta apagada somem junto', not exists (select 1 from public.profiles where id = '00000000-0000-0000-0000-00000000000c'));
 
+-- ─── Sincronização da Bíblia e do total de dias (como o app grava) ───────────
+
+select tests.as_user('00000000-0000-0000-0000-00000000000b');
+select tests.ok('pessoa grava capítulo lido duas vezes sem erro (upsert)',
+  tests.allowed($$insert into public.bible_reads (user_id, book, chapter) values (auth.uid(), 'joao', 3) on conflict (user_id, book, chapter) do update set read_at = now()$$)
+  and tests.allowed($$insert into public.bible_reads (user_id, book, chapter) values (auth.uid(), 'joao', 3) on conflict (user_id, book, chapter) do update set read_at = now()$$));
+select tests.ok('pessoa grava a própria nota e o progresso do plano',
+  tests.allowed($$insert into public.bible_notes (user_id, verse_key, text) values (auth.uid(), 'joao:3:16', 'nota do Beto') on conflict (user_id, verse_key) do update set text = excluded.text$$)
+  and tests.allowed($$insert into public.plan_progress (user_id, plan_id, started_at, done_days, active) values (auth.uid(), 'nt-90', current_date, '{1,2}', true) on conflict (user_id, plan_id) do update set done_days = excluded.done_days$$)
+  and tests.allowed($$insert into public.activity_days (user_id, day, reading_minutes) values (auth.uid(), current_date, 10) on conflict (user_id, day) do update set reading_minutes = excluded.reading_minutes$$));
+reset role;
+
+select tests.as_user('00000000-0000-0000-0000-00000000000a');
+select tests.ok('outra pessoa não lê a nota bíblica do Beto', tests.rows($$select * from public.bible_notes where text = 'nota do Beto'$$) = 0);
+select tests.ok('outra pessoa não lê o progresso nem o total de dias do Beto',
+  tests.rows($$select * from public.plan_progress where user_id = '00000000-0000-0000-0000-00000000000b'$$) = 0
+  and tests.rows($$select * from public.activity_days where user_id = '00000000-0000-0000-0000-00000000000b'$$) = 0);
+select tests.ok('ninguém grava capítulo lido em nome de outra pessoa',
+  tests.denied($$insert into public.bible_reads (user_id, book, chapter) values ('00000000-0000-0000-0000-00000000000b', 'joao', 4)$$));
+select tests.ok('ninguém apaga a nota de outra pessoa', tests.denied($$delete from public.bible_notes where verse_key = 'joao:3:16'$$));
+reset role;
+
 -- ─── Texto bíblico, acesso e limites ─────────────────────────────────────────
 
 insert into public.bible_verses (book, chapter, verse, text) values

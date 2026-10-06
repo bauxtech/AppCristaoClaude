@@ -18,7 +18,7 @@ describe('conta nova', () => {
   test('Home sem dias, sem plano e sem compromissos', async () => {
     await renderApp(<HomeScreen />, fresh)
     expect(screen.getByRole('button', { name: '0 dias com leitura ou oração' })).toBeTruthy()
-    // Meus planos vazio: capa tracejada. Momentos de oração aparecem também para conta nova.
+    // Meus planos vazio: linha de escolher plano. Momentos de oração aparecem também para conta nova.
     expect(screen.getByRole('button', { name: /^Escolher um plano de leitura/ })).toBeTruthy()
     expect(screen.getByRole('header', { name: 'Momentos de oração' })).toBeTruthy()
     expect(screen.getByRole('button', { name: /^Criar ou entrar numa célula/ })).toBeTruthy()
@@ -78,7 +78,7 @@ describe('planos de leitura', () => {
     await fireEvent.changeText(screen.getByLabelText('Dias'), '20')
     expect(screen.getByText('20 dias, cerca de 4 capítulos por dia')).toBeTruthy()
     await fireEvent.press(screen.getByRole('button', { name: 'Criar plano' }))
-    expect(router.replace).toHaveBeenCalledWith(expect.stringMatching(/^\/biblia\/plano\/meu-/))
+    expect(router.replace).toHaveBeenCalledWith(expect.stringMatching(/^\/biblia\/plano\/[0-9a-f-]{36}$/))
   })
 })
 

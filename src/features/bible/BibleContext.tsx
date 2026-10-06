@@ -1,11 +1,14 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
+import { enqueue, flush, useUserId } from '../../lib/sync'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { BOOKS, slugify } from './books'
 import { CATALOG, readingsForDay, sampleProgress, type PlanDef, type PlanProgress } from './plans'
+import { bibleDiffOps, newPlanId, pullBible } from './sync'
 
-// Marcações da pessoa na Bíblia. Ficam no aparelho até o banco entrar, e funcionam sem internet.
+// Marcações da pessoa na Bíblia. Ficam no aparelho e funcionam sem internet.
+// Com o servidor ligado, cada mudança vai para o banco (só a diferença) e, ao entrar, o app traz o que está lá.
 
 export type HighlightColor = 'amarelo' | 'verde' | 'azul' | 'rosa'
 
@@ -89,13 +92,42 @@ export function BibleProvider({ children, initial }: { children: ReactNode; init
     setItem('bible', next)
   })
 
+  // Estado atual fora do React, para calcular a diferença uma vez só por mudança.
+  const current = useRef(state)
+  current.current = state
+  const sample = useRef(sampleData)
+  sample.current = sampleData
+
   const update = useCallback((fn: (s: BibleState) => BibleState) => {
-    setState((prev) => {
-      const next = fn(prev)
-      setItem('bible', next)
-      return next
-    })
+    const prev = current.current
+    const next = fn(prev)
+    if (next === prev) return
+    current.current = next
+    setState(next)
+    setItem('bible', next)
+    // Dados de exemplo nunca vão para o banco.
+    if (!sample.current) enqueue(...bibleDiffOps(prev, next))
   }, [])
+
+  // Ao entrar (ou trocar de conta): envia o que estava na fila e traz o que está no banco.
+  const uid = useUserId()
+  useEffect(() => {
+    if (!uid || sampleData || initial) return
+    let alive = true
+    flush()
+      .then(() => pullBible(uid))
+      .then((remote) => {
+        if (!alive || !remote) return
+        const next = { ...current.current, ...remote }
+        current.current = next
+        setState(next)
+        setItem('bible', next)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [uid, sampleData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const value = useMemo<BibleValue>(
     () => ({
@@ -124,7 +156,7 @@ export function BibleProvider({ children, initial }: { children: ReactNode; init
       plans: [...CATALOG, ...state.customPlans],
       planDef: (id) => [...CATALOG, ...state.customPlans].find((p) => p.id === id),
       createPlan: (p, start) => {
-        const def: PlanDef = { ...p, id: `meu-${Date.now().toString(36)}`, custom: true }
+        const def: PlanDef = { ...p, id: newPlanId(), custom: true }
         update((s) => ({
           ...s,
           customPlans: [...s.customPlans, def],
