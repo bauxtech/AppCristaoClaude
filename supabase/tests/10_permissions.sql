@@ -342,6 +342,40 @@ select tests.as_user('00000000-0000-0000-0000-00000000000e');
 select tests.ok('ninguém toma uma célula de outro reenviando o id dela', tests.denied($$select public.create_cell('Roubo', null, 1, '20:00', '', '', '', '10000000-0000-0000-0000-000000000001')$$));
 reset role;
 
+-- ─── Enquetes, playlist e músicas favoritas ─────────────────────────────────
+
+select tests.as_user('00000000-0000-0000-0000-00000000000a'); -- Ana, líder
+select tests.ok('líder cria enquete e põe música na playlist da célula',
+  tests.allowed($$insert into public.cell_polls (id, cell_id, question, options) values ('50000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '19h ou 20h?', array['19h', '20h'])$$)
+  and tests.allowed($$insert into public.cell_playlist (cell_id, title, artist) values ('10000000-0000-0000-0000-000000000001', 'Oceans', 'Hillsong')$$));
+select tests.ok('link da playlist precisa ser https', tests.denied($$insert into public.cell_playlist (cell_id, title, url) values ('10000000-0000-0000-0000-000000000001', 'x', 'javascript:alert(1)')$$));
+reset role;
+
+select tests.as_user('00000000-0000-0000-0000-00000000000b'); -- Beto, membro
+select tests.ok('membro vota uma vez e pode mudar o voto',
+  tests.allowed($$insert into public.cell_poll_votes (poll_id, user_id, option) values ('50000000-0000-0000-0000-000000000001', auth.uid(), 1) on conflict (poll_id, user_id) do update set option = excluded.option$$)
+  and tests.allowed($$insert into public.cell_poll_votes (poll_id, user_id, option) values ('50000000-0000-0000-0000-000000000001', auth.uid(), 0) on conflict (poll_id, user_id) do update set option = excluded.option$$));
+select tests.ok('voto em opção que não existe é recusado', tests.denied($$update public.cell_poll_votes set option = 5 where user_id = auth.uid()$$));
+select tests.ok('membro não cria enquete nem mexe na playlist',
+  tests.denied($$insert into public.cell_polls (cell_id, question, options) values ('10000000-0000-0000-0000-000000000001', 'x', array['a', 'b'])$$)
+  and tests.denied($$delete from public.cell_playlist$$));
+select tests.ok('membro guarda música favorita', tests.allowed($$insert into public.favorite_songs (user_id, title, artist) values (auth.uid(), 'Oceans', 'Hillsong')$$));
+reset role;
+
+select tests.as_user('00000000-0000-0000-0000-00000000000d'); -- Dani, visitante
+select tests.ok('visitante não vota', tests.denied($$insert into public.cell_poll_votes (poll_id, user_id, option) values ('50000000-0000-0000-0000-000000000001', auth.uid(), 0)$$));
+select tests.ok('visitante vê só a contagem, não quem votou',
+  (select votes from public.cell_poll_counts('10000000-0000-0000-0000-000000000001') where option = 0) = 1
+  and tests.rows($$select * from public.cell_poll_votes$$) = 0);
+reset role;
+
+select tests.as_user('00000000-0000-0000-0000-00000000000e'); -- Edu, outra célula
+select tests.ok('outra célula não vê enquete, playlist nem contagem',
+  tests.rows($$select * from public.cell_polls$$) = 0 and tests.rows($$select * from public.cell_playlist$$) = 0
+  and tests.denied($$select * from public.cell_poll_counts('10000000-0000-0000-0000-000000000001')$$));
+select tests.ok('ninguém lê as músicas favoritas de outra pessoa', tests.rows($$select * from public.favorite_songs$$) = 0);
+reset role;
+
 -- ─── Exclusão de conta ───────────────────────────────────────────────────────
 
 select tests.as_user('00000000-0000-0000-0000-00000000000a');

@@ -1,8 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
+import { enqueue, flush, pendingOps, useUserId } from '../../lib/sync'
+import { uuid } from '../../lib/uuid'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import type { Song } from '../music/catalog'
+import { profileDiffOps, pullProfileData } from './sync'
 
 export const MILESTONE_TYPES = ['Conversão', 'Batismo', 'Casamento', 'Ministério', 'Missão', 'Curso', 'Outro']
 export const NOTE_SOURCES = ['Bíblia', 'Culto', 'Curso', 'Célula', 'Pessoal'] as const
@@ -69,11 +72,50 @@ export function profileInitial(sample: boolean): ProfileState {
 
 export function ProfileProvider({ children, initial }: { children: ReactNode; initial?: Partial<ProfileState> }) {
   const { sampleData } = useSession()
-  const [state, setState] = useState<ProfileState>(() => (initial ? { ...profileInitial(false), ...initial } : getItem<ProfileState>('profileData', profileInitial(sampleData))))
+  const [state, setStateRaw] = useState<ProfileState>(() => (initial ? { ...profileInitial(false), ...initial } : getItem<ProfileState>('profileData', profileInitial(sampleData))))
   useEffect(() => {
     if (!initial) setItem('profileData', state)
   }, [state, initial])
-  useDataReset((s) => setState(profileInitial(s)))
+  useDataReset((s) => setStateRaw(profileInitial(s)))
+
+  // Cada mudança manda a diferença para o banco. Dados de exemplo não vão.
+  const current = useRef(state)
+  current.current = state
+  const sample = useRef(sampleData)
+  sample.current = sampleData
+  const setState = useCallback(
+    (fn: (s: ProfileState) => ProfileState) => {
+      const prev = current.current
+      const next = fn(prev)
+      if (next === prev) return
+      current.current = next
+      setStateRaw(next)
+      if (!sample.current && !initial) enqueue(...profileDiffOps(prev, next))
+    },
+    [initial],
+  )
+
+  // Ao entrar: manda o que já estava no aparelho (primeira vez) e traz o perfil do banco.
+  const uid = useUserId()
+  useEffect(() => {
+    if (!uid || sampleData || initial) return
+    let alive = true
+    const flag = `profileSynced:${uid}`
+    if (!getItem(flag, false)) enqueue(...profileDiffOps(profileInitial(false), current.current))
+    flush()
+      .then(() => (pendingOps().length ? null : pullProfileData(uid)))
+      .then((remote) => {
+        if (!alive || !remote || pendingOps().length) return
+        const next = { ...current.current, ...remote, photoUri: remote.photoUri }
+        current.current = next
+        setStateRaw(next)
+        setItem(flag, true)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [uid, sampleData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const value = useMemo<ProfileValue>(
     () => ({
@@ -83,13 +125,13 @@ export function ProfileProvider({ children, initial }: { children: ReactNode; in
       setPrivacy: (p) => setState((s) => ({ ...s, privacy: { ...s.privacy, ...p } })),
       saveMilestone: (m) =>
         setState((s) => {
-          const id = m.id ?? `mk${Date.now().toString(36)}`
+          const id = m.id ?? uuid()
           const item = { ...m, id }
           return { ...s, milestones: s.milestones.some((x) => x.id === id) ? s.milestones.map((x) => (x.id === id ? item : x)) : [...s.milestones, item] }
         }),
       removeMilestone: (id) => setState((s) => ({ ...s, milestones: s.milestones.filter((m) => m.id !== id) })),
       saveNote: (n) => {
-        const id = n.id ?? `n${Date.now().toString(36)}`
+        const id = n.id ?? uuid()
         const existing = state.notes.find((x) => x.id === id)
         const item: FreeNote = { ...n, id, date: existing?.date ?? today() }
         setState((s) => ({ ...s, notes: s.notes.some((x) => x.id === id) ? s.notes.map((x) => (x.id === id ? item : x)) : [item, ...s.notes] }))
@@ -102,7 +144,7 @@ export function ProfileProvider({ children, initial }: { children: ReactNode; in
           return { ...s, favoriteSongs: has ? s.favoriteSongs.filter((x) => !(x.title === song.title && x.artist === song.artist)) : [...s.favoriteSongs, song] }
         }),
     }),
-    [state],
+    [state, setState],
   )
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

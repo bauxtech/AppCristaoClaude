@@ -1,6 +1,7 @@
 import NetInfo from '@react-native-community/netinfo'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { useSyncExternalStore } from 'react'
+import { readBytes } from './files'
 import { getItem, setItem } from './storage'
 import { supabase } from './supabase'
 
@@ -15,6 +16,9 @@ export type SyncOp = (
   | { kind: 'delete'; table: string; match: Record<string, unknown> }
   /** Função do banco que confere a permissão antes de gravar (ex.: create_cell, mark_attendance). */
   | { kind: 'rpc'; fn: string; args: Record<string, unknown>; table?: undefined }
+  /** Envia um arquivo do aparelho para o Storage. O arquivo é lido na hora do envio. */
+  | { kind: 'upload'; bucket: string; path: string; uri: string; contentType: string; table?: undefined }
+  | { kind: 'remove'; bucket: string; paths: string[]; table?: undefined }
 ) & {
   /** Conta logada quando a operação entrou na fila. Sem dono: feita antes do primeiro login (cadastro). */
   owner?: string
@@ -110,6 +114,8 @@ export function clearOutbox() {
 
 function fill<T>(v: T, uid: string): T {
   if (v === UID) return uid as T
+  // Caminho de arquivo que começa pela pasta da pessoa: '$uid/avatar.jpg'.
+  if (typeof v === 'string' && v.startsWith(`${UID}/`)) return `${uid}${v.slice(UID.length)}` as T
   if (Array.isArray(v)) return v.map((x) => fill(x, uid)) as T
   if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fill(x, uid)])) as T
   return v
@@ -133,6 +139,17 @@ async function run(c: SupabaseClient, op: SyncOp, uid: string): Promise<RunResul
   if (op.kind === 'upsert') return await c.from(op.table).upsert(fill(op.row, uid), op.onConflict ? { onConflict: op.onConflict } : undefined)
   if (op.kind === 'update') return await c.from(op.table).update(fill(op.values, uid)).match(fill(op.match, uid))
   if (op.kind === 'rpc') return await c.rpc(op.fn, fill(op.args, uid))
+  if (op.kind === 'upload') {
+    const bytes = await readBytes(op.uri)
+    // Arquivo apagado do aparelho antes do envio: não há o que enviar.
+    if (!bytes) return { error: { message: 'Arquivo não encontrado no aparelho' }, status: 400 }
+    const { error } = await c.storage.from(op.bucket).upload(fill(op.path, uid), bytes, { contentType: op.contentType, upsert: true })
+    return { error, status: error ? Number((error as { statusCode?: string }).statusCode) || 0 : 200 }
+  }
+  if (op.kind === 'remove') {
+    const { error } = await c.storage.from(op.bucket).remove(fill(op.paths, uid))
+    return { error, status: error ? Number((error as { statusCode?: string }).statusCode) || 0 : 200 }
+  }
   return await c.from(op.table).delete().match(fill(op.match, uid))
 }
 
@@ -157,7 +174,7 @@ export function flush(): Promise<void> {
         }
         if (r.error && isTransient(r)) break
         if (r.error) {
-          console.warn('Sincronização: operação recusada pelo servidor', op.kind === 'rpc' ? op.fn : op.table, r.error.message)
+          console.warn('Sincronização: operação recusada pelo servidor', op.kind === 'rpc' ? op.fn : op.kind === 'upload' || op.kind === 'remove' ? op.bucket : op.table, r.error.message)
           setItem(DROPPED, [...droppedOps(), op].slice(-50))
         }
         // Tira a operação enviada. O que entrou na fila durante o envio continua lá.

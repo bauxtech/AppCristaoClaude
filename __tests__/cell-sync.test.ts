@@ -1,5 +1,5 @@
 import { newCell, sampleCell, type Cell } from '../src/features/cell/data'
-import { cellDiffOps, createCellOps, withIds } from '../src/features/cell/sync'
+import { cellDiffOps, createCellOps, materialPath, withIds } from '../src/features/cell/sync'
 import { uuid } from '../src/lib/uuid'
 
 const now = new Date(2026, 9, 6, 12, 0, 0)
@@ -115,4 +115,34 @@ test('criar célula: primeiro a função do banco, depois a escala padrão', () 
   expect(ops[1]).toEqual({ kind: 'update', table: 'cells', values: { max_size: c.maxSize }, match: { id: c.id } })
   expect(ops.slice(2).every((o) => o.kind === 'upsert' && o.table === 'cell_schedule')).toBe(true)
   expect(ops).toHaveLength(2 + c.schedule.length)
+})
+
+test('enquete criada pelo líder, voto de quem participa', () => {
+  const a = base()
+  const b = withIds(a, { ...a, polls: [{ id: 'q1', question: '19h ou 20h?', options: [{ label: '19h', votes: 0 }, { label: '20h', votes: 0 }] }] })
+  const poll = b.polls[0]
+  expect(cellDiffOps(a, b)).toEqual([{ kind: 'upsert', table: 'cell_polls', row: { id: poll.id, cell_id: a.id, question: '19h ou 20h?', options: ['19h', '20h'] } }])
+  const c = { ...b, polls: [{ ...poll, myVote: 1, options: [{ label: '19h', votes: 0 }, { label: '20h', votes: 1 }] }] }
+  expect(cellDiffOps(b, c)).toEqual([{ kind: 'upsert', table: 'cell_poll_votes', row: { poll_id: poll.id, user_id: '$uid', option: 1 }, onConflict: 'poll_id,user_id' }])
+})
+
+test('material sobe para a pasta da célula; apagar tira a linha e o arquivo', () => {
+  const a = base()
+  const b = withIds(a, { ...a, materials: [{ id: 'mt1', name: 'Estudo ação.pdf', kind: 'PDF' as const, size: '1 MB', date: '', uri: 'file:///estudo.pdf' }] })
+  const f = b.materials[0]
+  const path = materialPath(a.id, f.id, f.name)
+  expect(path).toBe(`${a.id}/materiais/${f.id}-Estudo-acao.pdf`)
+  expect(cellDiffOps(a, b)).toEqual([
+    { kind: 'upload', bucket: 'cell-files', path, uri: 'file:///estudo.pdf', contentType: 'application/pdf' },
+    { kind: 'upsert', table: 'cell_materials', row: { id: f.id, cell_id: a.id, name: f.name, kind: 'PDF', path } },
+  ])
+  expect(cellDiffOps(b, a).map((o) => o.kind)).toEqual(['delete', 'remove'])
+})
+
+test('playlist e capa da célula', () => {
+  const a = base()
+  const b = withIds(a, { ...a, playlist: [{ id: 'pl1', title: 'Oceans', artist: 'Hillsong' }], coverUri: 'file:///capa.jpg' })
+  const ops = cellDiffOps(a, b)
+  expect(ops.map((o) => (o.kind === 'upload' || o.kind === 'remove' ? `${o.kind}:${o.bucket}` : `${o.kind}:${o.table}`))).toEqual(['upsert:cell_playlist', 'upload:cell-files', 'update:cells'])
+  expect(ops[2]).toEqual({ kind: 'update', table: 'cells', values: { cover_path: `${a.id}/capa.jpg` }, match: { id: a.id } })
 })

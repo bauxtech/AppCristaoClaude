@@ -1,4 +1,5 @@
 import type { SyncOp } from '../../lib/sync'
+import { contentTypeOf, signedUrl } from '../../lib/files'
 import { supabase } from '../../lib/supabase'
 import { isUuid, uuid } from '../../lib/uuid'
 import { DEFAULT_ROLES, type Cell, type Member } from './data'
@@ -12,6 +13,12 @@ import type { CellRole } from './permissions'
 
 const me = (id: string | null | undefined) => (id === 'me' ? '$uid' : id ?? null)
 const iso = (ts: string | null | undefined) => (ts ? ts.slice(0, 10) : '')
+
+/** Caminho do material na pasta da célula. O nome vai sem caracteres especiais. */
+export function materialPath(cell: string, id: string, name: string) {
+  const safe = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-60)
+  return `${cell}/materiais/${id}-${safe}`
+}
 
 /** Itens novos criados nas telas com id provisório ganham uuid, que é a chave das tabelas. */
 export function withIds(prev: Cell | null, next: Cell): Cell {
@@ -30,8 +37,21 @@ export function withIds(prev: Cell | null, next: Cell): Cell {
   const rides = fix(next.rides, known(prev?.rides))
   const swaps = fix(next.swaps, known(prev?.swaps))
   const visitors = fix(next.visitors, known(prev?.visitors))
-  if (schedule === next.schedule && board === next.board && rides === next.rides && swaps === next.swaps && visitors === next.visitors) return next
-  return { ...next, schedule, board, rides, swaps, visitors }
+  const polls = fix(next.polls, known(prev?.polls))
+  const playlist = fix(next.playlist, known(prev?.playlist))
+  const materials = fix(next.materials, known(prev?.materials))
+  if (
+    schedule === next.schedule &&
+    board === next.board &&
+    rides === next.rides &&
+    swaps === next.swaps &&
+    visitors === next.visitors &&
+    polls === next.polls &&
+    playlist === next.playlist &&
+    materials === next.materials
+  )
+    return next
+  return { ...next, schedule, board, rides, swaps, visitors, polls, playlist, materials }
 }
 
 function byId<T extends { id: string }>(list: T[]) {
@@ -179,6 +199,49 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
   const nextVisitors = byId(next.visitors)
   for (const v of prev.visitors) if (!nextVisitors.has(v.id) && isUuid(v.id)) ops.push({ kind: 'delete', table: 'cell_leads', match: { id: v.id } })
 
+  // Enquetes (o líder cria) e votos (cada um o seu).
+  const prevPolls = byId(prev.polls)
+  for (const q of next.polls) {
+    if (!isUuid(q.id)) continue
+    const before = prevPolls.get(q.id)
+    if (!before) ops.push({ kind: 'upsert', table: 'cell_polls', row: { id: q.id, cell_id: cell, question: q.question, options: q.options.map((o) => o.label) } })
+    if (q.myVote != null && before?.myVote !== q.myVote) ops.push({ kind: 'upsert', table: 'cell_poll_votes', row: { poll_id: q.id, user_id: '$uid', option: q.myVote }, onConflict: 'poll_id,user_id' })
+  }
+  const nextPolls = byId(next.polls)
+  for (const q of prev.polls) if (isUuid(q.id) && !nextPolls.has(q.id)) ops.push({ kind: 'delete', table: 'cell_polls', match: { id: q.id } })
+
+  // Playlist da célula (o líder).
+  const prevSongs = byId(prev.playlist)
+  for (const s of next.playlist) if (isUuid(s.id) && !prevSongs.has(s.id)) ops.push({ kind: 'upsert', table: 'cell_playlist', row: { id: s.id, cell_id: cell, title: s.title, artist: s.artist, url: s.url ?? null } })
+  const nextSongs = byId(next.playlist)
+  for (const s of prev.playlist) if (isUuid(s.id) && !nextSongs.has(s.id)) ops.push({ kind: 'delete', table: 'cell_playlist', match: { id: s.id } })
+
+  // Materiais: o arquivo sobe para a pasta da célula e a linha guarda o caminho. Apagar tira os dois.
+  const prevFiles = byId(prev.materials)
+  for (const f of next.materials) {
+    if (!isUuid(f.id) || prevFiles.has(f.id) || !f.uri || /^https?:/.test(f.uri)) continue
+    const path = materialPath(cell, f.id, f.name)
+    ops.push({ kind: 'upload', bucket: 'cell-files', path, uri: f.uri, contentType: contentTypeOf(f.name) })
+    ops.push({ kind: 'upsert', table: 'cell_materials', row: { id: f.id, cell_id: cell, name: f.name, kind: f.kind, path } })
+  }
+  const nextFiles = byId(next.materials)
+  for (const f of prev.materials) {
+    if (!isUuid(f.id) || nextFiles.has(f.id)) continue
+    ops.push({ kind: 'delete', table: 'cell_materials', match: { id: f.id } })
+    ops.push({ kind: 'remove', bucket: 'cell-files', paths: [materialPath(cell, f.id, f.name)] })
+  }
+
+  // Capa da célula.
+  if (prev.coverUri !== next.coverUri) {
+    if (next.coverUri && !/^https?:/.test(next.coverUri)) {
+      ops.push({ kind: 'upload', bucket: 'cell-files', path: `${cell}/capa.jpg`, uri: next.coverUri, contentType: 'image/jpeg' })
+      ops.push({ kind: 'update', table: 'cells', values: { cover_path: `${cell}/capa.jpg` }, match: { id: cell } })
+    } else if (!next.coverUri) {
+      ops.push({ kind: 'update', table: 'cells', values: { cover_path: null }, match: { id: cell } })
+      ops.push({ kind: 'remove', bucket: 'cell-files', paths: [`${cell}/capa.jpg`] })
+    }
+  }
+
   // "Orei por você" nos pedidos da célula.
   const prevPrayers = byId(prev.prayers)
   for (const p of next.prayers) {
@@ -230,7 +293,7 @@ interface Card {
 
 /**
  * Traz do banco as células de quem está logado, já no formato das telas.
- * O que o banco ainda não guarda (enquete, playlist, materiais, plano de leitura da célula) vem da cópia do aparelho.
+ * O que o banco ainda não guarda (plano de leitura da célula, histórico) vem da cópia do aparelho.
  */
 export async function pullCells(uid: string, local: Cell[], now = new Date()): Promise<PulledCells | null> {
   if (!supabase) return null
@@ -251,8 +314,8 @@ export async function pullCells(uid: string, local: Cell[], now = new Date()): P
 async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: string, myRole: CellRole, muted: boolean, local: Cell | null, now: Date): Promise<Cell | null> {
   const asMe = (id: string | null) => (id === uid ? 'me' : id)
   const today = now.toISOString().slice(0, 10)
-  const [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden] = await Promise.all([
-    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, created_at').eq('id', cellId).single(),
+  const [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden, polls, votes, counts, playlist, materials] = await Promise.all([
+    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, created_at').eq('id', cellId).single(),
     db.rpc('cell_member_cards', { p_cell: cellId }),
     db.from('cell_schedule').select('id, role_name, member_id').eq('cell_id', cellId).is('meeting_date', null),
     db.from('cell_meetings').select('id, date, time, extra, cancelled').eq('cell_id', cellId).order('date', { ascending: true }),
@@ -264,8 +327,13 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
     db.from('prayer_prayed').select('request_id').eq('user_id', uid),
     db.from('cell_rsvps').select('meeting_date, going').eq('cell_id', cellId).eq('user_id', uid).gte('meeting_date', today),
     db.from('hidden_content').select('target_id').eq('user_id', uid),
+    db.from('cell_polls').select('id, question, options').eq('cell_id', cellId).order('created_at', { ascending: false }),
+    db.from('cell_poll_votes').select('poll_id, option').eq('user_id', uid),
+    db.rpc('cell_poll_counts', { p_cell: cellId }),
+    db.from('cell_playlist').select('id, title, artist, url').eq('cell_id', cellId).order('created_at', { ascending: true }),
+    db.from('cell_materials').select('id, name, kind, path, created_at').eq('cell_id', cellId).order('created_at', { ascending: false }),
   ])
-  const all = [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden]
+  const all = [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden, polls, votes, counts, playlist, materials]
   if (all.some((r) => r.error) || !row.data) return null
   const c = row.data
   const list = (cards.data ?? []) as Card[]
@@ -312,6 +380,16 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   const confirmed = next ? await db.rpc('cell_rsvp_count', { p_cell: cellId, p_date: next.date }) : { data: 0, error: null }
   const prayedSet = new Set((prayed.data ?? []).map((p) => p.request_id))
   const hiddenIds = (hidden.data ?? []).map((h) => h.target_id)
+  const voteRows = (counts.data ?? []) as { poll_id: string; option: number; votes: number }[]
+  const myVotes = new Map((votes.data ?? []).map((v) => [v.poll_id, v.option]))
+  // Arquivos privados: o app mostra por link temporário.
+  const cover = c.cover_path ? await signedUrl('cell-files', c.cover_path) : null
+  const files = await Promise.all((materials.data ?? []).map(async (f) => ({ ...f, url: await signedUrl('cell-files', f.path) })))
+  const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+  const longDay = (ts: string) => {
+    const d = new Date(ts)
+    return `${d.getDate()} de ${months[d.getMonth()]}`
+  }
 
   return {
     id: c.id,
@@ -321,7 +399,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
     address: c.address ?? '',
     reference: c.reference ?? '',
     neighborhood: c.neighborhood ?? '',
-    ...(local?.coverUri ? { coverUri: local.coverUri } : {}),
+    ...(cover ? { coverUri: cover } : {}),
     code: c.invite_code,
     maxSize: c.max_size ?? 10,
     archived: c.archived,
@@ -346,9 +424,14 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
       status: s.status === 'accepted' ? ('approved' as const) : (s.status as 'pending' | 'declined'),
     })),
     board: (board.data ?? []).map((b) => ({ id: b.id, authorId: asMe(b.author_id) ?? '', text: b.text, at: iso(b.created_at) })),
-    polls: local?.polls ?? [],
-    materials: local?.materials ?? [],
-    playlist: local?.playlist ?? [],
+    polls: (polls.data ?? []).map((q) => ({
+      id: q.id,
+      question: q.question,
+      options: (q.options as string[]).map((label, i) => ({ label, votes: voteRows.find((v) => v.poll_id === q.id && v.option === i)?.votes ?? 0 })),
+      ...(myVotes.has(q.id) ? { myVote: myVotes.get(q.id) } : {}),
+    })),
+    materials: files.map((f) => ({ id: f.id, name: f.name, kind: f.kind === 'PDF' ? ('PDF' as const) : ('Imagem' as const), size: local?.materials.find((m) => m.id === f.id)?.size ?? '', date: longDay(f.created_at), ...(f.url ? { uri: f.url } : {}) })),
+    playlist: (playlist.data ?? []).map((s) => ({ id: s.id, title: s.title, artist: s.artist, ...(s.url ? { url: s.url } : {}) })),
     prayers: (prayers.data ?? []).map((p) => ({ id: p.id, memberId: p.user_id, text: p.text, prayedCount: 0, iPrayed: prayedSet.has(p.id), at: iso(p.created_at) })),
     rides: (rides.data ?? []).map((r) => ({
       id: r.id,
