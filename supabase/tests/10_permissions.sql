@@ -331,6 +331,27 @@ select tests.ok('ninguém grava capítulo lido em nome de outra pessoa',
 select tests.ok('ninguém apaga a nota de outra pessoa', tests.denied($$delete from public.bible_notes where verse_key = 'joao:3:16'$$));
 reset role;
 
+-- ─── Sincronização da oração (como o app grava: id criado no aparelho, upsert) ─
+
+select tests.as_user('00000000-0000-0000-0000-00000000000b');
+select tests.ok('pessoa grava o próprio pedido com id do aparelho e atualiza depois',
+  tests.allowed($$insert into public.prayer_requests (id, user_id, title, text) values ('30000000-0000-0000-0000-000000000001', auth.uid(), 'Viagem', 'Proteção na viagem') on conflict (id) do update set text = excluded.text$$)
+  and tests.allowed($$insert into public.prayer_requests (id, user_id, title, text, answered_at) values ('30000000-0000-0000-0000-000000000001', auth.uid(), 'Viagem', 'Proteção na viagem', current_date) on conflict (id) do update set answered_at = excluded.answered_at$$));
+select tests.ok('pessoa grava entrada do diário e campanha com id do aparelho',
+  tests.allowed($$insert into public.prayer_diary (id, user_id, text) values ('30000000-0000-0000-0000-000000000002', auth.uid(), 'Agradeci pelo dia') on conflict (id) do update set text = excluded.text$$)
+  and tests.allowed($$insert into public.prayer_campaigns (id, user_id, name, type, start_date, end_date) values ('30000000-0000-0000-0000-000000000003', auth.uid(), '21 dias', 'oracao', current_date, current_date + 20) on conflict (id) do update set done_days = excluded.done_days$$));
+reset role;
+
+select tests.as_user('00000000-0000-0000-0000-00000000000a');
+select tests.ok('outra pessoa não sobrescreve o pedido do Beto usando o mesmo id',
+  tests.denied($$insert into public.prayer_requests (id, user_id, text) values ('30000000-0000-0000-0000-000000000001', auth.uid(), 'trocado') on conflict (id) do update set text = excluded.text$$)
+  and (select text from public.prayer_requests where id = '30000000-0000-0000-0000-000000000001') is null);
+select tests.ok('outra pessoa não lê o diário nem a campanha do Beto',
+  tests.rows($$select * from public.prayer_diary where id = '30000000-0000-0000-0000-000000000002'$$) = 0
+  and tests.rows($$select * from public.prayer_campaigns where id = '30000000-0000-0000-0000-000000000003'$$) = 0);
+reset role;
+select tests.ok('o pedido do Beto continua com o texto dele', (select text from public.prayer_requests where id = '30000000-0000-0000-0000-000000000001') = 'Proteção na viagem');
+
 -- ─── Texto bíblico, acesso e limites ─────────────────────────────────────────
 
 insert into public.bible_verses (book, chapter, verse, text) values

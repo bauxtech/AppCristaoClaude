@@ -1,5 +1,6 @@
 import type { SyncOp } from '../../lib/sync'
 import { supabase } from '../../lib/supabase'
+import { isUuid, uuid } from '../../lib/uuid'
 import type { HighlightColor } from './BibleContext'
 import type { PlanDef, PlanProgress } from './plans'
 
@@ -16,15 +17,8 @@ export interface SyncedBible {
   progress: Record<string, PlanProgress>
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
 /** Id de plano próprio: uuid, porque é a chave da tabela reading_plans. */
-export function newPlanId() {
-  const c = globalThis.crypto as Crypto | undefined
-  if (c?.randomUUID) return c.randomUUID()
-  const hex = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join('')
-  return `${hex(8)}-${hex(4)}-4${hex(3)}-${'89ab'[Math.floor(Math.random() * 4)]}${hex(3)}-${hex(12)}`
-}
+export const newPlanId = uuid
 
 function splitChapter(k: string) {
   const i = k.lastIndexOf(':')
@@ -63,7 +57,7 @@ export function bibleDiffOps(prev: SyncedBible, next: SyncedBible, now = new Dat
   const prevPlans = new Map(prev.customPlans.map((p) => [p.id, p]))
   const nextPlans = new Map(next.customPlans.map((p) => [p.id, p]))
   for (const p of next.customPlans) {
-    if (UUID.test(p.id) && prevPlans.get(p.id) !== p) ops.push({ kind: 'upsert', table: 'reading_plans', row: { id: p.id, user_id: '$uid', name: p.name, books: p.books, days: p.total } })
+    if (isUuid(p.id) && prevPlans.get(p.id) !== p) ops.push({ kind: 'upsert', table: 'reading_plans', row: { id: p.id, user_id: '$uid', name: p.name, books: p.books, days: p.total } })
   }
 
   // Progresso: linha nova, mudada ou com o plano ativo trocado.
@@ -74,7 +68,7 @@ export function bibleDiffOps(prev: SyncedBible, next: SyncedBible, now = new Dat
   for (const id of Object.keys(prev.progress)) if (!(id in next.progress)) ops.push({ kind: 'delete', table: 'plan_progress', match: { user_id: '$uid', plan_id: id } })
 
   // Plano apagado sai depois do progresso dele.
-  for (const p of prev.customPlans) if (!nextPlans.has(p.id) && UUID.test(p.id)) ops.push({ kind: 'delete', table: 'reading_plans', match: { id: p.id, user_id: '$uid' } })
+  for (const p of prev.customPlans) if (!nextPlans.has(p.id) && isUuid(p.id)) ops.push({ kind: 'delete', table: 'reading_plans', match: { id: p.id, user_id: '$uid' } })
 
   return ops
 }

@@ -1,9 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useRelockOnBackground } from '../../lib/relock'
 import { getItem, setItem } from '../../lib/storage'
+import { enqueue, flush, useUserId } from '../../lib/sync'
+import { uuid } from '../../lib/uuid'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { sampleData, toISODate, type Campaign, type CampaignType, type DiaryEntry, type PrayerRequest } from './data'
+import { mergePrayer, prayerDiffOps, pullPrayer } from './sync'
 
 interface PrayerState {
   diary: DiaryEntry[]
@@ -36,11 +39,6 @@ interface PrayerValue extends PrayerState {
 
 const PrayerContext = createContext<PrayerValue | null>(null)
 
-let seq = 0
-function newId(prefix: string) {
-  seq += 1
-  return `${prefix}${Date.now().toString(36)}${seq}`
-}
 
 /** Título curto a partir do texto do pedido: a primeira frase, cortada na palavra até 48 letras. */
 export function titleFrom(text: string) {
@@ -72,7 +70,41 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
     if (!initial) setItem('prayer', state)
   }, [state, initial])
 
-  const update = useCallback((fn: (s: PrayerState) => PrayerState) => setState(fn), [])
+  // Cada mudança grava no aparelho (efeito acima) e manda a diferença para o banco. Exemplo não vai.
+  const current = useRef(state)
+  current.current = state
+  const isSample = useRef(sample)
+  isSample.current = sample
+  const update = useCallback(
+    (fn: (s: PrayerState) => PrayerState) => {
+      const prev = current.current
+      const next = fn(prev)
+      if (next === prev) return
+      current.current = next
+      setState(next)
+      if (!isSample.current && !initial) enqueue(...prayerDiffOps(prev, next))
+    },
+    [initial],
+  )
+
+  // Ao entrar: envia a fila e traz do banco o diário, os pedidos e as campanhas.
+  const uid = useUserId()
+  useEffect(() => {
+    if (!uid || sample || initial) return
+    let alive = true
+    flush()
+      .then(() => pullPrayer(uid))
+      .then((remote) => {
+        if (!alive || !remote) return
+        const next = { ...current.current, ...mergePrayer(current.current, remote) }
+        current.current = next
+        setState(next)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [uid, sample]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const value = useMemo<PrayerValue>(
     () => ({
@@ -82,7 +114,7 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
       setDiaryLock: (v) => update((s) => ({ ...s, diaryLock: v })),
       addDiaryEntry: (text) => {
         markActiveToday()
-        const entry = { id: newId('d'), date: toISODate(new Date()), text: text.trim() }
+        const entry = { id: uuid(), date: toISODate(new Date()), text: text.trim() }
         update((s) => ({ ...s, diary: [entry, ...s.diary] }))
         return entry
       },
@@ -90,7 +122,7 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
       deleteDiaryEntry: (id) => update((s) => ({ ...s, diary: s.diary.filter((e) => e.id !== id) })),
       addRequest: ({ text, shared, videoUri }) => {
         const r: PrayerRequest = {
-          id: newId('r'),
+          id: uuid(),
           title: text.trim() ? titleFrom(text) : 'Pedido em Libras',
           text: text.trim(),
           createdAt: toISODate(new Date()),
@@ -106,7 +138,7 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
       markAnswered: (id, date, testimony) =>
         update((s) => ({ ...s, requests: s.requests.map((r) => (r.id === id ? { ...r, answeredAt: date, testimony: testimony.trim() || undefined } : r)) })),
       addCampaign: ({ name, type, start, end }) => {
-        const c: Campaign = { id: newId('c'), name: name.trim(), type, start, end, doneDays: [] }
+        const c: Campaign = { id: uuid(), name: name.trim(), type, start, end, doneDays: [] }
         update((s) => ({ ...s, campaigns: [c, ...s.campaigns] }))
         return c
       },
