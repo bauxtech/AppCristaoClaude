@@ -1,3 +1,4 @@
+import { getTranslation } from '../bible/translations'
 import { router } from 'expo-router'
 import { useBlockedIds, useSettings } from '../settings/SettingsContext'
 import { visibleNotices } from '../settings/notices'
@@ -135,7 +136,7 @@ export function HomeScreen() {
                 {`"${passage.text}"`}
               </AppText>
               <AppText variant="bibleRef" tone="secondary" style={{ marginBottom: 20 }}>
-                {`${passage.reference} · Almeida`}
+                {`${passage.reference} · ${getTranslation().name}`}
               </AppText>
               <View
                 style={{

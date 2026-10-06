@@ -25,6 +25,8 @@ interface BibleState {
   activePlanId: string | null
   customPlans: PlanDef[]
   progress: Record<string, PlanProgress>
+  /** Último capítulo aberto, para continuar de onde parou. */
+  lastPosition: { book: string; chapter: number } | null
 }
 
 interface BibleValue extends BibleState {
@@ -45,6 +47,7 @@ interface BibleValue extends BibleState {
   markPlanDay: (id: string) => void
   /** Recomeça a contagem a partir de hoje, sem perder o que já foi lido. */
   resumePlan: (id: string) => void
+  setLastPosition: (book: string, chapter: number) => void
 }
 
 function today() {
@@ -62,9 +65,9 @@ function daysAgo(n: number) {
 
 /** Conta nova: nada lido, nenhum plano. Exemplo: o progresso do protótipo. */
 export function bibleInitial(sample: boolean): BibleState {
-  if (!sample) return { readChapters: [], highlights: {}, favorites: [], notes: {}, fontSize: 19, activePlanId: null, customPlans: [], progress: {} }
+  if (!sample) return { readChapters: [], highlights: {}, favorites: [], notes: {}, fontSize: 19, activePlanId: null, customPlans: [], progress: {}, lastPosition: null }
   const readChapters = BOOKS.flatMap((b) => Array.from({ length: b.read }, (_, i) => `${slugify(b.name)}:${i + 1}`))
-  return { readChapters, highlights: {}, favorites: [], notes: {}, fontSize: 19, activePlanId: 'nt-90', customPlans: [], progress: sampleProgress() }
+  return { readChapters, highlights: {}, favorites: [], notes: {}, fontSize: 19, activePlanId: 'nt-90', customPlans: [], progress: sampleProgress(), lastPosition: { book: 'salmos', chapter: 23 } }
 }
 
 const BibleContext = createContext<BibleValue | null>(null)
@@ -78,7 +81,7 @@ export function BibleProvider({ children, initial }: { children: ReactNode; init
     const base = bibleInitial(sampleData)
     if (initial) return { ...base, ...initial }
     const saved = getItem<Partial<BibleState> | null>('bible', null)
-    return saved ? { ...base, customPlans: [], progress: {}, ...saved } : base
+    return saved ? { ...base, customPlans: [], progress: {}, lastPosition: null, ...saved } : base
   })
   useDataReset((sample) => {
     const next = bibleInitial(sample)
@@ -159,6 +162,7 @@ export function BibleProvider({ children, initial }: { children: ReactNode; init
           }
         })
       },
+      setLastPosition: (book, chapter) => update((s) => (s.lastPosition?.book === book && s.lastPosition.chapter === chapter ? s : { ...s, lastPosition: { book, chapter } })),
       resumePlan: (id) =>
         update((s) => {
           const prog = s.progress[id]

@@ -1,18 +1,19 @@
 import { router } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { AppText, Card, Chip, ListRow, TextField, TopBar } from '../../../components'
 import { useTheme } from '../../../theme/ThemeProvider'
-import { BOOKS, slugify } from '../books'
-import { allVerses, searchVerses } from '../text'
+import { searchBible } from '../text'
 
 const SUGGESTIONS = ['pastor', 'ansiosos', 'João 3:16', 'Salmos 23']
+const LIMIT = 100
 
 export function SearchScreen() {
   const { colors } = useTheme()
   const [query, setQuery] = useState('')
-  const refs = useMemo(() => allVerses((slug) => BOOKS.find((b) => slugify(b.name) === slug)?.name ?? slug), [])
-  const results = searchVerses(query, refs)
+  // A busca roda em toda a Bíblia: espera a pessoa parar de digitar e mostra até LIMIT resultados.
+  const deferred = useDeferredValue(query)
+  const results = useMemo(() => searchBible(deferred, LIMIT), [deferred])
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -30,13 +31,13 @@ export function SearchScreen() {
           <Card accessibilityLiveRegion="polite" style={{ gap: 4 }}>
             <AppText variant="bodyStrong">{`Nenhum resultado para "${query}"`}</AppText>
             <AppText variant="body" tone="secondary">
-              Na prévia, a busca procura só nos versículos de exemplo.
+              Confira a grafia ou tente uma palavra só.
             </AppText>
           </Card>
         ) : null}
         {results.length > 0 ? (
           <AppText variant="label" tone="secondary" accessibilityLiveRegion="polite">
-            {`${results.length} ${results.length === 1 ? 'resultado' : 'resultados'}`}
+            {results.length >= LIMIT ? `Mostrando os ${LIMIT} primeiros resultados` : `${results.length} ${results.length === 1 ? 'resultado' : 'resultados'}`}
           </AppText>
         ) : null}
         {results.map((r) => (

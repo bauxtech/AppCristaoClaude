@@ -153,7 +153,7 @@ test('termos: sem marcar 18 anos, avisa que o app é para maiores de 18', async 
 
 test('tradição: só a tradução de domínio público pode ser escolhida', async () => {
   await renderApp(<TraditionScreen />)
-  expect(screen.getByRole('button', { name: 'Almeida' })).toBeSelected()
+  expect(screen.getByRole('button', { name: 'Bíblia Livre' })).toBeSelected()
   expect(screen.queryByRole('button', { name: 'NVI' })).toBeNull()
   expect(screen.getByLabelText(/Em breve: NVI/)).toBeTruthy()
 })

@@ -1,12 +1,13 @@
 import { fireEvent, screen } from '@testing-library/react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { BOOKS, bookBySlug, slugify } from '../src/features/bible/books'
+import { getTranslation, TRANSLATIONS_DATA } from '../src/features/bible/translations'
 import { ChapterScreen } from '../src/features/bible/screens/ChapterScreen'
 import { SearchScreen } from '../src/features/bible/screens/SearchScreen'
-import { allVerses, getChapter, searchVerses } from '../src/features/bible/text'
+import { BooksScreen } from '../src/features/bible/screens/BooksScreen'
+import { TranslationInfoScreen } from '../src/features/bible/screens/TranslationInfoScreen'
+import { getChapter, parseReference, searchBible, verseText } from '../src/features/bible/text'
 import { renderApp } from '../test-utils/render'
-
-const refs = allVerses((slug) => BOOKS.find((b) => slugify(b.name) === slug)?.name ?? slug)
 
 describe('texto bíblico', () => {
   test('tem os 66 livros', () => {
@@ -15,23 +16,60 @@ describe('texto bíblico', () => {
     expect(bookBySlug('joao')?.name).toBe('João')
   })
 
-  test('Salmos 23 está completo, com 6 versículos', () => {
+  test('todos os livros e capítulos têm texto, com 31.102 versículos', () => {
+    let total = 0
+    for (const b of BOOKS) {
+      for (let c = 1; c <= b.chapters; c++) {
+        const { verses } = getChapter(slugify(b.name), c)
+        expect(verses.length).toBeGreaterThan(0)
+        total += verses.length
+      }
+    }
+    expect(total).toBe(31102)
+  })
+
+  test('Salmos 23 tem 6 versículos', () => {
     const c = getChapter('salmos', 23)
     expect(c.complete).toBe(true)
     expect(c.verses.map((v) => v.v)).toEqual([1, 2, 3, 4, 5, 6])
+    expect(verseText('João', 3, 16)).toMatch(/^Porque Deus amou ao mundo/)
+  })
+
+  test('versículo vazio na fonte não aparece (Salmos 46:3 foi juntado ao 2)', () => {
+    expect(getChapter('salmos', 46).verses.map((v) => v.v)).not.toContain(3)
+  })
+
+  test('a tradução registra licença e crédito, e não se diz domínio público', () => {
+    const t = getTranslation()
+    expect(t.id).toBe('biblia-livre')
+    expect(t.license).not.toBe('public-domain')
+    expect(t.attribution).toMatch(/Almeida/)
+    expect(TRANSLATIONS_DATA.map((x) => x.id)).not.toEqual(expect.arrayContaining(['ara', 'naa', 'ntlh', 'nvi']))
   })
 
   test('busca por palavra ignora acento e caixa', () => {
-    expect(searchVerses('ANSIOSOS', refs).map((r) => `${r.book} ${r.chapter}:${r.verse}`)).toEqual(['Filipenses 4:6'])
+    const r = searchBible('ANSIOSOS', 200)
+    expect(r.length).toBeGreaterThan(0)
+    expect(r.every((x) => /ansiosos/i.test(x.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))).toBe(true)
+  })
+
+  test('busca respeita o limite', () => {
+    expect(searchBible('senhor', 50)).toHaveLength(50)
   })
 
   test('busca por referência', () => {
-    expect(searchVerses('João 3:16', refs)).toHaveLength(1)
-    expect(searchVerses('joao 3:16', refs)).toHaveLength(1)
+    expect(searchBible('João 3:16')).toHaveLength(1)
+    expect(searchBible('joao 3:16')[0].book).toBe('João')
+    expect(searchBible('Jo 3:16')[0].book).toBe('João')
+    expect(parseReference('Jó 3')?.book).toBe('Jó')
+    expect(parseReference('Hb 11:1')?.book).toBe('Hebreus')
+    expect(parseReference('1 Sm 3')?.book).toBe('1 Samuel')
+    expect(searchBible('Salmos 23')).toHaveLength(6)
+    expect(parseReference('Salmos 151')).toBeNull()
   })
 
   test('busca com menos de 2 letras não retorna nada', () => {
-    expect(searchVerses('a', refs)).toEqual([])
+    expect(searchBible('a')).toEqual([])
   })
 })
 
@@ -44,7 +82,7 @@ describe('tela do capítulo', () => {
   test('mostra os versículos com nome para o leitor de tela', async () => {
     await renderApp(<ChapterScreen />, { onboarded: true })
     expect(screen.getByRole('header', { name: 'Salmos 23' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /^Versículo 1\. O Senhor é o meu pastor/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Versículo 1\. Salmo de Davi: O SENHOR é meu pastor/ })).toBeTruthy()
   })
 
   test('grifar um versículo anuncia a cor, sem depender só dela', async () => {
@@ -53,6 +91,27 @@ describe('tela do capítulo', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Grifar' }))
     await fireEvent.press(screen.getByRole('button', { name: 'Grifar em amarelo' }))
     expect(screen.getByRole('button', { name: /^Versículo 1\..*grifado em amarelo/ })).toBeTruthy()
+  })
+
+  test('abrir um capítulo guarda onde parou e a aba Bíblia oferece continuar', async () => {
+    jest.mocked(useLocalSearchParams).mockReturnValue({ livro: 'romanos', capitulo: '8' })
+    await renderApp(
+      <>
+        <ChapterScreen />
+        <BooksScreen />
+      </>,
+      { onboarded: true },
+    )
+    await fireEvent.press(screen.getByRole('button', { name: 'Continuar: Romanos 8' }))
+    expect(router.push).toHaveBeenCalledWith('/biblia/romanos/8')
+  })
+
+  test('o fim do capítulo mostra o crédito da tradução, que abre a licença', async () => {
+    await renderApp(<ChapterScreen />, { onboarded: true })
+    await fireEvent.press(screen.getByRole('button', { name: /^Bíblia Livre · Creative Commons Atribuição/ }))
+    expect(router.push).toHaveBeenCalledWith('/biblia/sobre-traducao')
+    await renderApp(<TranslationInfoScreen />, { onboarded: true })
+    expect(screen.getByText(/Diego Santos, Mario Sérgio e Marco Teles/)).toBeTruthy()
   })
 
   test('capítulo já lido aparece como lido', async () => {
@@ -69,8 +128,8 @@ describe('tela do capítulo', () => {
 
   test('traduções licenciadas aparecem como em breve', async () => {
     await renderApp(<ChapterScreen />, { onboarded: true })
-    await fireEvent.press(screen.getByRole('button', { name: 'Almeida' }))
-    expect(screen.getByLabelText('Almeida, selecionada')).toBeTruthy()
+    await fireEvent.press(screen.getByRole('button', { name: 'Bíblia Livre' }))
+    expect(screen.getByLabelText('Bíblia Livre, selecionada')).toBeTruthy()
     expect(screen.getByLabelText('NVI, em breve')).toBeTruthy()
   })
 

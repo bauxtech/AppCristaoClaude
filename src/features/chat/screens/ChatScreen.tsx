@@ -18,6 +18,7 @@ import { askRemote, ChatBlocked } from '../remote'
 import { IS_REMOTE } from '../../../lib/supabase'
 import { useChat, type Conversation, type Message } from '../ChatContext'
 import { DAILY_LIMIT, isCrisis } from '../rules'
+import { getTranslation } from '../../bible/translations'
 
 const SUGGESTIONS = ['O que significa "O Senhor é meu pastor"?', 'Quais versículos falam sobre ansiedade?', 'O que a Bíblia diz sobre perdão?', 'Quem é o bom pastor em João 10?']
 
@@ -283,7 +284,7 @@ function Bubble({ m, onRetry, onListen, onDivided }: { m: Message; onRetry: () =
             accessibilityLabel={`${v.book} ${v.chapter}:${v.verse}. ${v.text}. Abrir na Bíblia`}
             style={{ borderRadius: 12, padding: 12, backgroundColor: colors.primarySoft, gap: 4 }}
           >
-            <AppText variant="small" style={{ color: colors.primary, fontFamily: fonts.semibold }}>{`${v.book} ${v.chapter}:${v.verse} · Almeida`}</AppText>
+            <AppText variant="small" style={{ color: colors.primary, fontFamily: fonts.semibold }}>{`${v.book} ${v.chapter}:${v.verse} · ${getTranslation().name}`}</AppText>
             <AppText style={{ fontFamily: fonts.bible, fontSize: size.body, color: colors.text, lineHeight: 24 }}>{v.text}</AppText>
           </Pressable>
         ))}

@@ -60,9 +60,11 @@ describe('tela do chat', () => {
   test('pergunta e resposta com versículo que abre a Bíblia', async () => {
     await renderApp(<ChatScreen />, { onboarded: true })
     await fireEvent.press(screen.getByRole('button', { name: 'Perguntar: Quais versículos falam sobre ansiedade?' }))
-    const link = await waitFor(() => screen.getByRole('link', { name: /^Filipenses 4:6\./ }), { timeout: 3000 })
-    await fireEvent.press(link)
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: 'filipenses', capitulo: '4', v: '6' } })
+    // Os versículos vêm do texto bíblico do app; a referência abre a Bíblia no versículo.
+    const links = await waitFor(() => screen.getAllByRole('link', { name: /^[\p{L}0-9 ]+ \d+:\d+\./u }), { timeout: 3000 })
+    expect(links[0].props.accessibilityLabel).toMatch(/ansi/i)
+    await fireEvent.press(links[0])
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/biblia/[livro]/[capitulo]', params: expect.objectContaining({ livro: expect.any(String), capitulo: expect.any(String), v: expect.any(String) }) })
   })
 
   test('aberto da Bíblia mostra a passagem no topo', async () => {

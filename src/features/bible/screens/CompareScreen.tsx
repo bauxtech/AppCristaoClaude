@@ -14,7 +14,7 @@ export function CompareScreen() {
         <Card style={{ gap: 6 }}>
           <AppText variant="bodyStrong">Disponível com a segunda tradução</AppText>
           <AppText variant="body" tone="secondary">
-            Para comparar, é preciso ter duas traduções. No lançamento só há a Almeida, de domínio público. As traduções licenciadas entram depois.
+            Para comparar, é preciso ter duas traduções. No lançamento só há a Bíblia Livre. As traduções licenciadas entram depois.
           </AppText>
         </Card>
         <AppText variant="label" tone="secondary">

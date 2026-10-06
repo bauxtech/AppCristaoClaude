@@ -14,6 +14,7 @@ import { NotFound } from './NotFound'
 import { useSession } from '../../../state/session'
 import { SuggestedSong } from '../../music/screens/MusicScreens'
 import { useSettings } from '../../settings/SettingsContext'
+import { getTranslation } from '../translations'
 
 export function ChapterScreen() {
   const { colors, isDark } = useTheme()
@@ -37,11 +38,16 @@ export function ChapterScreen() {
       if (mins > 0) addMinutes('reading', mins)
     }
   }, [slug, chapter]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Guarda onde a pessoa parou.
+  useEffect(() => {
+    if (book && chapter >= 1 && chapter <= book.chapters) bible.setLastPosition(slug, chapter)
+  }, [slug, chapter]) // eslint-disable-line react-hooks/exhaustive-deps
   const [sheet, setSheet] = useState<'actions' | 'highlight' | 'translation' | 'more' | null>(null)
 
   if (!book || !chapter || chapter < 1 || chapter > book.chapters) return <NotFound />
 
-  const { verses, complete } = getChapter(slug, chapter)
+  const { verses } = getChapter(slug, chapter)
+  const translation = getTranslation()
   const key = chapterKey(slug, chapter)
   const isRead = bible.readChapters.includes(key)
   const next = chapter < book.chapters ? chapter + 1 : null
@@ -80,7 +86,7 @@ export function ChapterScreen() {
 
       {/* Tradução, tamanho da letra e comparar */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: colors.line }}>
-        <Button label="Almeida" icon="chevronDown" variant="text" size="sm" onPress={() => setSheet('translation')} accessibilityHint="Trocar a tradução" />
+        <Button label={translation.name} icon="chevronDown" variant="text" size="sm" onPress={() => setSheet('translation')} accessibilityHint="Trocar a tradução" />
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <SizeButton label="A-" spoken="Diminuir a letra" onPress={() => bible.setFontSize(bible.fontSize - 1)} />
           <AppText variant="small" tone="secondary" accessibilityLabel={`Tamanho da letra ${bible.fontSize}`}>
@@ -93,16 +99,11 @@ export function ChapterScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 140, gap: 6 }}>
         {verses.length === 0 ? (
           <Card style={{ gap: 6 }}>
-            <AppText variant="bodyStrong">Texto ainda não carregado</AppText>
+            <AppText variant="bodyStrong">Capítulo não encontrado</AppText>
             <AppText variant="body" tone="secondary">
-              Na prévia, só Salmos 23 tem o capítulo inteiro. O texto completo, de domínio público, entra quando a Bíblia for carregada no app.
+              Volte e escolha outro capítulo.
             </AppText>
           </Card>
-        ) : null}
-        {verses.length > 0 && !complete ? (
-          <AppText variant="small" tone="secondary" style={{ marginBottom: 8 }}>
-            Na prévia, este capítulo mostra só alguns versículos.
-          </AppText>
         ) : null}
         {verses.map((v) => {
           const k = verseKey(slug, chapter, v.v)
@@ -168,6 +169,8 @@ export function ChapterScreen() {
               <SuggestedSong moment="oracao" />
             </View>
           ) : null}
+          {/* Crédito exigido pela licença do texto. */}
+          <Button label={`${translation.name} · ${translation.licenseName}`} variant="text" size="sm" onPress={() => router.push('/biblia/sobre-traducao')} accessibilityHint="Abre o crédito e a licença da tradução" />
         </View>
       </ScrollView>
 
@@ -277,7 +280,7 @@ export function ChapterScreen() {
           </View>
         ))}
         <AppText variant="small" tone="secondary">
-          No lançamento, só a tradução de domínio público está disponível. As outras entram depois.
+          No lançamento, só a Bíblia Livre está disponível. As traduções licenciadas entram depois.
         </AppText>
       </Sheet>
 

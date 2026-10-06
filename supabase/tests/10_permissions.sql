@@ -312,8 +312,12 @@ select tests.ok('os dados da conta apagada somem junto', not exists (select 1 fr
 -- ─── Texto bíblico, acesso e limites ─────────────────────────────────────────
 
 insert into public.bible_verses (book, chapter, verse, text) values
-  ('filipenses', 4, 6, 'Não estejais ansiosos por coisa alguma; antes, em tudo fazei conhecidas as vossas necessidades a Deus em oração e súplica, com ação de graças.'),
-  ('salmos', 23, 1, 'O Senhor é o meu pastor; nada me faltará.');
+  ('filipenses', 4, 6, 'Não estejais ansiosos por coisa alguma; mas em tudo, por meio de orações e súplicas com ações de gratidão, sejam os vossos pedidos conhecidos por Deus;'),
+  ('salmos', 23, 1, 'Salmo de Davi: O SENHOR é meu pastor, nada me faltará.');
+select tests.ok('versículo sem tradução informada entra como Bíblia Livre', (select translation from public.bible_verses where book = 'salmos' and chapter = 23 and verse = 1) = 'biblia-livre');
+select tests.ok('versículo de tradução não registrada é recusado', tests.denied($$insert into public.bible_verses (translation, book, chapter, verse, text) values ('ara', 'salmos', 23, 2, 'x')$$));
+select tests.ok('a Bíblia Livre está registrada com licença CC BY, não domínio público',
+  (select license from public.bible_translations where id = 'biblia-livre') = 'cc-by-3.0-br');
 
 select tests.as_user('00000000-0000-0000-0000-00000000000b');
 select tests.ok('busca encontra versículo por palavra parecida (ansiedade)', tests.rows($$select * from public.search_verses('ansiosos')$$) = 1);
@@ -343,3 +347,13 @@ select tests.ok('authenticated não pode esvaziar tabela (TRUNCATE não passa pe
   not exists (select 1 from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = 'public' and privilege_type = 'TRUNCATE'));
 select tests.ok('authenticated só lê o texto bíblico',
   not has_table_privilege('authenticated', 'public.bible_verses', 'insert,update,delete'));
+select tests.ok('authenticated só lê o registro das traduções',
+  not has_table_privilege('authenticated', 'public.bible_translations', 'insert,update,delete'));
+
+select tests.as_anon();
+select tests.ok('visitante sem login não lê as traduções', tests.denied($$select * from public.bible_translations$$) or tests.rows($$select * from public.bible_translations$$) = 0);
+reset role;
+select tests.as_user('00000000-0000-0000-0000-00000000000b');
+select tests.ok('pessoa logada lê o crédito da tradução', tests.rows($$select * from public.bible_translations where attribution like '%Almeida%'$$) = 1);
+select tests.ok('pessoa não altera o crédito da tradução', tests.denied($$update public.bible_translations set license = 'public-domain'$$));
+reset role;

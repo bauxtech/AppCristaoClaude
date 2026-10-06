@@ -11,7 +11,7 @@ import { OnboardingScaffold } from '../OnboardingScaffold'
 export function TraditionScreen() {
   const { profile, updateProfile } = useSession()
   const [trad, setTrad] = useState<string | null>(profile.tradition)
-  const [translation, setTranslation] = useState('almeida')
+  const [translation, setTranslation] = useState('biblia-livre')
 
   function next() {
     updateProfile({ tradition: trad })

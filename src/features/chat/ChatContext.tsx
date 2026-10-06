@@ -1,3 +1,4 @@
+import { verseText } from '../bible/text'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
 import { useSession } from '../../state/session'
@@ -61,7 +62,7 @@ function sample(): Conversation[] {
           id: 'm2',
           role: 'assistant',
           text: 'Estes são os versículos do texto bíblico do app que tratam do que você perguntou.',
-          answer: { text: '', verses: [{ book: 'Salmos', chapter: 23, verse: 1, text: 'O Senhor é o meu pastor; nada me faltará.' }], preview: true },
+          answer: { text: '', verses: [{ book: 'Salmos', chapter: 23, verse: 1, text: verseText('Salmos', 23, 1) }], preview: true },
         },
       ],
     },

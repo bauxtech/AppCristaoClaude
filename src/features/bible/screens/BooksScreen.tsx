@@ -7,7 +7,7 @@ import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { useBible } from '../BibleContext'
-import { BOOKS, slugify, type BookInfo } from '../books'
+import { bookBySlug, BOOKS, slugify, type BookInfo } from '../books'
 
 export function bookProgress(book: BookInfo, readChapters: string[]) {
   const slug = slugify(book.name)
@@ -17,7 +17,8 @@ export function bookProgress(book: BookInfo, readChapters: string[]) {
 export function BooksScreen() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
-  const { readChapters } = useBible()
+  const { readChapters, lastPosition } = useBible()
+  const last = lastPosition ? bookBySlug(lastPosition.book) : undefined
   const [testament, setTestament] = useState<'AT' | 'NT'>('NT')
   const [query, setQuery] = useState('')
 
@@ -55,6 +56,14 @@ export function BooksScreen() {
             </View>
             <ProgressBar value={done} max={66} label={`${done} de 66 livros concluídos`} />
           </View>
+          {last && lastPosition ? (
+            <Button
+              label={`Continuar: ${last.name} ${lastPosition.chapter}`}
+              icon="book"
+              onPress={() => router.push(`/biblia/${lastPosition.book}/${lastPosition.chapter}`)}
+              accessibilityHint="Abre o último capítulo que você leu"
+            />
+          ) : null}
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Button label="Planos" variant="outline" size="sm" onPress={() => router.push('/biblia/planos')} style={{ flex: 1 }} />
             <Button label="Comparar" variant="outline" size="sm" onPress={() => router.push('/biblia/comparar')} style={{ flex: 1 }} />

@@ -18,7 +18,7 @@ export const demoCell = { name: 'Jovens da Central', leader: 'João Silva', when
 
 /** Só uma tradução de domínio público no lançamento (regra decidida). As outras aparecem como "Em breve". */
 export const TRANSLATIONS = [
-  { id: 'almeida', label: 'Almeida', available: true },
+  { id: 'biblia-livre', label: 'Bíblia Livre', available: true },
   { id: 'nvi', label: 'NVI', available: false },
   { id: 'ara', label: 'ARA', available: false },
   { id: 'acf', label: 'ACF', available: false },

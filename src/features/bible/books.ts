@@ -49,7 +49,7 @@ export const BOOKS: BookInfo[] = [
   { name: 'Jonas', abbr: 'Jn', chapters: 4, read: 4, testament: 'AT', author: 'Jonas', era: '760 a.C. aprox.', theme: 'Misericórdia de Deus para além de Israel. Fuga e obediência.', genre: 'Profético / Narrativa' },
   { name: 'Miquéias', abbr: 'Mq', chapters: 7, read: 0, testament: 'AT', author: 'Miquéias', era: '740–700 a.C.', theme: 'Julgamento e esperança. O Governante de Belém.', genre: 'Profético' },
   { name: 'Naum', abbr: 'Na', chapters: 3, read: 0, testament: 'AT', author: 'Naum', era: '650 a.C. aprox.', theme: 'Julgamento de Nínive e conforto para Judá.', genre: 'Profético' },
-  { name: 'Habacuque', abbr: 'Hb', chapters: 3, read: 0, testament: 'AT', author: 'Habacuque', era: '610 a.C. aprox.', theme: 'O justo viverá pela fé. Diálogo com Deus sobre o mal.', genre: 'Profético' },
+  { name: 'Habacuque', abbr: 'Hc', chapters: 3, read: 0, testament: 'AT', author: 'Habacuque', era: '610 a.C. aprox.', theme: 'O justo viverá pela fé. Diálogo com Deus sobre o mal.', genre: 'Profético' },
   { name: 'Sofonias', abbr: 'Sf', chapters: 3, read: 0, testament: 'AT', author: 'Sofonias', era: '630 a.C. aprox.', theme: 'O Dia do Senhor como juízo e salvação.', genre: 'Profético' },
   { name: 'Ageu', abbr: 'Ag', chapters: 2, read: 0, testament: 'AT', author: 'Ageu', era: '520 a.C.', theme: 'Encorajamento para reconstruir o templo após o exílio.', genre: 'Profético' },
   { name: 'Zacarias', abbr: 'Zc', chapters: 14, read: 0, testament: 'AT', author: 'Zacarias', era: '520–480 a.C.', theme: 'Visões sobre a restauração e o Rei que vem em mansidão.', genre: 'Profético' },

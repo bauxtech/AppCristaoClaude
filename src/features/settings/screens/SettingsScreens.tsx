@@ -17,6 +17,7 @@ import { useProfile } from '../../profile/ProfileContext'
 import { AUDIO_DAYS } from '../../sermon/data'
 import { useSettings } from '../SettingsContext'
 import { isValidEmail } from './AccountScreens'
+import { verseText } from '../../bible/text'
 
 function SwitchRow({ label, sub, value, onChange, divider }: { label: string; sub?: string; value: boolean; onChange: (v: boolean) => void; divider?: boolean }) {
   const { colors } = useTheme()
@@ -236,7 +237,7 @@ export function BibleSettingsScreen() {
           <Button label="A+" variant="outline" size="sm" onPress={() => bible.setFontSize(bible.fontSize + 1)} disabled={bible.fontSize >= FONT_MAX} accessibilityHint="Aumentar o texto bíblico" />
         </View>
         <AppText style={{ fontFamily: s.bibleFont === 'sans' ? fonts.regular : fonts.bible, fontSize: bible.fontSize, lineHeight: bible.fontSize * 1.6, color: colors.text }}>
-          O Senhor é o meu pastor; nada me faltará.
+          {verseText('Salmos', 23, 1)}
         </AppText>
       </Card>
 
@@ -267,7 +268,7 @@ export function BibleSettingsScreen() {
             ))}
           </View>
         )}
-        <Button label="Ouvir um trecho" variant="outline" size="sm" icon="volume" onPress={() => Speech.speak('O Senhor é o meu pastor; nada me faltará.', { language: 'pt-BR', voice: s.voice ?? undefined })} />
+        <Button label="Ouvir um trecho" variant="outline" size="sm" icon="volume" onPress={() => Speech.speak(verseText('Salmos', 23, 1), { language: 'pt-BR', voice: s.voice ?? undefined })} />
       </Card>
     </Page>
   )

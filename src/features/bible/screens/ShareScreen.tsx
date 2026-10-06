@@ -1,3 +1,4 @@
+import { getTranslation } from '../translations'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { ScrollView, Share, View } from 'react-native'
@@ -36,7 +37,7 @@ export function ShareScreen() {
             {verse?.text ?? ''}
           </AppText>
           <AppText variant="small" style={{ color: look.sub, textAlign: 'center', fontFamily: 'Figtree_600SemiBold' }}>
-            {`${ref} · Almeida`}
+            {`${ref} · ${getTranslation().name}`}
           </AppText>
         </View>
         <AppText variant="label" tone="secondary">
@@ -47,7 +48,7 @@ export function ShareScreen() {
           <Chip label="Azul" selected={bg === 'azul'} onPress={() => setBg('azul')} />
           <Chip label="Escuro" selected={bg === 'escuro'} onPress={() => setBg('escuro')} />
         </View>
-        <Button label="Compartilhar" onPress={() => Share.share({ message: `"${verse?.text ?? ''}" ${ref} (Almeida)` }).catch(() => {})} />
+        <Button label="Compartilhar" onPress={() => Share.share({ message: `"${verse?.text ?? ''}" ${ref} (${getTranslation().name}, ${getTranslation().licenseName})` }).catch(() => {})} />
         <AppText variant="small" tone="secondary">
           Na prévia, o texto é compartilhado sem a imagem. A imagem entra com o app no celular.
         </AppText>

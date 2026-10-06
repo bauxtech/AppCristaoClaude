@@ -2,9 +2,11 @@
 // Saem daqui quando o fluxo "Hoje e Bíblia" ligar o app ao banco.
 
 import type { IconName } from '../../components/Icon'
+import { verseText } from '../bible/text'
 
+// O versículo vem sempre do texto bíblico do app, nunca escrito à mão nem pela IA.
 export const passage = {
-  text: 'O Senhor é o meu pastor; nada me faltará.',
+  text: verseText('Salmos', 23, 1),
   reference: 'Salmos 23:1',
 }
 

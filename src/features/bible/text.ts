@@ -1,50 +1,28 @@
-// Texto bíblico de exemplo: só os versículos que aparecem no protótipo.
-// Tradução de exemplo "Almeida". O texto completo de domínio público substitui este arquivo
-// quando a Bíblia for carregada no app. Nenhum versículo aqui é gerado por IA.
+// Texto bíblico do app, guardado dentro do próprio app: funciona sem internet e não depende de API.
+// A tradução e a licença ficam em translations.ts. Nenhum versículo aqui é gerado por IA.
 
-import { slugify } from './books'
+import { BOOKS, slugify } from './books'
+import { DEFAULT_TRANSLATION, getTranslation } from './translations'
 
 export interface Verse {
   v: number
   text: string
 }
 
-/** Chave: "slug-do-livro:capítulo". */
-const CHAPTERS: Record<string, Verse[]> = {
-  'salmos:23': [
-    { v: 1, text: 'O Senhor é o meu pastor; nada me faltará.' },
-    { v: 2, text: 'Ele me faz repousar em pastos verdejantes. Leva-me para junto das águas de descanso.' },
-    { v: 3, text: 'Refrigera a minha alma; guia-me pelas veredas da justiça por amor do seu nome.' },
-    { v: 4, text: 'Ainda que eu ande pelo vale da sombra da morte, não temerei mal algum, porque tu estás comigo; o teu bordão e o teu cajado me consolam.' },
-    { v: 5, text: 'Preparas uma mesa perante mim na presença dos meus inimigos; unges a minha cabeça com óleo; o meu cálice transborda.' },
-    { v: 6, text: 'Certamente que a bondade e a misericórdia me seguirão todos os dias da minha vida; e habitarei na casa do Senhor por longos dias.' },
-  ],
-  'joao:3': [{ v: 16, text: 'Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.' }],
-  'joao:10': [{ v: 11, text: 'Eu sou o bom pastor; o bom pastor dá a sua vida pelas ovelhas.' }],
-  'filipenses:4': [
-    { v: 6, text: 'Não estejais ansiosos por coisa alguma; antes, em tudo fazei conhecidas as vossas necessidades a Deus em oração e súplica, com ação de graças.' },
-    { v: 13, text: 'Tudo posso naquele que me fortalece.' },
-    { v: 19, text: 'O meu Deus suprirá todas as vossas necessidades segundo as suas riquezas em glória em Cristo Jesus.' },
-  ],
-  'isaias:40': [{ v: 11, text: 'Como pastor ele apascenta o seu rebanho, ajunta os cordeiros com os braços.' }],
-  'ezequiel:34': [{ v: 23, text: 'Levantarei sobre elas um único pastor que as apascentará, o meu servo Davi.' }],
-  'hebreus:13': [{ v: 20, text: 'O Deus da paz que pelo sangue da aliança eterna trouxe dentre os mortos o grande pastor das ovelhas.' }],
-  '1-pedro:2': [{ v: 25, text: 'Porque andáveis desgarrados como ovelhas, mas agora vos convertestes ao Bispo e Pastor das vossas almas.' }],
-  'mateus:18': [{ v: 20, text: 'Porque onde estiverem dois ou três reunidos em meu nome, estou no meio deles.' }],
-  'proverbios:31': [{ v: 10, text: 'Quem pode achar a mulher virtuosa? O seu valor excede muito ao de rubis.' }],
-  'efesios:4': [{ v: 32, text: 'Portanto, sede bondosos e compassivos uns para com os outros, perdoando-vos mutuamente, assim como Deus vos perdoou em Cristo.' }],
-}
-
-/** Capítulos com o texto inteiro na prévia. Nos outros, só alguns versículos. */
-const COMPLETE = new Set(['salmos:23'])
-
 export function chapterKey(bookSlug: string, chapter: number) {
   return `${bookSlug}:${chapter}`
 }
 
-export function getChapter(bookSlug: string, chapter: number): { verses: Verse[]; complete: boolean } {
-  const key = chapterKey(bookSlug, chapter)
-  return { verses: CHAPTERS[key] ?? [], complete: COMPLETE.has(key) }
+function bookChapters(bookSlug: string, translation = DEFAULT_TRANSLATION): string[][] {
+  const load = getTranslation(translation).books[bookSlug]
+  return load ? load() : []
+}
+
+/** Versículos do capítulo. Versículo vazio na fonte (texto juntado ao anterior) não aparece. */
+export function getChapter(bookSlug: string, chapter: number, translation = DEFAULT_TRANSLATION): { verses: Verse[]; complete: boolean } {
+  const ch = bookChapters(bookSlug, translation)[chapter - 1]
+  if (!ch) return { verses: [], complete: false }
+  return { verses: ch.map((text, i) => ({ v: i + 1, text })).filter((x) => x.text), complete: true }
 }
 
 export interface VerseRef {
@@ -53,13 +31,6 @@ export interface VerseRef {
   chapter: number
   verse: number
   text: string
-}
-
-export function allVerses(bookName: (slug: string) => string): VerseRef[] {
-  return Object.entries(CHAPTERS).flatMap(([key, verses]) => {
-    const [slug, ch] = key.split(':')
-    return verses.map((v) => ({ book: bookName(slug), bookSlug: slug, chapter: Number(ch), verse: v.v, text: v.text }))
-  })
 }
 
 /** Referências cruzadas de exemplo do protótipo (para Salmos 23). */
@@ -76,11 +47,73 @@ export function verseText(bookName: string, chapter: number, verse: number) {
   return getChapter(slugify(bookName), chapter).verses.find((v) => v.v === verse)?.text ?? ''
 }
 
-/** Busca por palavra ou por referência ("Jo 3:16", "salmos 23"). */
-export function searchVerses(query: string, refs: VerseRef[]): VerseRef[] {
-  const q = query.trim().toLowerCase()
+const plain = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+
+// Texto sem acento de cada livro, montado na primeira busca e guardado na memória.
+const plainCache = new Map<string, string[][]>()
+function plainBook(slug: string, translation: string, chapters: string[][]) {
+  const key = `${translation}:${slug}`
+  let p = plainCache.get(key)
+  if (!p) {
+    p = chapters.map((vs) => vs.map(plain))
+    plainCache.set(key, p)
+  }
+  return p
+}
+
+/** "Jo 3:16", "joão 3", "salmos 23:1": devolve a referência, se a busca for uma. */
+export function parseReference(query: string): { bookSlug: string; book: string; chapter: number; verse?: number } | null {
+  const raw = query.trim().toLowerCase()
+  const m = plain(raw).match(/^(\d?\s*[a-z]+)\.?\s+(\d+)(?:\s*[:.]\s*(\d+))?$/)
+  if (!m) return null
+  const name = m[1].replace(/\s+/g, ' ')
+  const typed = raw.split(/[\s.]+\d/)[0].replace(/\s+/g, '')
+  // "Jó" com acento é Jó; "jo" sem acento fica com João (abreviação repetida: vale a do livro mais adiante).
+  const b =
+    BOOKS.find((x) => x.abbr.toLowerCase() === typed || x.name.toLowerCase() === raw.replace(/\s*\d+([:.]\d+)?$/, '')) ??
+    BOOKS.find((x) => plain(x.name) === name) ??
+    [...BOOKS].reverse().find((x) => plain(x.abbr) === name.replace(' ', '')) ??
+    BOOKS.find((x) => name.length >= 3 && plain(x.name).startsWith(name))
+  if (!b) return null
+  const chapter = Number(m[2])
+  if (chapter < 1 || chapter > b.chapters) return null
+  return { bookSlug: slugify(b.name), book: b.name, chapter, verse: m[3] ? Number(m[3]) : undefined }
+}
+
+/**
+ * Busca por palavra, trecho ou referência em toda a Bíblia, sem internet.
+ * Ignora acentos e maiúsculas. Para no limite para não travar a tela.
+ */
+export function searchBible(query: string, limit = 100, translation = DEFAULT_TRANSLATION): VerseRef[] {
+  const q = query.trim()
   if (q.length < 2) return []
-  const plain = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const ref = parseReference(q)
+  if (ref) {
+    const { verses } = getChapter(ref.bookSlug, ref.chapter, translation)
+    return verses
+      .filter((v) => !ref.verse || v.v === ref.verse)
+      .slice(0, limit)
+      .map((v) => ({ book: ref.book, bookSlug: ref.bookSlug, chapter: ref.chapter, verse: v.v, text: v.text }))
+  }
   const pq = plain(q)
-  return refs.filter((r) => plain(r.text).includes(pq) || plain(`${r.book} ${r.chapter}:${r.verse}`).includes(pq))
+  const out: VerseRef[] = []
+  for (const b of BOOKS) {
+    const slug = slugify(b.name)
+    const chapters = bookChapters(slug, translation)
+    const plains = plainBook(slug, translation, chapters)
+    for (let c = 0; c < chapters.length; c++) {
+      const vs = chapters[c]
+      for (let v = 0; v < vs.length; v++) {
+        if (vs[v] && plains[c][v].includes(pq)) {
+          out.push({ book: b.name, bookSlug: slug, chapter: c + 1, verse: v + 1, text: vs[v] })
+          if (out.length >= limit) return out
+        }
+      }
+    }
+  }
+  return out
 }

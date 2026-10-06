@@ -5,6 +5,7 @@ import { ScrollView, View } from 'react-native'
 import { AppText, Button, Card, Chip, IconButton, ListRow, SectionLabel, Switch, Tag, TopBar, useToast } from '../components'
 import { ProgressBar } from '../components/ProgressBar'
 import { useTheme, type AppearancePreference } from '../theme/ThemeProvider'
+import { verseText } from '../features/bible/text'
 
 /** Vitrine dos componentes, para revisar no celular em todos os modos. Não é uma tela do produto. */
 export default function ComponentesRoute() {
@@ -110,7 +111,7 @@ function Componentes() {
           <AppText variant="body">Corpo do texto, 16. Respeita o tamanho de fonte do celular.</AppText>
           <AppText variant="small" tone="secondary">Texto de apoio, 14</AppText>
           <AppText variant="bible" style={{ marginTop: 8 }}>
-            {'"O Senhor é o meu pastor; nada me faltará."'}
+            {`"${verseText('Salmos', 23, 1)}"`}
           </AppText>
           <AppText variant="bibleRef" tone="secondary">Texto bíblico em Literata, 19</AppText>
         </Card>
