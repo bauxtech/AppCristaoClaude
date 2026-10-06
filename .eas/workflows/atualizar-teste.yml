@@ -1,0 +1,16 @@
+# Publica uma atualização para quem já tem o APK de teste instalado (canal preview).
+# O app baixa a atualização sozinho ao abrir. APK novo só quando entra algo nativo.
+name: Atualizar o app de teste
+on:
+  workflow_dispatch: {}
+jobs:
+  atualizar:
+    name: Publicar atualização no canal preview
+    type: update
+    environment: preview
+    env:
+      EXPO_PUBLIC_PREVIEW: '1'
+    params:
+      branch: preview
+      platform: android
+      message: Atualização do app de teste
