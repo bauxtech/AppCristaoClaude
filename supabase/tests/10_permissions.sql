@@ -338,6 +338,12 @@ select tests.ok('criar célula com id do aparelho e reenviar não duplica',
   and (select id from public.create_cell('Nova', 'Mista', 2, '20:00', 'Rua A, 1', '', 'Centro', '40000000-0000-0000-0000-000000000001')) = '40000000-0000-0000-0000-000000000001'
   and tests.rows($$select * from public.cell_members where cell_id = '40000000-0000-0000-0000-000000000001'$$) = 1);
 reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000011');
+update public.cells set archived = true where id = '40000000-0000-0000-0000-000000000001';
+delete from public.cell_members where cell_id = '40000000-0000-0000-0000-000000000001' and user_id = auth.uid();
+select tests.ok('quem criou e saiu não recebe de volta endereço e código reenviando o id',
+  tests.denied($$select public.create_cell('Nova', null, 1, '20:00', '', '', '', '40000000-0000-0000-0000-000000000001')$$));
+reset role;
 select tests.as_user('00000000-0000-0000-0000-00000000000e');
 select tests.ok('ninguém toma uma célula de outro reenviando o id dela', tests.denied($$select public.create_cell('Roubo', null, 1, '20:00', '', '', '', '10000000-0000-0000-0000-000000000001')$$));
 reset role;

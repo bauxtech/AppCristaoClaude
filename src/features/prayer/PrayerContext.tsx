@@ -134,13 +134,23 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
           text: text.trim(),
           createdAt: toISODate(new Date()),
           shared,
+          sharedCellId: shared ? currentCellId() : null,
           prayedBy: [],
           videoUri,
         }
         update((s) => ({ ...s, requests: [r, ...s.requests] }))
         return r
       },
-      updateRequest: (id, patch) => update((s) => ({ ...s, requests: s.requests.map((r) => (r.id === id ? { ...r, ...patch } : r)) })),
+      updateRequest: (id, patch) =>
+        update((s) => ({
+          ...s,
+          requests: s.requests.map((r) => {
+            if (r.id !== id) return r
+            // Ligar o compartilhamento fixa a célula aberta agora; desligar tira de qualquer célula.
+            const sharedCellId = patch.shared === undefined ? r.sharedCellId : patch.shared ? (r.shared ? r.sharedCellId : currentCellId()) : null
+            return { ...r, ...patch, sharedCellId }
+          }),
+        })),
       deleteRequest: (id) => update((s) => ({ ...s, requests: s.requests.filter((r) => r.id !== id) })),
       markAnswered: (id, date, testimony) =>
         update((s) => ({ ...s, requests: s.requests.map((r) => (r.id === id ? { ...r, answeredAt: date, testimony: testimony.trim() || undefined } : r)) })),

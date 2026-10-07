@@ -22,6 +22,8 @@ export type SyncOp = (
 ) & {
   /** Conta logada quando a operação entrou na fila. Sem dono: feita antes do primeiro login (cadastro). */
   owner?: string
+  /** Só faz sentido se o envio de arquivo logo antes deu certo (ex.: a linha que aponta para o arquivo). */
+  afterUpload?: boolean
 }
 
 const KEY = 'syncOutbox'
@@ -112,12 +114,19 @@ export function clearOutbox() {
   save([])
 }
 
-function fill<T>(v: T, uid: string): T {
+/** Campos que guardam caminho de arquivo. Só neles '$uid/...' vira a pasta da pessoa; texto digitado não é tocado. */
+const PATH_KEYS = new Set(['photo_path', 'cover_path', 'path'])
+
+function fillPath(v: string, uid: string) {
+  return v.startsWith(`${UID}/`) ? `${uid}${v.slice(UID.length)}` : v
+}
+
+/** Troca '$uid' (valor ou nome de campo, como nas presenças) pelo id de quem está logado. */
+export function fill<T>(v: T, uid: string, key?: string): T {
   if (v === UID) return uid as T
-  // Caminho de arquivo que começa pela pasta da pessoa: '$uid/avatar.jpg'.
-  if (typeof v === 'string' && v.startsWith(`${UID}/`)) return `${uid}${v.slice(UID.length)}` as T
-  if (Array.isArray(v)) return v.map((x) => fill(x, uid)) as T
-  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fill(x, uid)])) as T
+  if (typeof v === 'string' && key && PATH_KEYS.has(key)) return fillPath(v, uid) as T
+  if (Array.isArray(v)) return v.map((x) => fill(x, uid, key)) as T
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k === UID ? uid : k, fill(x, uid, k)])) as T
   return v
 }
 
@@ -143,11 +152,11 @@ async function run(c: SupabaseClient, op: SyncOp, uid: string): Promise<RunResul
     const bytes = await readBytes(op.uri)
     // Arquivo apagado do aparelho antes do envio: não há o que enviar.
     if (!bytes) return { error: { message: 'Arquivo não encontrado no aparelho' }, status: 400 }
-    const { error } = await c.storage.from(op.bucket).upload(fill(op.path, uid), bytes, { contentType: op.contentType, upsert: true })
+    const { error } = await c.storage.from(op.bucket).upload(fillPath(op.path, uid), bytes, { contentType: op.contentType, upsert: true })
     return { error, status: error ? Number((error as { statusCode?: string }).statusCode) || 0 : 200 }
   }
   if (op.kind === 'remove') {
-    const { error } = await c.storage.from(op.bucket).remove(fill(op.paths, uid))
+    const { error } = await c.storage.from(op.bucket).remove(op.paths.map((x) => fillPath(x, uid)))
     return { error, status: error ? Number((error as { statusCode?: string }).statusCode) || 0 : 200 }
   }
   return await c.from(op.table).delete().match(fill(op.match, uid))
@@ -173,6 +182,13 @@ export function flush(): Promise<void> {
           r = { error: { message: String((e as Error)?.message ?? e) }, status: 0 }
         }
         if (r.error && isTransient(r)) break
+        if (r.error && op.kind === 'upload') {
+          // Arquivo recusado de vez: a linha que apontaria para ele também sai, para não apontar para o nada.
+          const q = load()
+          const i = q.indexOf(op)
+          const dependents = q.slice(i + 1).filter((x, j) => x.afterUpload && q.slice(i + 1, i + 1 + j).every((y) => y.afterUpload))
+          if (dependents.length) save(q.filter((x) => !dependents.includes(x)))
+        }
         if (r.error) {
           console.warn('Sincronização: operação recusada pelo servidor', op.kind === 'rpc' ? op.fn : op.kind === 'upload' || op.kind === 'remove' ? op.bucket : op.table, r.error.message)
           setItem(DROPPED, [...droppedOps(), op].slice(-50))

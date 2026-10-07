@@ -14,6 +14,8 @@ interface Props {
   size?: 'md' | 'sm'
   icon?: IconName
   disabled?: boolean
+  /** Esperando o servidor. O leitor de tela anuncia "ocupado" e o botão não aceita outro toque. */
+  busy?: boolean
   /** Explica o que acontece ao tocar, quando o rótulo sozinho não basta. */
   accessibilityHint?: string
   style?: StyleProp<ViewStyle>
@@ -23,7 +25,8 @@ interface Props {
 /** Área mínima de toque de 48, que cobre 44 pt no iPhone e 48 dp no Android. */
 export const MIN_TOUCH = 48
 
-export function Button({ label, onPress, variant = 'primary', size: sz = 'md', icon, disabled, accessibilityHint, style, testID }: Props) {
+export function Button({ label, onPress, variant = 'primary', size: sz = 'md', icon, disabled: disabledProp, busy, accessibilityHint, style, testID }: Props) {
+  const disabled = disabledProp || busy
   const { colors } = useTheme()
 
   const look = {
@@ -43,7 +46,7 @@ export function Button({ label, onPress, variant = 'primary', size: sz = 'md', i
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityState={{ disabled: !!disabled, busy: !!busy }}
       hitSlop={variant === 'text' ? 8 : undefined}
       style={({ pressed }) => [
         {

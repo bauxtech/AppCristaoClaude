@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
 import { enqueue, flush, pendingOps, useUserId } from '../../lib/sync'
-import { uuid } from '../../lib/uuid'
+import { isUuid, uuid } from '../../lib/uuid'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import type { Song } from '../music/catalog'
@@ -101,7 +101,14 @@ export function ProfileProvider({ children, initial }: { children: ReactNode; in
     if (!uid || sampleData || initial) return
     let alive = true
     const flag = `profileSynced:${uid}`
-    if (!getItem(flag, false)) enqueue(...profileDiffOps(profileInitial(false), current.current))
+    if (!getItem(flag, false)) {
+      // Marcos e anotações de antes do servidor ganham id novo, para subirem junto.
+      const fresh = <T extends { id: string }>(list: T[]) => list.map((x) => (isUuid(x.id) ? x : { ...x, id: uuid() }))
+      const local = { ...current.current, milestones: fresh(current.current.milestones), notes: fresh(current.current.notes) }
+      current.current = local
+      setStateRaw(local)
+      enqueue(...profileDiffOps(profileInitial(false), local))
+    }
     flush()
       .then(() => (pendingOps().length ? null : pullProfileData(uid)))
       .then((remote) => {

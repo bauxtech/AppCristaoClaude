@@ -3,7 +3,7 @@ import { contentTypeOf, signedUrl } from '../../lib/files'
 import { supabase } from '../../lib/supabase'
 import { isUuid, uuid } from '../../lib/uuid'
 import { DEFAULT_ROLES, type Cell, type Member } from './data'
-import { nextMeeting } from './meetings'
+import { lastMeeting, nextMeeting } from './meetings'
 import type { CellRole } from './permissions'
 
 // Sincronização da célula com o banco. Os dados são de várias pessoas, então quem decide o que cada um
@@ -99,7 +99,6 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
   const prevMembers = byId(prev.members)
   const newLeader = next.members.find((m) => m.role === 'lider' && !m.isMe && prevMembers.get(m.id)?.role !== 'lider')
   const iLeft = prev.myRole === 'lider' && next.myRole !== 'lider'
-  if (newLeader && iLeft && isUuid(newLeader.id)) ops.push({ kind: 'rpc', fn: 'transfer_leadership', args: { p_cell: cell, p_new_leader: newLeader.id } })
   for (const m of next.members) {
     const before = prevMembers.get(m.id)
     if (!before || m.isMe || before.role === m.role || !isUuid(m.id)) continue
@@ -109,6 +108,8 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
   for (const m of prev.members) {
     if (!nextMembers.has(m.id) && !m.isMe && isUuid(m.id) && !prev.pendingJoins.some((j) => j.id === m.id)) ops.push({ kind: 'delete', table: 'cell_members', match: { cell_id: cell, user_id: m.id } })
   }
+  // Passar a liderança vai por último: depois dela, a pessoa já não é líder e as outras mudanças de papel seriam recusadas.
+  if (newLeader && iLeft && isUuid(newLeader.id)) ops.push({ kind: 'rpc', fn: 'transfer_leadership', args: { p_cell: cell, p_new_leader: newLeader.id } })
 
   // Presença: a última reunião marcada vai pela função do banco (só líder e auxiliar).
   if (next.history.meetings > prev.history.meetings) {
@@ -119,7 +120,8 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
       const uid = m.isMe ? '$uid' : m.id
       if (uid === '$uid' || isUuid(uid)) present[uid] = !!m.lastAttendance[m.lastAttendance.length - 1]
     }
-    const meeting = nextMeeting(prev, now)
+    // A presença é da reunião que já aconteceu (a mais recente), não da próxima.
+    const meeting = lastMeeting(prev, now) ?? nextMeeting(prev, now)
     if (meeting && Object.keys(present).length) ops.push({ kind: 'rpc', fn: 'mark_attendance', args: { p_cell: cell, p_date: meeting.date, p_present: present } })
   }
 
@@ -222,20 +224,21 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
     if (!isUuid(f.id) || prevFiles.has(f.id) || !f.uri || /^https?:/.test(f.uri)) continue
     const path = materialPath(cell, f.id, f.name)
     ops.push({ kind: 'upload', bucket: 'cell-files', path, uri: f.uri, contentType: contentTypeOf(f.name) })
-    ops.push({ kind: 'upsert', table: 'cell_materials', row: { id: f.id, cell_id: cell, name: f.name, kind: f.kind, path } })
+    ops.push({ kind: 'upsert', table: 'cell_materials', row: { id: f.id, cell_id: cell, name: f.name, kind: f.kind, path }, afterUpload: true })
   }
   const nextFiles = byId(next.materials)
   for (const f of prev.materials) {
     if (!isUuid(f.id) || nextFiles.has(f.id)) continue
     ops.push({ kind: 'delete', table: 'cell_materials', match: { id: f.id } })
-    ops.push({ kind: 'remove', bucket: 'cell-files', paths: [materialPath(cell, f.id, f.name)] })
+    // Usa o caminho guardado no banco; o calculado pelo nome só vale para material ainda não sincronizado.
+    ops.push({ kind: 'remove', bucket: 'cell-files', paths: [f.path ?? materialPath(cell, f.id, f.name)] })
   }
 
   // Capa da célula.
   if (prev.coverUri !== next.coverUri) {
     if (next.coverUri && !/^https?:/.test(next.coverUri)) {
       ops.push({ kind: 'upload', bucket: 'cell-files', path: `${cell}/capa.jpg`, uri: next.coverUri, contentType: 'image/jpeg' })
-      ops.push({ kind: 'update', table: 'cells', values: { cover_path: `${cell}/capa.jpg` }, match: { id: cell } })
+      ops.push({ kind: 'update', table: 'cells', values: { cover_path: `${cell}/capa.jpg` }, match: { id: cell }, afterUpload: true })
     } else if (!next.coverUri) {
       ops.push({ kind: 'update', table: 'cells', values: { cover_path: null }, match: { id: cell } })
       ops.push({ kind: 'remove', bucket: 'cell-files', paths: [`${cell}/capa.jpg`] })
@@ -430,7 +433,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
       options: (q.options as string[]).map((label, i) => ({ label, votes: voteRows.find((v) => v.poll_id === q.id && v.option === i)?.votes ?? 0 })),
       ...(myVotes.has(q.id) ? { myVote: myVotes.get(q.id) } : {}),
     })),
-    materials: files.map((f) => ({ id: f.id, name: f.name, kind: f.kind === 'PDF' ? ('PDF' as const) : ('Imagem' as const), size: local?.materials.find((m) => m.id === f.id)?.size ?? '', date: longDay(f.created_at), ...(f.url ? { uri: f.url } : {}) })),
+    materials: files.map((f) => ({ id: f.id, name: f.name, kind: f.kind === 'PDF' ? ('PDF' as const) : ('Imagem' as const), size: local?.materials.find((m) => m.id === f.id)?.size ?? '', date: longDay(f.created_at), path: f.path, ...(f.url ? { uri: f.url } : {}) })),
     playlist: (playlist.data ?? []).map((s) => ({ id: s.id, title: s.title, artist: s.artist, ...(s.url ? { url: s.url } : {}) })),
     prayers: (prayers.data ?? []).map((p) => ({ id: p.id, memberId: p.user_id, text: p.text, prayedCount: 0, iPrayed: prayedSet.has(p.id), at: iso(p.created_at) })),
     rides: (rides.data ?? []).map((r) => ({

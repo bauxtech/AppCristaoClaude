@@ -1,4 +1,5 @@
 import { newCell, sampleCell, type Cell } from '../src/features/cell/data'
+import { lastMeeting } from '../src/features/cell/meetings'
 import { cellDiffOps, createCellOps, materialPath, withIds } from '../src/features/cell/sync'
 import { uuid } from '../src/lib/uuid'
 
@@ -134,7 +135,7 @@ test('material sobe para a pasta da célula; apagar tira a linha e o arquivo', (
   expect(path).toBe(`${a.id}/materiais/${f.id}-Estudo-acao.pdf`)
   expect(cellDiffOps(a, b)).toEqual([
     { kind: 'upload', bucket: 'cell-files', path, uri: 'file:///estudo.pdf', contentType: 'application/pdf' },
-    { kind: 'upsert', table: 'cell_materials', row: { id: f.id, cell_id: a.id, name: f.name, kind: 'PDF', path } },
+    { kind: 'upsert', table: 'cell_materials', row: { id: f.id, cell_id: a.id, name: f.name, kind: 'PDF', path }, afterUpload: true },
   ])
   expect(cellDiffOps(b, a).map((o) => o.kind)).toEqual(['delete', 'remove'])
 })
@@ -144,5 +145,23 @@ test('playlist e capa da célula', () => {
   const b = withIds(a, { ...a, playlist: [{ id: 'pl1', title: 'Oceans', artist: 'Hillsong' }], coverUri: 'file:///capa.jpg' })
   const ops = cellDiffOps(a, b)
   expect(ops.map((o) => (o.kind === 'upload' || o.kind === 'remove' ? `${o.kind}:${o.bucket}` : `${o.kind}:${o.table}`))).toEqual(['upsert:cell_playlist', 'upload:cell-files', 'update:cells'])
-  expect(ops[2]).toEqual({ kind: 'update', table: 'cells', values: { cover_path: `${a.id}/capa.jpg` }, match: { id: a.id } })
+  expect(ops[2]).toEqual({ kind: 'update', table: 'cells', values: { cover_path: `${a.id}/capa.jpg` }, match: { id: a.id }, afterUpload: true })
+})
+
+test('presença vai para a reunião que já aconteceu, não para a da semana seguinte', () => {
+  // Quarta 20h. Na quarta às 22h, a reunião é a de hoje; na terça, a da quarta passada.
+  const a = base()
+  const wedNight = new Date(2026, 9, 7, 22, 0, 0)
+  expect(lastMeeting(a, wedNight)?.date).toBe('2026-10-07')
+  expect(lastMeeting(a, new Date(2026, 9, 6, 12, 0, 0))?.date).toBe('2026-09-30')
+  expect(lastMeeting({ ...a, cancelledDates: ['2026-09-30'] }, new Date(2026, 9, 6, 12, 0, 0))?.date).toBe('2026-09-23')
+  const b = { ...a, history: { ...a.history, meetings: 1 }, members: a.members.map((m) => ({ ...m, lastAttendance: [true] })) }
+  expect(cellDiffOps(a, b, wedNight)[0]).toMatchObject({ fn: 'mark_attendance', args: { p_date: '2026-10-07' } })
+})
+
+test('passar a liderança vai depois das outras mudanças de papel', () => {
+  const a = base()
+  const b = { ...a, myRole: 'membro' as const, members: a.members.map((m) => (m.isMe ? { ...m, role: 'membro' as const } : m.id === BETO ? { ...m, role: 'lider' as const } : m.id === CAIO ? { ...m, role: 'membro' as const } : m)) }
+  const ops = cellDiffOps(a, b)
+  expect(ops.map((o) => (o.kind === 'rpc' ? o.fn : `${o.kind}:${o.table}`))).toEqual(['update:cell_members', 'transfer_leadership'])
 })

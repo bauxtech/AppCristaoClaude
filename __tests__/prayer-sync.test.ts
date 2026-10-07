@@ -51,3 +51,12 @@ test('ao trazer do banco, o pedido mantém o vídeo do aparelho e usa o comparti
   expect(merged.requests[0]).toMatchObject({ text: 'A mudado em outro celular', shared: true, prayedBy: ['João'], videoUri: 'file:///v.mp4' })
   expect(merged.diary.map((d) => d.id)).toEqual(['d1'])
 })
+
+test('pedido compartilhado continua na célula em que foi compartilhado, mesmo com outra célula aberta', () => {
+  const cellA = uuid()
+  const cellB = uuid()
+  const r = { id: uuid(), title: 'A', text: 'A', createdAt: '2026-10-06', shared: true, sharedCellId: cellA, prayedBy: [] }
+  const answered = { ...r, answeredAt: '2026-10-07' }
+  const row = (prayerDiffOps({ ...empty, requests: [r] }, { ...empty, requests: [answered] }, now, cellB)[0] as { row: Record<string, unknown> }).row
+  expect(row.shared_cell_id).toBe(cellA)
+})

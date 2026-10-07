@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { View } from 'react-native'
 import { AppText, Button, Card, Chip, ConfirmCard, Page, SectionLabel, Switch, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
+import { IS_REMOTE } from '../../../lib/supabase'
 import { useCell } from '../CellContext'
 import type { Cell } from '../data'
 import { ROLE_LABEL, ROLES } from '../permissions'
@@ -104,7 +105,8 @@ function Options({ cell }: { cell: Cell }) {
         <Button label="Sair da célula" variant="dangerSoft" onPress={() => setConfirm('leave')} />
       )}
 
-      {IS_PREVIEW ? (
+      {/* Só na prévia sem servidor: com célula real, isso misturaria dados de exemplo na célula. */}
+      {IS_PREVIEW && !IS_REMOTE ? (
         <Card style={{ gap: 8 }}>
           <AppText variant="small" tone="secondary">
             Só na prévia: ver a célula com outro papel

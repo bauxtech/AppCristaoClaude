@@ -12,11 +12,12 @@ test('foto nova do aparelho sobe para a pasta da pessoa; tirar a foto apaga o ar
   const up = profileDiffOps(base, { ...base, photoUri: 'file:///foto.jpg' })
   expect(up).toEqual([
     { kind: 'upload', bucket: 'avatars', path: AVATAR_PATH, uri: 'file:///foto.jpg', contentType: 'image/jpeg' },
-    { kind: 'update', table: 'profiles', values: { photo_path: AVATAR_PATH }, match: { id: '$uid' } },
+    { kind: 'update', table: 'profiles', values: { photo_path: AVATAR_PATH }, match: { id: '$uid' }, afterUpload: true },
   ])
   expect(AVATAR_PATH.startsWith('$uid/')).toBe(true)
   const removed = profileDiffOps({ ...base, photoUri: 'https://x/foto' }, base)
   expect(removed.map((o) => o.kind)).toEqual(['remove', 'update'])
+  expect(removed[1]).toMatchObject({ values: { photo_path: null } })
 })
 
 test('foto que veio do banco (link) não sobe de novo', () => {

@@ -49,7 +49,8 @@ export function prayerDiffOps(prev: SyncedPrayer, next: SyncedPrayer, now = new 
       text: r.text,
       answered_at: r.answeredAt ?? null,
       testimony: r.testimony ?? null,
-      shared_cell_id: r.shared ? cellId : null,
+      // Mantém a célula onde o pedido foi compartilhado. A célula aberta só vale para pedido antigo sem célula guardada.
+      shared_cell_id: r.shared ? (r.sharedCellId ?? cellId) : null,
       created_at: atNoon(r.createdAt, now),
     })),
     ...diffList(prev.campaigns, next.campaigns, 'prayer_campaigns', (c) => ({ id: c.id, user_id: '$uid', name: c.name, type: c.type, start_date: c.start, end_date: c.end, done_days: c.doneDays })),
@@ -93,6 +94,7 @@ export async function pullPrayer(uid: string): Promise<SyncedPrayer | null> {
       text: r.text,
       createdAt: day(r.created_at),
       shared: !!r.shared_cell_id,
+      sharedCellId: r.shared_cell_id ?? null,
       // Nomes de quem orou: o banco devolve os ids; os nomes vêm da lista da célula.
       prayedBy: ((r.prayer_prayed ?? []) as { user_id: string }[]).map((p) => memberName(p.user_id)).filter((n): n is string => !!n),
       ...(r.answered_at ? { answeredAt: r.answered_at } : {}),

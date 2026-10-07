@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
-import { useState } from 'react'
-import { View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { AccessibilityInfo, View } from 'react-native'
 import { Button, SelectCard, TextField } from '../../../components'
 import { IS_REMOTE } from '../../../lib/supabase'
 import { useSession } from '../../../state/session'
@@ -17,6 +17,9 @@ export function CellStartScreen() {
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (error) AccessibilityInfo.announceForAccessibility(error)
+  }, [error])
   const { requestJoin } = useCell()
 
   async function start() {
@@ -49,7 +52,7 @@ export function CellStartScreen() {
       subtitle="A célula é o pequeno grupo que se reúne toda semana. Você pode entrar, criar ou deixar para depois."
       step="celula"
       onBack={() => router.back()}
-       footer={<Button label={busy ? 'Enviando pedido' : 'Começar'} onPress={start} disabled={!choice || busy} accessibilityHint={choice ? undefined : 'Escolha uma opção para começar'} />}
+      footer={<Button label={busy ? 'Enviando pedido' : 'Começar'} onPress={start} disabled={!choice} busy={busy} accessibilityHint={choice ? undefined : 'Escolha uma opção para começar'} />}
     >
       <View style={{ gap: 12 }}>
         <SelectCard kind="radio" label="Entrar por convite" description="Tenho um código ou link de convite." selected={choice === 'join'} onPress={() => setChoice('join')} />

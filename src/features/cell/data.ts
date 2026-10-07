@@ -103,7 +103,8 @@ export interface Cell {
   swaps: SwapRequest[]
   board: { id: string; authorId: string; text: string; at: string }[]
   polls: Poll[]
-  materials: { id: string; name: string; kind: 'PDF' | 'Imagem'; size: string; date: string; uri?: string }[]
+  /** path: caminho do arquivo no Storage, quando já está no banco. */
+  materials: { id: string; name: string; kind: 'PDF' | 'Imagem'; size: string; date: string; uri?: string; path?: string }[]
   playlist: { id: string; title: string; artist: string; url?: string }[]
   prayers: CellPrayer[]
   rides: Ride[]

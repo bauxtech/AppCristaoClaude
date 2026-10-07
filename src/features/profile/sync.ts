@@ -37,7 +37,8 @@ export function profileDiffOps(prev: SyncedProfile, next: SyncedProfile): SyncOp
   if (prev.photoUri !== next.photoUri) {
     if (next.photoUri && !isRemoteUri(next.photoUri)) {
       ops.push({ kind: 'upload', bucket: 'avatars', path: AVATAR_PATH, uri: next.photoUri, contentType: 'image/jpeg' })
-      values.photo_path = AVATAR_PATH
+      // Só aponta para a foto depois que ela subiu.
+      ops.push({ kind: 'update', table: 'profiles', values: { photo_path: AVATAR_PATH }, match: { id: '$uid' }, afterUpload: true })
     } else if (!next.photoUri) {
       ops.push({ kind: 'remove', bucket: 'avatars', paths: [AVATAR_PATH] })
       values.photo_path = null

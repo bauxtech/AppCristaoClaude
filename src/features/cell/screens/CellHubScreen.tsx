@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppText, Avatar, Button, Card, IconButton, SectionLabel, Tag, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { IS_PREVIEW } from '../../../lib/preview'
+import { IS_REMOTE } from '../../../lib/supabase'
 import { useSession } from '../../../state/session'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -85,10 +86,10 @@ function Awaiting() {
         <Icon name="clock" size={28} color={colors.primary} />
         <AppText variant="title">Aguardando aprovação do líder</AppText>
         <AppText variant="body" tone="secondary">
-          Seu pedido para entrar em Jovens da Central foi enviado para João Silva. Avisamos quando ele aprovar.
+          {IS_REMOTE ? 'Seu pedido foi enviado para o líder da célula. Avisamos quando o líder aprovar.' : 'Seu pedido para entrar em Jovens da Central foi enviado para o líder. Avisamos quando o líder aprovar.'}
         </AppText>
       </Card>
-      {IS_PREVIEW ? (
+      {IS_PREVIEW && !IS_REMOTE ? (
         <Card style={{ gap: 8 }}>
           <AppText variant="small" tone="secondary">
             Só na prévia

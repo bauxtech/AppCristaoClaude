@@ -44,6 +44,8 @@ export interface PrayerRequest {
   text: string
   createdAt: string
   shared: boolean
+  /** Célula em que o pedido foi compartilhado. Fica fixa: trocar de célula aberta não leva o pedido junto. */
+  sharedCellId?: string | null
   prayedBy: string[]
   videoUri?: string
   answeredAt?: string

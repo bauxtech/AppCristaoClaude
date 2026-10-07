@@ -55,6 +55,26 @@ export function upcomingMeetings(cell: Pick<Cell, 'day' | 'time' | 'cancelledDat
   return [...regular, ...extras].sort((a, b) => (a.date + a.time > b.date + b.time ? 1 : -1))
 }
 
+/** Reunião mais recente que já começou (hoje ou antes, até 3 semanas), não cancelada. É a da tela de presença. */
+export function lastMeeting(cell: Pick<Cell, 'day' | 'time' | 'cancelledDates' | 'extraMeetings'>, now = new Date()): Meeting | null {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const [h, min] = cell.time.split(':').map(Number)
+  const started = (d: Date, time: string) => {
+    if (d.getTime() < today.getTime()) return true
+    const [th, tm] = (time || cell.time).split(':').map(Number)
+    return now.getHours() > (th ?? h) || (now.getHours() === (th ?? h) && now.getMinutes() >= (tm ?? min))
+  }
+  for (let i = 0; i <= 21; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
+    const date = iso(d)
+    if (cell.cancelledDates.includes(date)) continue
+    const extra = cell.extraMeetings.find((e) => e.date === date)
+    if (extra && started(d, extra.time)) return { date, time: extra.time, extra: true, cancelled: false }
+    if (d.getDay() === cell.day && started(d, cell.time)) return { date, time: cell.time, extra: false, cancelled: false }
+  }
+  return null
+}
+
 export function nextMeeting(cell: Pick<Cell, 'day' | 'time' | 'cancelledDates' | 'extraMeetings'>, now = new Date()) {
   return upcomingMeetings(cell, now, 8).find((m) => !m.cancelled) ?? null
 }

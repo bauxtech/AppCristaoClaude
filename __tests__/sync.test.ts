@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { pushConsents, pushFaithConsent, pushProfile } from '../src/lib/account'
-import { clearOutbox, droppedOps, enqueue, flush, isTransient, pendingOps, setSyncClient } from '../src/lib/sync'
+import { clearOutbox, droppedOps, enqueue, fill, flush, isTransient, pendingOps, setSyncClient } from '../src/lib/sync'
 
 type Call = { table: string; op: string; payload?: unknown; match?: unknown; onConflict?: string }
 
@@ -146,4 +146,22 @@ test('o que foi feito antes do primeiro login (cadastro) vai para quem entrar', 
   await flush()
   expect(calls).toHaveLength(1)
   expect(calls[0].match).toEqual({ id: 'u1' })
+})
+
+test("'$uid' é trocado em valores, em nomes de campo e só nos campos de caminho de arquivo", () => {
+  expect(fill({ user_id: '$uid', p_present: { $uid: true, outro: false } }, 'u1')).toEqual({ user_id: 'u1', p_present: { u1: true, outro: false } })
+  expect(fill({ photo_path: '$uid/avatar.jpg', text: '$uid/não é caminho' }, 'u1')).toEqual({ photo_path: 'u1/avatar.jpg', text: '$uid/não é caminho' })
+})
+
+test('arquivo que não sobe leva junto a linha que apontaria para ele', async () => {
+  const { client, calls } = fakeClient()
+  setSyncClient(client, 'u1')
+  enqueue(
+    { kind: 'upload', bucket: 'avatars', path: '$uid/avatar.jpg', uri: 'file:///nao-existe.jpg', contentType: 'image/jpeg' },
+    { kind: 'update', table: 'profiles', values: { photo_path: '$uid/avatar.jpg' }, match: { id: '$uid' }, afterUpload: true },
+    { kind: 'update', table: 'profiles', values: { name: 'Ana' }, match: { id: '$uid' } },
+  )
+  await flush()
+  expect(pendingOps()).toEqual([])
+  expect(calls).toEqual([{ table: 'profiles', op: 'update', payload: { name: 'Ana' }, match: { id: 'u1' } }])
 })
