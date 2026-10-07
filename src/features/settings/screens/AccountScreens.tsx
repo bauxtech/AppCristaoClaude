@@ -17,7 +17,7 @@ import { useProfile } from '../../profile/ProfileContext'
 import { useSermons } from '../../sermon/SermonContext'
 import { DELETE_DAYS, REPORT_REASONS, useSettings } from '../SettingsContext'
 import { clearOutbox, flush, pendingOps } from '../../../lib/sync'
-import { cancelDeletionRemote, requestDeletionRemote } from '../../../lib/account'
+import { cancelDeletionRemote, requestDeletionRemote, withdrawFaithConsentRemote } from '../../../lib/account'
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 export const longDate = (iso: string) => {
@@ -167,7 +167,13 @@ export function DataSummaryScreen() {
   )
 }
 
-const CONSENT_LOSES = ['Sugestões personalizadas de leitura', 'Conteúdo de fé baseado no seu perfil', 'Resumos adaptados ao seu progresso']
+const CONSENT_LOSES = [
+  'Sugestões personalizadas de leitura',
+  'Conteúdo de fé baseado no seu perfil',
+  'Resumos adaptados ao seu progresso',
+  'Diário e pedidos de oração guardados na nuvem: passam a ficar só neste celular e são apagados da nuvem',
+  'Pedidos compartilhados com a célula saem da célula',
+]
 
 export function RevokeConsentScreen() {
   const { colors } = useTheme()
@@ -205,7 +211,7 @@ export function RevokeConsentScreen() {
           </View>
           <AppText variant="bodyStrong">Consentimento retirado.</AppText>
           <AppText variant="body" tone="secondary" style={{ textAlign: 'center' }}>
-            Você pode voltar às configurações a qualquer momento para reativar.
+            Seu diário e seus pedidos de oração foram apagados da nuvem e continuam neste celular. Você pode voltar às configurações a qualquer momento para reativar.
           </AppText>
         </View>
         <Button label="Voltar" onPress={() => router.back()} />
@@ -231,8 +237,13 @@ export function RevokeConsentScreen() {
           message="Essa ação pode ser revertida nas configurações."
           confirmLabel="Retirar"
           onCancel={() => setStep(1)}
-          onConfirm={() => {
-            s.update({ faithConsent: false })
+          onConfirm={async () => {
+            // O servidor apaga diário, pedidos e tradição. Só depois disso o app confirma a retirada.
+            if (!(await withdrawFaithConsentRemote())) {
+              toast('Não foi possível retirar agora. Confira a internet e tente de novo.')
+              return
+            }
+            s.update({ faithConsent: false }, { fromServer: true })
             setStep('done')
           }}
         />
@@ -463,7 +474,9 @@ export function DeleteAccountScreen() {
   const required = 'excluir minha conta'
   const me = cell?.members.find((m) => m.isMe)
   const othersActive = (cell?.members ?? []).filter((m) => !m.isMe && m.active).length
-  const mustPassLeadership = me?.role === 'lider' && othersActive > 0 && !cell?.archived
+  // A célula pode ter mais de um líder: só o único líder precisa passar a liderança antes de sair.
+  const otherLeader = (cell?.members ?? []).some((m) => !m.isMe && m.role === 'lider')
+  const mustPassLeadership = me?.role === 'lider' && othersActive > 0 && !otherLeader && !cell?.archived
 
   if (s.deletionAt) return <AccountDeletedScreen />
 

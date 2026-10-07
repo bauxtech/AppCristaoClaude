@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { pushConsents, pushFaithConsent, pushProfile } from '../src/lib/account'
+import { pushConsents, pushFaithConsent, pushProfile, setFaithConsentFlag } from '../src/lib/account'
 import { clearOutbox, droppedOps, enqueue, fill, flush, isTransient, pendingOps, setSyncClient } from '../src/lib/sync'
 
 type Call = { table: string; op: string; payload?: unknown; match?: unknown; onConflict?: string }
@@ -164,4 +164,14 @@ test('arquivo que não sobe leva junto a linha que apontaria para ele', async ()
   await flush()
   expect(pendingOps()).toEqual([])
   expect(calls).toEqual([{ table: 'profiles', op: 'update', payload: { name: 'Ana' }, match: { id: 'u1' } }])
+})
+
+test('sem consentimento de fé, a tradição não vai para o banco', async () => {
+  const { client, calls } = fakeClient()
+  setSyncClient(client, 'u1')
+  setFaithConsentFlag(false)
+  pushProfile({ name: 'Ana', tradition: 'Batista' })
+  setFaithConsentFlag(true)
+  await flush()
+  expect(calls[0].payload).toEqual({ name: 'Ana' })
 })

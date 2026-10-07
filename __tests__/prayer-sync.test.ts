@@ -60,3 +60,20 @@ test('pedido compartilhado continua na célula em que foi compartilhado, mesmo c
   const row = (prayerDiffOps({ ...empty, requests: [r] }, { ...empty, requests: [answered] }, now, cellB)[0] as { row: Record<string, unknown> }).row
   expect(row.shared_cell_id).toBe(cellA)
 })
+
+test('sem consentimento de fé, diário e pedidos não vão para o banco; campanha vai', () => {
+  const d = { id: uuid(), date: '2026-10-06', text: 'Agradeci' }
+  const r = { id: uuid(), title: 'A', text: 'A', createdAt: '2026-10-06', shared: false, prayedBy: [] }
+  const c = { id: uuid(), name: '21 dias', type: 'Oração' as const, start: '2026-10-01', end: '2026-10-21', doneDays: [] }
+  const ops = prayerDiffOps(empty, { diary: [d], requests: [r], campaigns: [c] }, now, null, false)
+  expect(ops.map((o) => o.table)).toEqual(['prayer_campaigns'])
+  expect(prayerDiffOps({ ...empty, diary: [d] }, empty, now, null, false)).toEqual([])
+})
+
+test('sem consentimento, o que veio do banco não apaga o diário e os pedidos do aparelho', () => {
+  const local = { ...empty, diary: [{ id: uuid(), date: '2026-10-06', text: 'Só no aparelho' }], requests: [{ id: uuid(), title: 'A', text: 'A', createdAt: '2026-10-06', shared: false, prayedBy: [] }] }
+  const merged = mergePrayer(local, empty, false)
+  expect(merged.diary).toEqual(local.diary)
+  expect(merged.requests).toEqual(local.requests)
+  expect(mergePrayer(local, empty, true).diary).toEqual([])
+})

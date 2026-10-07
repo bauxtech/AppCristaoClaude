@@ -19,6 +19,8 @@ function Options({ cell }: { cell: Cell }) {
   const [confirm, setConfirm] = useState<'leave' | 'archive' | null>(null)
   const [newLeader, setNewLeader] = useState<string | null>(null)
   const isLeader = cell.myRole === 'lider'
+  // Com outro líder na célula, quem lidera pode sair sem passar a liderança nem arquivar.
+  const otherLeader = cell.members.some((m) => !m.isMe && m.role === 'lider')
   const candidates = cell.members.filter((m) => !m.isMe && m.active && m.role !== 'visitante')
 
   return (
@@ -89,7 +91,9 @@ function Options({ cell }: { cell: Cell }) {
         ) : (
           <Button label="Arquivar célula" variant="outline" onPress={() => setConfirm('archive')} />
         )
-      ) : confirm === 'leave' ? (
+      ) : null}
+
+      {isLeader && !otherLeader ? null : confirm === 'leave' ? (
         <ConfirmCard
           title={`Sair de ${cell.name}?`}
           message="Para voltar, você vai precisar de um novo convite e da aprovação do líder."

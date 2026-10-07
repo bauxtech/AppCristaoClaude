@@ -72,6 +72,8 @@ update public.profiles set name = 'Edu Costa' where id = '00000000-0000-0000-000
 update public.profiles set name = 'Fabi Nunes' where id = '00000000-0000-0000-0000-00000000000f';
 update public.profiles set name = 'Gil Rocha' where id = '00000000-0000-0000-0000-000000000011';
 update public.profiles set name = 'Hugo Dias' where id = '00000000-0000-0000-0000-000000000012';
+-- Todos deram o consentimento de fé no cadastro (sem ele, o banco não guarda diário nem pedidos).
+update public.profiles set faith_consent = true, faith_consent_at = now();
 
 insert into public.cells (id, name, address, neighborhood, invite_code, created_by) values
   ('10000000-0000-0000-0000-000000000001', 'Jovens da Central', 'Rua das Flores, 100, ap 12', 'Pinheiros', 'ABC123', '00000000-0000-0000-0000-00000000000a'),
@@ -381,6 +383,36 @@ select tests.ok('outra célula não vê enquete, playlist nem contagem',
   and tests.denied($$select * from public.cell_poll_counts('10000000-0000-0000-0000-000000000001')$$));
 select tests.ok('ninguém lê as músicas favoritas de outra pessoa', tests.rows($$select * from public.favorite_songs$$) = 0);
 reset role;
+
+-- ─── Consentimento de fé e mais de um líder ─────────────────────────────────
+
+select tests.as_user('00000000-0000-0000-0000-000000000011'); -- Gil
+select tests.ok('com consentimento, a pessoa grava diário, pedido e tradição',
+  tests.allowed($$insert into public.prayer_diary (user_id, text) values (auth.uid(), 'Diário do Gil')$$)
+  and tests.allowed($$insert into public.prayer_requests (user_id, text) values (auth.uid(), 'Pedido do Gil')$$)
+  and tests.allowed($$update public.profiles set tradition = 'Batista' where id = auth.uid()$$));
+select public.withdraw_faith_consent();
+select tests.ok('retirar o consentimento apaga diário, pedidos e tradição no servidor',
+  tests.rows($$select * from public.prayer_diary$$) = 0 and tests.rows($$select * from public.prayer_requests where user_id = auth.uid()$$) = 0
+  and (select tradition from public.profiles where id = auth.uid()) is null
+  and not (select faith_consent from public.profiles where id = auth.uid()));
+select tests.ok('sem consentimento, o banco não aceita diário nem pedido novo',
+  tests.denied($$insert into public.prayer_diary (user_id, text) values (auth.uid(), 'x')$$)
+  and tests.denied($$insert into public.prayer_requests (user_id, text) values (auth.uid(), 'x')$$));
+update public.profiles set tradition = 'Batista' where id = auth.uid();
+select tests.ok('sem consentimento, a tradição não fica guardada', (select tradition from public.profiles where id = auth.uid()) is null);
+reset role;
+update public.profiles set faith_consent = true where id = '00000000-0000-0000-0000-000000000011';
+
+select tests.as_user('00000000-0000-0000-0000-00000000000a'); -- Ana, líder da célula 1
+select tests.ok('líder põe outro líder na célula', tests.allowed($$update public.cell_members set role = 'lider' where cell_id = '10000000-0000-0000-0000-000000000001' and user_id = '00000000-0000-0000-0000-000000000012'$$));
+select tests.ok('com outro líder, quem lidera pede a exclusão sem passar a liderança', public.request_account_deletion() > now());
+select public.cancel_account_deletion();
+select tests.ok('com outro líder, quem lidera pode sair da célula', tests.allowed($$delete from public.cell_members where cell_id = '10000000-0000-0000-0000-000000000001' and user_id = '00000000-0000-0000-0000-00000000000a'$$));
+reset role;
+-- Volta a Ana como líder e o Hugo como anfitrião para os testes seguintes.
+insert into public.cell_members (cell_id, user_id, role, status) values ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-00000000000a', 'lider', 'approved');
+update public.cell_members set role = 'anfitriao' where cell_id = '10000000-0000-0000-0000-000000000001' and user_id = '00000000-0000-0000-0000-000000000012';
 
 -- ─── Exclusão de conta ───────────────────────────────────────────────────────
 

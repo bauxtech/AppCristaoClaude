@@ -6,7 +6,7 @@ import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { sampleNotices, type Notice } from './notices'
 import { defaultNotificationPrefs, type NotificationPrefs } from './prefs'
-import { pushFaithConsent } from '../../lib/account'
+import { pushFaithConsent, setFaithConsentFlag } from '../../lib/account'
 
 export const DELETE_DAYS = 30
 export const REPORT_REASONS = ['Conteúdo impróprio', 'Assédio', 'Spam', 'Outro']
@@ -99,6 +99,8 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
   // Troca de conta ou da prévia: refaz tudo que é da conta. Preferências de aviso ficam.
   useDataReset((s) => setState((prev) => ({ ...settingsInitial(s, profile.time), notif: prev.notif })))
 
+  useEffect(() => setFaithConsentFlag(state.faithConsent), [state.faithConsent])
+
   const value = useMemo<SettingsValue>(
     () => ({
       ...state,
@@ -134,6 +136,11 @@ export function useSettings() {
   const v = useContext(Ctx)
   if (!v) throw new Error('useSettings fora do SettingsProvider')
   return v
+}
+
+/** Consentimento de fé. Fora do SettingsProvider (testes isolados), vale como dado. */
+export function useFaithConsent() {
+  return useContext(Ctx)?.faithConsent ?? true
 }
 
 /** Pessoas bloqueadas: o que elas publicam na célula some para quem bloqueou. */

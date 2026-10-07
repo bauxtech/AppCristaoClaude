@@ -39,7 +39,12 @@ function diffList<T extends { id: string }>(prev: T[], next: T[], table: string,
 }
 
 /** cellId: célula aberta agora. Pedido marcado como compartilhado vai para ela; sem célula, fica só da pessoa. */
-export function prayerDiffOps(prev: SyncedPrayer, next: SyncedPrayer, now = new Date(), cellId: string | null = null): SyncOp[] {
+/** faith: consentimento de fé. Sem ele, diário e pedidos ficam só no aparelho; campanhas seguem. */
+export function prayerDiffOps(prev: SyncedPrayer, next: SyncedPrayer, now = new Date(), cellId: string | null = null, faith = true): SyncOp[] {
+  if (!faith) {
+    prev = { ...prev, diary: [], requests: [] }
+    next = { ...next, diary: [], requests: [] }
+  }
   return [
     ...diffList(prev.diary, next.diary, 'prayer_diary', (e) => ({ id: e.id, user_id: '$uid', text: e.text, created_at: atNoon(e.date, now), updated_at: now.toISOString() })),
     ...diffList(prev.requests, next.requests, 'prayer_requests', (r) => ({
@@ -61,8 +66,10 @@ export function prayerDiffOps(prev: SyncedPrayer, next: SyncedPrayer, now = new 
  * Junta o que veio do banco com o que só existe no aparelho (itens de antes do servidor).
  * Do aparelho, o pedido mantém o vídeo em Libras, que o banco ainda não guarda.
  */
-export function mergePrayer(local: SyncedPrayer, remote: SyncedPrayer): SyncedPrayer {
+export function mergePrayer(local: SyncedPrayer, remote: SyncedPrayer, faith = true): SyncedPrayer {
   const localReq = byId(local.requests)
+  // Sem consentimento, o banco não guarda diário nem pedidos: os do aparelho ficam como estão.
+  const keep = faith ? null : { diary: local.diary, requests: local.requests }
   return {
     diary: [...remote.diary, ...local.diary.filter((e) => !isUuid(e.id))],
     requests: [
@@ -73,6 +80,7 @@ export function mergePrayer(local: SyncedPrayer, remote: SyncedPrayer): SyncedPr
       ...local.requests.filter((r) => !isUuid(r.id)),
     ],
     campaigns: [...remote.campaigns.map((c) => ({ ...c, days: local.campaigns.find((l) => l.id === c.id)?.days })), ...local.campaigns.filter((c) => !isUuid(c.id))],
+    ...keep,
   }
 }
 

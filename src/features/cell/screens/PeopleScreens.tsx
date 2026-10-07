@@ -211,7 +211,7 @@ function MemberDetail({ cell, m }: { cell: Cell; m: Member }) {
       <View style={{ gap: 8 }} accessibilityRole="radiogroup" accessibilityLabel="Papel na célula">
         <AppText variant="bodyStrong">Papel na célula</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {ROLES.filter((r) => r !== 'lider').map((r) => (
+          {ROLES.filter((r) => r !== 'lider' || cell.myRole === 'lider').map((r) => (
             <Chip
               key={r}
               label={ROLE_LABEL[r]}
@@ -224,7 +224,7 @@ function MemberDetail({ cell, m }: { cell: Cell; m: Member }) {
           ))}
         </View>
         <AppText variant="small" tone="secondary">
-          O auxiliar marca presença e edita a escala. O anfitrião não tem permissão a mais.
+          {cell.myRole === 'lider' ? 'A célula pode ter mais de um líder, com as mesmas permissões. ' : ''}O auxiliar marca presença e edita a escala. O anfitrião não tem permissão a mais.
         </AppText>
       </View>
 

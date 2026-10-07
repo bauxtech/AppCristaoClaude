@@ -7,10 +7,20 @@ import { IS_REMOTE, supabase } from './supabase'
 
 const FIELDS: Partial<Record<keyof Profile, string>> = { name: 'name', phone: 'phone', tradition: 'tradition', goal: 'goal', time: 'reminder_time', email: 'email' }
 
+// Consentimento de fé atual (as configurações avisam quando muda). Sem ele, a tradição não vai para o banco.
+let faithConsent = true
+export function setFaithConsentFlag(v: boolean) {
+  faithConsent = v
+}
+export function hasFaithConsent() {
+  return faithConsent
+}
+
 /** Manda para o banco os campos do perfil que mudaram. Sem servidor, não faz nada. */
 export function pushProfile(p: Partial<Profile>) {
   const values: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(p)) {
+    if (k === 'tradition' && !faithConsent) continue
     const col = FIELDS[k as keyof Profile]
     if (col) values[col] = v === '' && col === 'email' ? null : v
   }
@@ -79,5 +89,16 @@ export async function cancelDeletionRemote(): Promise<boolean> {
   if (!IS_REMOTE || !syncEnabled() || !supabase) return true
   if (!currentUserId()) return false
   const { error } = await supabase.rpc('cancel_account_deletion')
+  return !error
+}
+
+/**
+ * Retira o consentimento de fé no servidor: o banco apaga diário, pedidos de oração e tradição.
+ * No aparelho, esses dados continuam. Sem servidor, devolve ok para a prévia seguir.
+ */
+export async function withdrawFaithConsentRemote(): Promise<boolean> {
+  if (!IS_REMOTE || !syncEnabled() || !supabase) return true
+  if (!currentUserId()) return false
+  const { error } = await supabase.rpc('withdraw_faith_consent')
   return !error
 }

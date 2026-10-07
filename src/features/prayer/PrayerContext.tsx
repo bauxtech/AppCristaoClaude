@@ -7,6 +7,7 @@ import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { sampleData, toISODate, type Campaign, type CampaignType, type DiaryEntry, type PrayerRequest } from './data'
 import { currentCellId } from '../cell/current'
+import { useFaithConsent } from '../settings/SettingsContext'
 import { mergePrayer, prayerDiffOps, pullPrayer } from './sync'
 
 interface PrayerState {
@@ -76,6 +77,8 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
   current.current = state
   const isSample = useRef(sample)
   isSample.current = sample
+  const faith = useFaithConsent()
+  const faithRef = useRef(faith)
   const update = useCallback(
     (fn: (s: PrayerState) => PrayerState) => {
       const prev = current.current
@@ -83,10 +86,20 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
       if (next === prev) return
       current.current = next
       setState(next)
-      if (!isSample.current && !initial) enqueue(...prayerDiffOps(prev, next, new Date(), currentCellId()))
+      if (!isSample.current && !initial) enqueue(...prayerDiffOps(prev, next, new Date(), currentCellId(), faithRef.current))
     },
     [initial],
   )
+
+  // Consentimento de fé dado de novo: o diário e os pedidos do aparelho voltam para o banco.
+  useEffect(() => {
+    const was = faithRef.current
+    faithRef.current = faith
+    if (faith && !was && !isSample.current && !initial) {
+      const none = { diary: [], requests: [], campaigns: [] }
+      enqueue(...prayerDiffOps(none, { ...none, diary: current.current.diary, requests: current.current.requests }, new Date(), currentCellId()))
+    }
+  }, [faith, initial])
 
   // Ao entrar: envia a fila e traz do banco o diário, os pedidos e as campanhas.
   const uid = useUserId()
@@ -95,14 +108,14 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
     let alive = true
     // Primeira vez desta conta neste aparelho: manda antes o que já estava aqui (itens com id uuid).
     const flag = `prayerSynced:${uid}`
-    if (!getItem(flag, false)) enqueue(...prayerDiffOps({ diary: [], requests: [], campaigns: [] }, current.current, new Date(), currentCellId()))
+    if (!getItem(flag, false)) enqueue(...prayerDiffOps({ diary: [], requests: [], campaigns: [] }, current.current, new Date(), currentCellId(), faithRef.current))
     flush()
       // Se algo não foi enviado (sem internet), o aparelho está à frente do banco: não troca nada agora.
       .then(() => (pendingOps().length ? null : pullPrayer(uid)))
       .then((remote) => {
         // Algo novo entrou na fila durante a leitura: o aparelho segue à frente, troca na próxima vez.
         if (!alive || !remote || pendingOps().length) return
-        const next = { ...current.current, ...mergePrayer(current.current, remote) }
+        const next = { ...current.current, ...mergePrayer(current.current, remote, faithRef.current) }
         current.current = next
         setState(next)
         setItem(flag, true)

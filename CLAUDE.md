@@ -40,6 +40,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 ## REGRAS DO PRODUTO, JÁ DECIDIDAS
 - Entrada na célula: o líder aprova cada pessoa.
 - Papéis: o auxiliar marca presença e edita a escala. O anfitrião não tem permissão a mais.
+- Líder: a célula pode ter mais de um. Só o único líder de uma célula com outros membros precisa passar a liderança antes de sair ou excluir a conta.
 - Telefone dos membros: aparece só para o líder.
 - Visitante: vê reunião, endereço e roteiro. Não vê os pedidos de oração.
 - Página web da célula: mostra só o bairro. O endereço completo aparece depois de a pessoa deixar nome e telefone.
@@ -53,6 +54,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Áudio do culto: o padrão é guardar só o texto. Quando a pessoa escolhe guardar o áudio, ele fica 30 dias.
 - Carona: botão que abre o WhatsApp quando o pedido é aceito.
 - Exclusão da conta: dados apagados em 30 dias.
+- Retirar o consentimento de fé: apaga do servidor o diário, os pedidos de oração e a tradição. No aparelho, eles continuam. Sem consentimento, o banco não aceita gravar esses dados. Dar o consentimento de novo envia o que está no aparelho.
 - Denúncia: vai para a equipe do app. O conteúdo some na hora para quem denunciou.
 - Conteúdo diário: escrito pela IA. O versículo vem sempre do texto bíblico do app, nunca da IA.
 - Chat: só fala de Bíblia e fé cristã, cita só o texto bíblico do app e mostra a fonte. Se a pessoa falar em se machucar, mostra o CVV, telefone 188.

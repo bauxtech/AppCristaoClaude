@@ -165,3 +165,9 @@ test('passar a liderança vai depois das outras mudanças de papel', () => {
   const ops = cellDiffOps(a, b)
   expect(ops.map((o) => (o.kind === 'rpc' ? o.fn : `${o.kind}:${o.table}`))).toEqual(['update:cell_members', 'transfer_leadership'])
 })
+
+test('dar o papel de líder a outra pessoa sem sair da liderança é só update do papel', () => {
+  const a = base()
+  const b = { ...a, members: a.members.map((m) => (m.id === BETO ? { ...m, role: 'lider' as const } : m)) }
+  expect(cellDiffOps(a, b)).toEqual([{ kind: 'update', table: 'cell_members', values: { role: 'lider' }, match: { cell_id: a.id, user_id: BETO } }])
+})
