@@ -36,6 +36,9 @@ Deno.serve(async (req) => {
   const { data: sermon } = await asUser(req).from('sermons').select('id, audio_path').eq('id', sermonId).single()
   if (!sermon?.audio_path) return json({ error: 'Culto não encontrado' }, 404)
   if (!sermon.audio_path.startsWith(`${uid}/`)) return json({ error: 'Sem permissão' }, 403)
+  // Um processamento por vez: outra chamada no meio (ex.: "Tentar de novo" depois de um tempo esgotado) não gasta outro culto.
+  const { data: claimed } = await asUser(req).rpc('claim_sermon', { p_id: sermon.id })
+  if (claimed !== true) return json({ status: 'processing' }, 409)
 
   const db = admin()
   const month = brMonth()

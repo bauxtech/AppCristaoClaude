@@ -8,6 +8,7 @@ import { useDataReset } from '../../state/useDataReset'
 import { sampleData, toISODate, type Campaign, type CampaignType, type DiaryEntry, type PrayerRequest } from './data'
 import { currentCellId } from '../cell/current'
 import { useFaithConsent } from '../settings/SettingsContext'
+import { fetchFaithConsentRemote } from '../../lib/account'
 import { mergePrayer, prayerDiffOps, pullPrayer } from './sync'
 
 interface PrayerState {
@@ -109,13 +110,21 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
     // Primeira vez desta conta neste aparelho: manda antes o que já estava aqui (itens com id uuid).
     const flag = `prayerSynced:${uid}`
     if (!getItem(flag, false)) enqueue(...prayerDiffOps({ diary: [], requests: [], campaigns: [] }, current.current, new Date(), currentCellId(), faithRef.current))
+    let serverFaith: boolean | null = null
     flush()
-      // Se algo não foi enviado (sem internet), o aparelho está à frente do banco: não troca nada agora.
-      .then(() => (pendingOps().length ? null : pullPrayer(uid)))
+      // O consentimento do banco vale mais que o do aparelho (pode ter sido retirado em outro celular).
+      .then(() => fetchFaithConsentRemote(uid))
+      .then((f) => {
+        serverFaith = f
+        // Se algo não foi enviado (sem internet), o aparelho está à frente do banco: não troca nada agora.
+        return pendingOps().length ? null : pullPrayer(uid)
+      })
       .then((remote) => {
         // Algo novo entrou na fila durante a leitura: o aparelho segue à frente, troca na próxima vez.
         if (!alive || !remote || pendingOps().length) return
-        const next = { ...current.current, ...mergePrayer(current.current, remote, faithRef.current) }
+        // Sem consentimento em qualquer um dos lados, o diário e os pedidos do aparelho não são trocados pelos do banco.
+        const faithNow = serverFaith === false ? false : faithRef.current
+        const next = { ...current.current, ...mergePrayer(current.current, remote, faithNow) }
         current.current = next
         setState(next)
         setItem(flag, true)

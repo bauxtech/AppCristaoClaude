@@ -28,6 +28,7 @@ export function ConfirmCard({
   danger = true,
   onCancel,
   onConfirm,
+  busy,
 }: {
   title: string
   message?: string
@@ -35,6 +36,8 @@ export function ConfirmCard({
   danger?: boolean
   onCancel: () => void
   onConfirm: () => void
+  /** Esperando o servidor: o botão de confirmar fica ocupado. */
+  busy?: boolean
 }) {
   const { colors } = useTheme()
   return (
@@ -49,7 +52,7 @@ export function ConfirmCard({
       </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Button label="Cancelar" variant="outline" size="sm" onPress={onCancel} style={{ flex: 1 }} />
-        <Button label={confirmLabel} variant={danger ? 'danger' : 'primary'} size="sm" onPress={onConfirm} style={{ flex: 1 }} />
+        <Button label={confirmLabel} variant={danger ? 'danger' : 'primary'} size="sm" onPress={onConfirm} busy={busy} style={{ flex: 1 }} />
       </View>
     </Card>
   )

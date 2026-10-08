@@ -16,10 +16,10 @@ export async function readBytes(uri: string): Promise<ArrayBuffer | null> {
   }
 }
 
-/** Link que vale por 7 dias para mostrar um arquivo privado. Null se não há servidor ou permissão. */
-export async function signedUrl(bucket: string, path: string): Promise<string | null> {
+/** Link temporário (7 dias por padrão) para mostrar um arquivo privado. Null se não há servidor ou permissão. */
+export async function signedUrl(bucket: string, path: string, seconds = 7 * 24 * 3600): Promise<string | null> {
   if (!supabase || !path) return null
-  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 7 * 24 * 3600)
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, seconds)
   return error ? null : data.signedUrl
 }
 

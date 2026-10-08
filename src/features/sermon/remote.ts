@@ -10,7 +10,7 @@ import type { Sermon, VerseRef } from './data'
 /** Limite da transcrição por arquivo. */
 export const MAX_AUDIO_BYTES = 25 * 1024 * 1024
 
-export type FailReason = 'too_big' | 'no_audio' | 'limit' | 'no_access' | 'empty' | 'error'
+export type FailReason = 'too_big' | 'no_audio' | 'limit' | 'no_access' | 'empty' | 'no_login' | 'error'
 
 export interface RemoteResult {
   theme: string
@@ -54,11 +54,14 @@ export async function startRemote(s: Sermon, uid: string): Promise<'ok' | FailRe
   const path = `${uid}/${s.id}.m4a`
   const up = await supabase.storage.from('sermon-audio').upload(path, bytes, { contentType: 'audio/mp4', upsert: true })
   if (up.error) return 'error'
-  const row = await supabase.from('sermons').upsert({ id: s.id, user_id: uid, church: s.church || null, date: s.date, duration_sec: Math.round(s.trim.end - s.trim.start), status: 'processing', audio_path: path, notes: s.notes })
+  // Sem mexer na situação: quem marca "processando" é a trava do servidor (claim_sermon).
+  const row = await supabase.from('sermons').upsert({ id: s.id, user_id: uid, church: s.church || null, date: s.date, duration_sec: Math.round(s.trim.end - s.trim.start), audio_path: path, notes: s.notes })
   if (row.error) return 'error'
   try {
     await callFunction('sermon-process', { sermonId: s.id, keepAudio: s.keepAudio })
-  } catch {
+  } catch (e) {
+    // 409: o servidor já está processando este culto (pedido repetido). Basta esperar o resultado.
+    if ((e as { context?: { status?: number } })?.context?.status === 409) return 'ok'
     return 'error'
   }
   return 'ok'

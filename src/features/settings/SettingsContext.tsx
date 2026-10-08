@@ -6,7 +6,7 @@ import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { sampleNotices, type Notice } from './notices'
 import { defaultNotificationPrefs, type NotificationPrefs } from './prefs'
-import { pushFaithConsent, setFaithConsentFlag } from '../../lib/account'
+import { fetchFaithConsentRemote, pushFaithConsent, setFaithConsentFlag } from '../../lib/account'
 import { IS_REMOTE } from '../../lib/supabase'
 import { enqueue, useUserId } from '../../lib/sync'
 import { dismissOps, markReadOps, pullNotices, serverPrefs } from './notices-sync'
@@ -113,6 +113,18 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
   useEffect(() => {
     if (remote && uid) enqueue({ kind: 'update', table: 'profiles', values: { notify_prefs: serverPrefs(state.notif) }, match: { id: '$uid' } })
   }, [prefsKey, uid, remote]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // O consentimento de fé pode ter mudado em outro celular: ao abrir, vale o que está no banco.
+  useEffect(() => {
+    if (!remote || !uid) return
+    let alive = true
+    fetchFaithConsentRemote(uid).then((v) => {
+      if (alive && v !== null) setState((s) => (s.faithConsent === v ? s : { ...s, faithConsent: v }))
+    })
+    return () => {
+      alive = false
+    }
+  }, [remote, uid])
 
   // Avisos da central vêm do banco. Ler e apagar também vão para lá.
   const refreshNotices = useCallback(async () => {

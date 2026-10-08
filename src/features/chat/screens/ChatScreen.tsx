@@ -98,6 +98,8 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
       const msg: Message = { id: replyId, role: 'assistant', text: answer.text, answer }
       if (existing) chat.replaceMessage(c.id, replyId, { ...msg, failed: false })
       else chat.addMessage(c.id, msg)
+      // O servidor guardou a pergunta e a resposta. Conversa que já tinha mensagens só no aparelho continua para envio.
+      if (saved && !existing && (c.synced || c.messages.length === 0)) chat.markSynced(c.id)
     } catch (e) {
       // O servidor confere crise, assinatura e limite de novo: o app obedece.
       if (e instanceof ChatBlocked) {

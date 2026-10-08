@@ -22,11 +22,12 @@ export async function devicePushToken(): Promise<string | null> {
 }
 
 /** Guarda o token para a conta logada. */
-export async function registerPushToken(uid: string): Promise<boolean> {
+export async function registerPushToken(_uid: string): Promise<boolean> {
   if (!supabase) return false
   const token = await devicePushToken()
   if (!token) return false
-  const { error } = await supabase.from('push_tokens').upsert({ user_id: uid, token }, { onConflict: 'user_id,token' })
+  // A função do banco tira este aparelho de outras contas: ele recebe só os avisos de quem está nele.
+  const { error } = await supabase.rpc('register_push_token', { p_token: token })
   return !error
 }
 

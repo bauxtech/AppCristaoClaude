@@ -381,6 +381,7 @@ function Multiplication({ cell }: { cell: Cell }) {
   const [leader, setLeader] = useState(suggested?.id ?? null)
   const [groupB, setGroupB] = useState<string[]>(() => people.slice(Math.ceil(people.length / 2)).map((m) => m.id))
   const [confirm, setConfirm] = useState(false)
+  const [busy, setBusy] = useState(false)
   const inB = (id: string) => groupB.includes(id) || id === leader
 
   return (
@@ -440,14 +441,24 @@ function Multiplication({ cell }: { cell: Cell }) {
               title="Confirmar a divisão?"
               message={`${people.filter((m) => inB(m.id)).length} pessoas vão para a nova célula. Todos serão avisados.`}
               confirmLabel="Dividir"
+              busy={busy}
               danger={false}
               onCancel={() => setConfirm(false)}
               onConfirm={() => {
                 const leaving = people.filter((m) => inB(m.id) && m.id !== leader).map((m) => m.id)
                 const name = cell.members.find((m) => m.id === leader)?.name
-                if (leader) multiplyCell({ name: `${cell.name} 2`, leaderId: leader, memberIds: leaving })
-                toast(`Nova célula criada, liderada por ${name}`)
-                router.back()
+                if (!leader) return
+                setBusy(true)
+                void multiplyCell({ name: `${cell.name} 2`, leaderId: leader, memberIds: leaving }).then((r) => {
+                  setBusy(false)
+                  if (r === 'failed') {
+                    setConfirm(false)
+                    toast('Não foi possível dividir agora. Confira a internet e tente de novo.')
+                    return
+                  }
+                  toast(`Nova célula criada, liderada por ${name}`)
+                  router.back()
+                })
               }}
             />
           ) : (

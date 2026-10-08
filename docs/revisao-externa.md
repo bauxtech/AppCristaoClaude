@@ -11,7 +11,7 @@ O app guarda dado de fé e pedido de oração, que são dados sensíveis pela LG
 
 **Pontos que precisam de parecer**
 1. **Consentimento de fé obrigatório:** hoje o cadastro não continua sem ele. Pela LGPD, o consentimento precisa ser livre. Pode ser obrigatório? O que o app deve deixar de fazer quando a pessoa retira?
-2. **Retirada do consentimento:** hoje é possível retirar em Configurações > Meus dados. O servidor apaga o diário, os pedidos de oração e a tradição da pessoa e passa a recusar esses dados. No aparelho, eles continuam. Confirmar se isso basta e se leituras da Bíblia, campanhas de oração e participação na célula também contam como dado de fé.
+2. **Retirada do consentimento:** hoje é possível retirar em Configurações > Meus dados. O servidor apaga o diário, os pedidos de oração, o histórico do chat, o registro de que a pessoa orou pelos pedidos de outros e a tradição, e passa a recusar esses dados. No aparelho, eles continuam. Confirmar se isso basta e se leituras da Bíblia, campanhas de oração e participação na célula também contam como dado de fé.
 3. **Idade:** só maiores de 18. A pessoa confirma com uma caixa no cadastro e, se informar o aniversário, o app confere a idade. Isso basta?
 4. **Exclusão:** a conta fica marcada e é apagada em 30 dias, com opção de cancelar. Os arquivos (áudio, vídeo e foto) são apagados junto.
 5. **Exportação:** o arquivo vai para o e-mail da pessoa. O e-mail precisa ser verificado antes?

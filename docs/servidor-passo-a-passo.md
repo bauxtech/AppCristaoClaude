@@ -48,6 +48,8 @@ Modelos decididos em 8/10, depois da comparação de custo e qualidade: o chat u
 
 ## 5. Segredo das rotinas
 
+As funções purge, daily-content, push e revenuecat-webhook são publicadas sem conferir login (verify_jwt = false, em supabase/config.toml), porque quem chama é a rotina ou o RevenueCat. Elas conferem a própria senha no código. Depois de publicar, teste com `select public.call_routine('purge')` e confira a resposta em `net._http_response`.
+
 No Supabase, em **Edge Functions > Secrets**, crie `CRON_SECRET` com uma senha longa qualquer. Ele protege as rotinas diárias: conteúdo do dia, exclusão de contas e limpeza de áudio.
 
 ## 6. Lojas e assinatura (Apple, Google e RevenueCat)

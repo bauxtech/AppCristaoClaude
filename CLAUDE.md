@@ -56,7 +56,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Carona: botão que abre o WhatsApp quando o pedido é aceito.
 - Exclusão da conta: dados apagados em 30 dias.
 - Histórico do chat: guardado no servidor só com o consentimento de fé.
-- Retirar o consentimento de fé: apaga do servidor o diário, os pedidos de oração, o histórico do chat e a tradição. No aparelho, eles continuam. Sem consentimento, o banco não aceita gravar esses dados. Dar o consentimento de novo envia o que está no aparelho.
+- Retirar o consentimento de fé: apaga do servidor o diário, os pedidos de oração, o histórico do chat, o registro de que a pessoa orou pelos pedidos de outros e a tradição. No aparelho, eles continuam. Sem consentimento, o banco não aceita gravar esses dados. Dar o consentimento de novo envia o que está no aparelho.
 - Denúncia: vai para a equipe do app. O conteúdo some na hora para quem denunciou.
 - Conteúdo diário: escrito pela IA. O versículo vem sempre do texto bíblico do app, nunca da IA.
 - Chat: só fala de Bíblia e fé cristã, cita só o texto bíblico do app e mostra a fonte. Se a pessoa falar em se machucar, mostra o CVV, telefone 188.

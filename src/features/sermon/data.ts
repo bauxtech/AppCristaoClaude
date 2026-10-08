@@ -33,7 +33,7 @@ export interface Sermon {
   /** Frase de aplicação prática, do resumo do servidor. */
   application?: string
   /** Por que o processamento falhou, quando o servidor diz. */
-  failReason?: 'too_big' | 'no_audio' | 'limit' | 'no_access' | 'empty' | 'error'
+  failReason?: 'too_big' | 'no_audio' | 'limit' | 'no_access' | 'empty' | 'no_login' | 'error'
   /** Culto que está no banco (com servidor). */
   remote?: boolean
 }

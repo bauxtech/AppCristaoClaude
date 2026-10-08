@@ -1,0 +1,22 @@
+# Configuração das funções do servidor no Supabase.
+# As funções chamadas por rotina ou por serviço de fora (não pelo app) não conferem login:
+# elas conferem a própria senha (CRON_SECRET ou REVENUECAT_WEBHOOK_SECRET) no código.
+project_id = "lrsusnlzfdydxidybzje"
+
+[functions.purge]
+verify_jwt = false
+
+[functions.daily-content]
+verify_jwt = false
+
+[functions.push]
+verify_jwt = false
+
+[functions.revenuecat-webhook]
+verify_jwt = false
+
+[functions.chat]
+verify_jwt = true
+
+[functions.sermon-process]
+verify_jwt = true

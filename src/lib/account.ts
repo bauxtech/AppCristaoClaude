@@ -102,3 +102,11 @@ export async function withdrawFaithConsentRemote(): Promise<boolean> {
   const { error } = await supabase.rpc('withdraw_faith_consent')
   return !error
 }
+
+/** Consentimento de fé guardado no banco. Null quando não dá para saber (sem servidor ou sem rede). */
+export async function fetchFaithConsentRemote(uid: string): Promise<boolean | null> {
+  if (!IS_REMOTE || !supabase) return null
+  const { data, error } = await supabase.from('profiles').select('faith_consent').eq('id', uid).maybeSingle()
+  if (error || !data) return null
+  return !!data.faith_consent
+}

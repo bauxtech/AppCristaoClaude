@@ -1,5 +1,5 @@
 import { verseText } from '../bible/text'
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
 import { enqueue, flush, pendingOps, useUserId } from '../../lib/sync'
 import { uuid } from '../../lib/uuid'
@@ -8,7 +8,8 @@ import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import type { Answer, ChatContextRef } from './answer'
 import { DAILY_LIMIT } from './rules'
-import { deleteAllOps, deleteConversationOps, mergeChat, pullChat } from './sync'
+import { deleteAllOps, deleteConversationOps, mergeChat, pullChat, pushConversation } from './sync'
+import { fetchFaithConsentRemote } from '../../lib/account'
 
 export interface Message {
   id: string
@@ -24,6 +25,8 @@ export interface Conversation {
   createdAt: string
   context: ChatContextRef | null
   messages: Message[]
+  /** A conversa inteira já está no banco. Sem isso, ela é enviada quando houver consentimento e rede. */
+  synced?: boolean
 }
 
 interface ChatState {
@@ -38,6 +41,8 @@ interface ChatValue {
   addMessage: (convId: string, m: Message) => void
   replaceMessage: (convId: string, msgId: string, m: Partial<Message>) => void
   countQuestion: () => void
+  /** O servidor guardou pergunta e resposta: a conversa está igual no banco. */
+  markSynced: (convId: string) => void
   removeConversation: (id: string) => void
   clearAll: () => void
   /** Só na prévia: usa todas as perguntas de hoje. */
@@ -83,6 +88,8 @@ export function ChatProvider({ children, initial }: { children: ReactNode; initi
   useEffect(() => {
     if (!initial) setItem('chat', state)
   }, [state, initial])
+  const stateRef = useRef(state)
+  stateRef.current = state
   useDataReset((s) => setState({ conversations: s ? sample() : [], usage: { date: today(), count: 0 } }))
 
   // Ao entrar, traz as conversas guardadas no banco. Sem consentimento de fé, o banco não guarda conversas.
@@ -91,12 +98,19 @@ export function ChatProvider({ children, initial }: { children: ReactNode; initi
   useEffect(() => {
     if (!uid || sampleData || initial || !faith) return
     let alive = true
-    flush()
-      .then(() => (pendingOps().length ? null : pullChat(uid)))
-      .then((remote) => {
-        if (alive && remote) setState((s) => ({ ...s, conversations: mergeChat(s.conversations, remote) }))
-      })
-      .catch(() => {})
+    ;(async () => {
+      await flush()
+      // O consentimento do banco vale mais que o do aparelho (pode ter sido retirado em outro celular).
+      if ((await fetchFaithConsentRemote(uid)) === false) return
+      // Primeiro envia o que está só no aparelho; depois traz do banco, sem perder nada local.
+      for (const c of stateRef.current.conversations.filter((x) => !x.synced && x.messages.length)) {
+        if (!alive) return
+        if (await pushConversation(c, uid)) setState((s) => ({ ...s, conversations: s.conversations.map((x) => (x.id === c.id ? { ...x, synced: true } : x)) }))
+      }
+      if (pendingOps().length) return
+      const remote = await pullChat(uid)
+      if (alive && remote) setState((s) => ({ ...s, conversations: mergeChat(s.conversations, remote) }))
+    })().catch(() => {})
     return () => {
       alive = false
     }
@@ -118,11 +132,12 @@ export function ChatProvider({ children, initial }: { children: ReactNode; initi
         setState((s) => ({
           ...s,
           conversations: s.conversations.map((c) =>
-            c.id === convId ? { ...c, title: c.messages.length === 0 && m.role === 'user' && !c.context ? m.text.slice(0, 60) : c.title, messages: [...c.messages, m] } : c,
+            c.id === convId ? { ...c, synced: false, title: c.messages.length === 0 && m.role === 'user' && !c.context ? m.text.slice(0, 60) : c.title, messages: [...c.messages, m] } : c,
           ),
         })),
       replaceMessage: (convId, msgId, m) =>
         setState((s) => ({ ...s, conversations: s.conversations.map((c) => (c.id === convId ? { ...c, messages: c.messages.map((x) => (x.id === msgId ? { ...x, ...m } : x)) } : c)) })),
+      markSynced: (convId) => setState((s) => ({ ...s, conversations: s.conversations.map((c) => (c.id === convId ? { ...c, synced: true } : c)) })),
       fillTodayLimit: () => setState((s) => ({ ...s, usage: { date: today(), count: DAILY_LIMIT } })),
       countQuestion: () => setState((s) => ({ ...s, usage: { date: today(), count: (s.usage.date === today() ? s.usage.count : 0) + 1 } })),
       removeConversation: (id) => {

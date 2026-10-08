@@ -47,7 +47,7 @@ export function TrimScreen() {
 
   return (
     <Page title="Ajustar gravação">
-      <AppText variant="body" tone="secondary">{`Gravação de ${formatDuration(total)}. Marque onde a pregação começa e termina. Só esse trecho vai para o texto.`}</AppText>
+      <AppText variant="body" tone="secondary">{`Gravação de ${formatDuration(total)}. Marque onde a pregação começa e termina, para a duração e para ouvir de novo. Por enquanto, o áudio inteiro vai para a transcrição.`}</AppText>
       <Card accessible={false} importantForAccessibility="no-hide-descendants">
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 80, gap: 2 }}>
           {BARS.map((h, i) => {

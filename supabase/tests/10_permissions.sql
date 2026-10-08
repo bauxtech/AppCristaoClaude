@@ -615,3 +615,36 @@ insert into public.prayer_requests (user_id, text, shared_cell_id) values ('0000
 select tests.ok('pedido compartilhado avisa os membros, sem o texto, e não avisa o visitante',
   exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-000000000011' and pref = 'novoPedido' and body not like '%Pedido novo%')
   and not exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-00000000000d'));
+
+-- ─── Correções da revisão 3 ─────────────────────────────────────────────────
+
+-- Um aparelho fica só com a última conta que entrou nele.
+select tests.as_user('00000000-0000-0000-0000-00000000000a');
+select public.register_push_token('ExponentPushToken[mesmo-celular]');
+reset role;
+select tests.as_user('00000000-0000-0000-0000-00000000000e');
+select public.register_push_token('ExponentPushToken[mesmo-celular]');
+reset role;
+select tests.ok('o mesmo celular deixa de receber os avisos da conta anterior',
+  (select array_agg(user_id::text) from public.push_tokens where token = 'ExponentPushToken[mesmo-celular]') = array['00000000-0000-0000-0000-00000000000e']);
+select tests.as_user('00000000-0000-0000-0000-00000000000e');
+select tests.ok('ninguém lê o token de avisos de outra pessoa', tests.rows($$select * from public.push_tokens where user_id <> auth.uid()$$) = 0);
+reset role;
+
+-- O culto é processado uma vez; outra chamada no meio é recusada.
+insert into public.sermons (id, user_id, title) values ('80000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-00000000000e', 'Culto');
+select tests.as_user('00000000-0000-0000-0000-00000000000e');
+select tests.ok('primeira chamada trava o culto', public.claim_sermon('80000000-0000-0000-0000-000000000001'));
+select tests.ok('segunda chamada no meio do processamento é recusada', not public.claim_sermon('80000000-0000-0000-0000-000000000001'));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-00000000000a');
+select tests.ok('ninguém trava o culto de outra pessoa', not public.claim_sermon('80000000-0000-0000-0000-000000000001'));
+reset role;
+
+-- Retirar o consentimento apaga também o registro de que orou pelos pedidos de outros.
+insert into public.prayer_prayed (request_id, user_id) values ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000011') on conflict do nothing;
+select tests.as_user('00000000-0000-0000-0000-000000000011');
+select public.withdraw_faith_consent();
+reset role;
+select tests.ok('retirar o consentimento apaga quem orou', not exists (select 1 from public.prayer_prayed where user_id = '00000000-0000-0000-0000-000000000011'));
+update public.profiles set faith_consent = true where id = '00000000-0000-0000-0000-000000000011';

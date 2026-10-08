@@ -22,6 +22,7 @@ const FAIL_TEXT: Record<NonNullable<Sermon['failReason']>, string> = {
   limit: 'Você já usou os 5 cultos deste mês.',
   no_access: 'A transcrição faz parte da assinatura.',
   empty: 'Não deu para entender a fala do áudio. Confira se o som foi gravado.',
+  no_login: 'Entre na sua conta de novo para transcrever.',
   error: 'Não foi possível processar agora. Tente de novo.',
 }
 

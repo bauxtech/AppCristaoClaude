@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
+import { supabase } from '../../lib/supabase'
 import { enqueue, flush, pendingOps, syncEnabled, useUserId } from '../../lib/sync'
 import { isUuid, uuid } from '../../lib/uuid'
 import { setMemberNameLookup } from '../prayer/sync'
@@ -31,7 +32,7 @@ interface CellValue {
   switchCell: (id: string) => void
   leaveCell: () => void
   /** Divide a célula aberta: quem vai para a nova célula sai desta. */
-  multiplyCell: (input: { name: string; leaderId: string; memberIds: string[] }) => void
+  multiplyCell: (input: { name: string; leaderId: string; memberIds: string[] }) => Promise<'ok' | 'failed'>
   /** Só na prévia: troca o papel da pessoa na célula aberta. */
   setMyRole: (role: CellRole) => void
 }
@@ -51,7 +52,8 @@ export function CellProvider({ children, initial }: { children: ReactNode; initi
   sample.current = sampleData
 
   useEffect(() => {
-    if (!initial) setItem('cells', state)
+    // Link da foto dos colegas não fica guardado no aparelho: vale 1 hora e é refeito a cada leitura.
+    if (!initial) setItem('cells', { ...state, cells: state.cells.map((c) => ({ ...c, members: c.members.map(({ photoUri: _p, ...m }) => m) })) })
   }, [state, initial])
 
   useDataReset((sample) => {
@@ -161,18 +163,28 @@ export function CellProvider({ children, initial }: { children: ReactNode; initi
         setState({ cells: rest, currentId: rest[0]?.id ?? null })
         setCellStatus(statusFor(rest[0] ?? null))
       },
-      multiplyCell: ({ name, leaderId, memberIds }) => {
-        if (!cell) return
+      multiplyCell: async ({ name, leaderId, memberIds }) => {
+        if (!cell) return 'failed'
         const leaving = new Set([leaderId, ...memberIds])
-        // A mudança vai pela função do banco, não pela diferença da lista: tirar da lista aqui não remove ninguém no banco.
-        const next = { ...cell, members: cell.members.filter((m) => !leaving.has(m.id)), schedule: cell.schedule.map((x) => (x.memberId && leaving.has(x.memberId) ? { ...x, memberId: null } : x)) }
-        const nextState = { ...current.current, cells: current.current.cells.map((c) => (c.id === cell.id ? next : c)) }
-        current.current = nextState
-        setState(nextState)
-        if (remote && !sample.current) {
-          enqueue(...multiplyOps(cell.id, uuid(), name, leaderId, memberIds))
-          void flush().then(refresh)
+        const apply = () => {
+          const fresh = current.current.cells.find((c) => c.id === cell.id) ?? cell
+          const next = { ...fresh, members: fresh.members.filter((m) => !leaving.has(m.id)), schedule: fresh.schedule.map((x) => (x.memberId && leaving.has(x.memberId) ? { ...x, memberId: null } : x)) }
+          const nextState = { ...current.current, cells: current.current.cells.map((c) => (c.id === cell.id ? next : c)) }
+          current.current = nextState
+          setState(nextState)
         }
+        // Com servidor: espera o banco dividir. Se ele recusar, nada muda na tela.
+        if (remote && !sample.current) {
+          const [op] = multiplyOps(cell.id, uuid(), name, leaderId, memberIds)
+          if (!op || op.kind !== 'rpc' || !supabase) return 'failed'
+          const { error } = await supabase.rpc(op.fn, op.args)
+          if (error) return 'failed'
+          apply()
+          void refresh()
+          return 'ok'
+        }
+        apply()
+        return 'ok'
       },
       setMyRole: (role) => {
         if (!cell) return

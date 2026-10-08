@@ -121,6 +121,12 @@ export function SermonProvider({ children, initial }: { children: ReactNode; ini
     (s: Sermon) => {
       const uid = currentUserId()
       // Com servidor: transcrição e resumo de verdade. Sem servidor (prévia): o resultado de exemplo.
+      // Com servidor, nunca usa o resultado de exemplo: sem login, falha e mantém o áudio.
+      if (IS_REMOTE && !sampleData && !uid) {
+        update(s.id, { remote: true })
+        fail(s.id, 'no_login')
+        return
+      }
       if (IS_REMOTE && syncEnabled() && uid && !sampleData) {
         update(s.id, { remote: true, failReason: undefined })
         startRemote(s, uid)

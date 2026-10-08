@@ -364,8 +364,8 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   const lastAttendance = (userId: string) => past.filter((m) => (att.data ?? []).some((a) => a.meeting_id === m.id && a.user_id === userId)).map((m) => !!(att.data ?? []).find((a) => a.meeting_id === m.id && a.user_id === userId)?.present)
 
   const localMember = (id: string) => local?.members.find((x) => x.id === id)
-  // Fotos privadas: link temporário, só de quem deixa mostrar (o banco já esconde as outras).
-  const photos = new Map(await Promise.all(list.filter((x) => x.photo_path).map(async (x) => [x.user_id, await signedUrl('avatars', x.photo_path!)] as const)))
+  // Fotos privadas: link de 1 hora, só de quem deixa mostrar (o banco já esconde as outras). Refeito a cada leitura.
+  const photos = new Map(await Promise.all(list.filter((x) => x.photo_path).map(async (x) => [x.user_id, await signedUrl('avatars', x.photo_path!, 3600)] as const)))
   const members: Member[] = list
     .filter((x) => x.status === 'approved')
     .map((x) => ({
