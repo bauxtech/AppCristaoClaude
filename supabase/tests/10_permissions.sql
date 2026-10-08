@@ -531,3 +531,55 @@ select tests.as_user('00000000-0000-0000-0000-00000000000b');
 select tests.ok('pessoa logada lê o crédito da tradução', tests.rows($$select * from public.bible_translations where attribution like '%Almeida%'$$) = 1);
 select tests.ok('pessoa não altera o crédito da tradução', tests.denied($$update public.bible_translations set license = 'public-domain'$$));
 reset role;
+
+-- ─── Célula: plano de leitura em grupo, histórico e multiplicação ──────────
+
+select tests.as_user('00000000-0000-0000-0000-00000000000a'); -- Ana, líder
+select tests.ok('líder escolhe o plano de leitura da célula', tests.allowed($$update public.cells set reading_plan_id = 'sl-pv-30' where id = '10000000-0000-0000-0000-000000000001'$$));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-00000000000b'); -- Beto, membro
+select tests.ok('membro não escolhe o plano da célula', tests.denied($$update public.cells set reading_plan_id = 'x' where id = '10000000-0000-0000-0000-000000000001'$$));
+select public.set_my_cell_reading('10000000-0000-0000-0000-000000000001', true, false, 40);
+select tests.ok('membro participa do plano e guarda o próprio progresso',
+  (select reading_joined and reading_progress = 40 from public.cell_member_cards('10000000-0000-0000-0000-000000000001') where is_me));
+select tests.ok('membro não muda o próprio papel pela participação no plano',
+  (select role = 'membro' from public.cell_member_cards('10000000-0000-0000-0000-000000000001') where is_me));
+select tests.ok('membro não vê o histórico da célula', tests.denied($$select * from public.cell_history('10000000-0000-0000-0000-000000000001')$$));
+select tests.ok('membro não multiplica a célula', tests.denied($$select public.multiply_cell('10000000-0000-0000-0000-000000000001', null, 'Nova', '00000000-0000-0000-0000-000000000012', '{}')$$));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000012'); -- Hugo
+select tests.ok('progresso de quem não escolheu mostrar não aparece para a célula',
+  (select reading_progress is null from public.cell_member_cards('10000000-0000-0000-0000-000000000001') where user_id = '00000000-0000-0000-0000-00000000000b'));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-00000000000b');
+select public.set_my_cell_reading('10000000-0000-0000-0000-000000000001', null, true, null);
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000012');
+select tests.ok('progresso aparece quando a pessoa escolhe mostrar',
+  (select reading_progress = 40 from public.cell_member_cards('10000000-0000-0000-0000-000000000001') where user_id = '00000000-0000-0000-0000-00000000000b'));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-00000000000e'); -- Edu, outra célula
+select tests.ok('outra célula não vê o histórico nem multiplica', tests.denied($$select * from public.cell_history('10000000-0000-0000-0000-000000000001')$$)
+  and tests.denied($$select public.multiply_cell('10000000-0000-0000-0000-000000000001', null, 'Nova', '00000000-0000-0000-0000-000000000012', '{}')$$));
+reset role;
+insert into public.prayer_requests (id, user_id, text, shared_cell_id) values ('20000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-00000000000b', 'Pedido para a célula', '10000000-0000-0000-0000-000000000001');
+select tests.as_user('00000000-0000-0000-0000-00000000000a'); -- Ana
+select tests.ok('líder vê o histórico da célula', (select meetings >= 1 and avg_attendance between 0 and 100 from public.cell_history('10000000-0000-0000-0000-000000000001')));
+select tests.ok('visitante não vai para a nova célula',
+  tests.denied($$select public.multiply_cell('10000000-0000-0000-0000-000000000001', null, 'Nova', '00000000-0000-0000-0000-000000000012', '{00000000-0000-0000-0000-00000000000d}')$$));
+select tests.ok('quem é de outra célula não vai para a nova célula',
+  tests.denied($$select public.multiply_cell('10000000-0000-0000-0000-000000000001', null, 'Nova', '00000000-0000-0000-0000-000000000012', '{00000000-0000-0000-0000-00000000000e}')$$));
+select public.multiply_cell('10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000003', 'Jovens da Central 2', '00000000-0000-0000-0000-000000000012', '{00000000-0000-0000-0000-00000000000b}');
+select tests.ok('reenviar a mesma multiplicação não cria outra célula',
+  public.multiply_cell('10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000003', 'Jovens da Central 2', '00000000-0000-0000-0000-000000000012', '{00000000-0000-0000-0000-00000000000b}') = '10000000-0000-0000-0000-000000000003');
+select tests.ok('quem foi para a nova célula sai da célula antiga e da escala',
+  tests.rows($$select * from public.cell_member_cards('10000000-0000-0000-0000-000000000001') where user_id in ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000000012')$$) = 0
+  and (select member_id is null from public.cell_schedule where id = '40000000-0000-0000-0000-000000000001'));
+select tests.ok('líder antigo não vê a nova célula', tests.rows($$select * from public.cells where id = '10000000-0000-0000-0000-000000000003'$$) = 0);
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000012'); -- Hugo
+select tests.ok('novo líder lidera a nova célula, sem o endereço da antiga',
+  public.is_cell_leader('10000000-0000-0000-0000-000000000003') and (select address is null and neighborhood = 'Pinheiros' from public.cells where id = '10000000-0000-0000-0000-000000000003'));
+reset role;
+select tests.ok('pedido compartilhado vai junto com a pessoa para a nova célula',
+  (select shared_cell_id = '10000000-0000-0000-0000-000000000003' from public.prayer_requests where id = '20000000-0000-0000-0000-000000000009'));

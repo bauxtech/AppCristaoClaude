@@ -25,6 +25,8 @@ export interface Member {
   isMe?: boolean
   showReadingProgress?: boolean
   readingProgress?: number
+  /** Foto, quando a pessoa deixa mostrar. Link temporário. */
+  photoUri?: string
 }
 
 export interface PlanSection {

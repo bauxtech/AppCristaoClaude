@@ -37,7 +37,7 @@ function Attendance({ cell }: { cell: Cell }) {
       <Card style={{ paddingVertical: 4 }}>
         {people.map((m, i) => (
           <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, borderBottomWidth: i < people.length - 1 ? 1 : 0, borderBottomColor: colors.line }}>
-            <Avatar name={m.name} size={36} />
+            <Avatar name={m.name} size={36} uri={m.photoUri} />
             <View style={{ flex: 1 }}>
               <AppText variant="body">{m.isMe ? `${m.name} (você)` : m.name}</AppText>
               {!m.active ? <AppText variant="small" tone="secondary">Inativo</AppText> : null}
@@ -129,7 +129,7 @@ export function MembersScreen() {
                 const label = `${m.isMe ? `${m.name} (você)` : m.name}, ${ROLE_LABEL[m.role]}${!m.active ? ', inativo' : ''}${leader && missedTwoWeeks(m.lastAttendance) ? ', faltou 2 semanas' : ''}`
                 const row = (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, borderBottomWidth: i < order.length - 1 ? 1 : 0, borderBottomColor: colors.line }}>
-                    <Avatar name={m.name} strong={m.isMe} />
+                    <Avatar name={m.name} strong={m.isMe} uri={m.photoUri} />
                     <View style={{ flex: 1, gap: 2 }}>
                       <AppText variant="body">{m.isMe ? `${m.name} (você)` : m.name}</AppText>
                       <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
@@ -193,7 +193,7 @@ function MemberDetail({ cell, m }: { cell: Cell; m: Member }) {
   return (
     <Page title="Membro">
       <View style={{ alignItems: 'center', gap: 6, paddingVertical: 8 }}>
-        <Avatar name={m.name} size={72} />
+        <Avatar name={m.name} size={72} uri={m.photoUri} />
         <AppText variant="title" accessibilityRole="header">
           {m.name}
         </AppText>

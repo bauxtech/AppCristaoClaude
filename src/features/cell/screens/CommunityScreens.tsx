@@ -375,7 +375,7 @@ export function MultiplicationScreen() {
 function Multiplication({ cell }: { cell: Cell }) {
   const { colors } = useTheme()
   const toast = useToast()
-  const { update } = useCell()
+  const { update, multiplyCell } = useCell()
   const people = cell.members.filter((m) => !m.isMe && m.role !== 'visitante')
   const suggested = people.find((m) => m.role === 'auxiliar') ?? people[0]
   const [leader, setLeader] = useState(suggested?.id ?? null)
@@ -443,9 +443,9 @@ function Multiplication({ cell }: { cell: Cell }) {
               danger={false}
               onCancel={() => setConfirm(false)}
               onConfirm={() => {
-                const leaving = people.filter((m) => inB(m.id)).map((m) => m.id)
+                const leaving = people.filter((m) => inB(m.id) && m.id !== leader).map((m) => m.id)
                 const name = cell.members.find((m) => m.id === leader)?.name
-                update((c) => ({ ...c, members: c.members.filter((m) => !leaving.includes(m.id)), schedule: c.schedule.map((s) => (s.memberId && leaving.includes(s.memberId) ? { ...s, memberId: null } : s)) }))
+                if (leader) multiplyCell({ name: `${cell.name} 2`, leaderId: leader, memberIds: leaving })
                 toast(`Nova célula criada, liderada por ${name}`)
                 router.back()
               }}

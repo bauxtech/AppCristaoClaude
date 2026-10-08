@@ -4,7 +4,7 @@ import { enqueue, flush, pendingOps, syncEnabled, useUserId } from '../../lib/sy
 import { isUuid, uuid } from '../../lib/uuid'
 import { setMemberNameLookup } from '../prayer/sync'
 import { setCurrentCellId } from './current'
-import { cellDiffOps, createCellOps, pullCells, requestJoinRemote, withIds } from './sync'
+import { cellDiffOps, createCellOps, multiplyOps, pullCells, requestJoinRemote, withIds } from './sync'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { newCell, sampleCell, type Cell, type CellType } from './data'
@@ -30,6 +30,8 @@ interface CellValue {
   simulateApproval: (role?: CellRole) => void
   switchCell: (id: string) => void
   leaveCell: () => void
+  /** Divide a célula aberta: quem vai para a nova célula sai desta. */
+  multiplyCell: (input: { name: string; leaderId: string; memberIds: string[] }) => void
   /** Só na prévia: troca o papel da pessoa na célula aberta. */
   setMyRole: (role: CellRole) => void
 }
@@ -158,6 +160,19 @@ export function CellProvider({ children, initial }: { children: ReactNode; initi
         const rest = state.cells.filter((c) => c.id !== cell?.id)
         setState({ cells: rest, currentId: rest[0]?.id ?? null })
         setCellStatus(statusFor(rest[0] ?? null))
+      },
+      multiplyCell: ({ name, leaderId, memberIds }) => {
+        if (!cell) return
+        const leaving = new Set([leaderId, ...memberIds])
+        // A mudança vai pela função do banco, não pela diferença da lista: tirar da lista aqui não remove ninguém no banco.
+        const next = { ...cell, members: cell.members.filter((m) => !leaving.has(m.id)), schedule: cell.schedule.map((x) => (x.memberId && leaving.has(x.memberId) ? { ...x, memberId: null } : x)) }
+        const nextState = { ...current.current, cells: current.current.cells.map((c) => (c.id === cell.id ? next : c)) }
+        current.current = nextState
+        setState(nextState)
+        if (remote && !sample.current) {
+          enqueue(...multiplyOps(cell.id, uuid(), name, leaderId, memberIds))
+          void flush().then(refresh)
+        }
       },
       setMyRole: (role) => {
         if (!cell) return

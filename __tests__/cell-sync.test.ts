@@ -1,6 +1,6 @@
 import { newCell, sampleCell, type Cell } from '../src/features/cell/data'
 import { lastMeeting } from '../src/features/cell/meetings'
-import { cellDiffOps, createCellOps, materialPath, withIds } from '../src/features/cell/sync'
+import { cellDiffOps, createCellOps, materialPath, multiplyOps, withIds } from '../src/features/cell/sync'
 import { uuid } from '../src/lib/uuid'
 
 const now = new Date(2026, 9, 6, 12, 0, 0)
@@ -170,4 +170,17 @@ test('dar o papel de líder a outra pessoa sem sair da liderança é só update 
   const a = base()
   const b = { ...a, members: a.members.map((m) => (m.id === BETO ? { ...m, role: 'lider' as const } : m)) }
   expect(cellDiffOps(a, b)).toEqual([{ kind: 'update', table: 'cell_members', values: { role: 'lider' }, match: { cell_id: a.id, user_id: BETO } }])
+})
+
+test('líder escolhe o plano em grupo; participar e mostrar o progresso vão pela função do banco', () => {
+  const a = base()
+  expect(cellDiffOps(a, { ...a, readingPlan: { planId: 'sl-pv-30', joined: false } })).toEqual([{ kind: 'update', table: 'cells', values: { reading_plan_id: 'sl-pv-30' }, match: { id: a.id } }])
+  const joined = { ...a, readingPlan: { ...a.readingPlan, joined: true }, members: a.members.map((m) => (m.isMe ? { ...m, showReadingProgress: true, readingProgress: 25 } : m)) }
+  expect(cellDiffOps(a, joined)).toEqual([{ kind: 'rpc', fn: 'set_my_cell_reading', args: { p_cell: a.id, p_joined: true, p_show: true, p_progress: 25 } }])
+})
+
+test('multiplicar vai numa só chamada ao banco, com quem lidera e quem vai junto', () => {
+  const a = base()
+  const ops = multiplyOps(a.id, '11111111-1111-4111-8111-111111111111', 'Jovens 2', BETO, [CAIO, 'antigo'])
+  expect(ops).toEqual([{ kind: 'rpc', fn: 'multiply_cell', args: { p_cell: a.id, p_new_id: '11111111-1111-4111-8111-111111111111', p_name: 'Jovens 2', p_new_leader: BETO, p_members: [CAIO] } }])
 })

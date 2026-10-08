@@ -1,5 +1,5 @@
 import { router } from 'expo-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Linking, View } from 'react-native'
 import { AppText, Avatar, Button, Card, EmptyState, Page, ProgressBar, SectionLabel, Segmented, Switch, Tag, TextField, useToast } from '../../../components'
 import { fonts } from '../../../theme/typography'
@@ -247,6 +247,11 @@ function GroupReading({ cell }: { cell: Cell }) {
   const plan = bible.planDef(cell.readingPlan.planId)
   const me = cell.members.find((m) => m.isMe)!
   const showing = cell.members.filter((m) => m.showReadingProgress && (!m.isMe || cell.readingPlan.joined))
+  // O próprio progresso no plano vai para a célula. Ela só vê se a pessoa escolheu mostrar.
+  const myPct = plan ? Math.round((planState(plan, bible.progress[plan.id]).done / plan.total) * 100) : null
+  useEffect(() => {
+    if (cell.readingPlan.joined && myPct !== null && me.readingProgress !== myPct) update((c) => ({ ...c, members: c.members.map((m) => (m.isMe ? { ...m, readingProgress: myPct } : m)) }))
+  }, [cell.readingPlan.joined, myPct]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!plan) {
     return (

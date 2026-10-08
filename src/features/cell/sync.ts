@@ -78,9 +78,18 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
   if (prev.archived !== next.archived) info.archived = next.archived
   if (prev.maxSize !== next.maxSize) info.max_size = next.maxSize
   if (JSON.stringify(planOf(prev)) !== JSON.stringify(planOf(next))) info.plan = planOf(next)
+  if (prev.readingPlan.planId !== next.readingPlan.planId) info.reading_plan_id = next.readingPlan.planId || null
   if (Object.keys(info).length) ops.push({ kind: 'update', table: 'cells', values: info, match: { id: cell } })
 
   if (prev.muted !== next.muted) ops.push({ kind: 'update', table: 'cell_members', values: { muted: next.muted }, match: { cell_id: cell, user_id: '$uid' } })
+
+  // Plano em grupo: a própria participação, se mostra o progresso e quanto já leu.
+  const meBefore = prev.members.find((m) => m.isMe)
+  const meAfter = next.members.find((m) => m.isMe)
+  const joined = prev.readingPlan.joined !== next.readingPlan.joined ? next.readingPlan.joined : null
+  const show = meBefore && meAfter && !!meBefore.showReadingProgress !== !!meAfter.showReadingProgress ? !!meAfter.showReadingProgress : null
+  const progress = meAfter?.readingProgress != null && meAfter.readingProgress !== meBefore?.readingProgress ? meAfter.readingProgress : null
+  if (joined !== null || show !== null || progress !== null) ops.push({ kind: 'rpc', fn: 'set_my_cell_reading', args: { p_cell: cell, p_joined: joined, p_show: show, p_progress: progress } })
 
   // Entrada: o líder aprova (a pessoa vira membro) ou recusa (some da lista de pedidos).
   const nextMembers = byId(next.members)
@@ -292,11 +301,15 @@ interface Card {
   books_read: number | null
   phone: string | null
   is_me: boolean
+  photo_path: string | null
+  reading_joined: boolean
+  show_reading: boolean
+  reading_progress: number | null
 }
 
 /**
  * Traz do banco as células de quem está logado, já no formato das telas.
- * O que o banco ainda não guarda (plano de leitura da célula, histórico) vem da cópia do aparelho.
+ * O histórico vem só para o líder.
  */
 export async function pullCells(uid: string, local: Cell[], now = new Date()): Promise<PulledCells | null> {
   if (!supabase) return null
@@ -318,7 +331,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   const asMe = (id: string | null) => (id === uid ? 'me' : id)
   const today = now.toISOString().slice(0, 10)
   const [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden, polls, votes, counts, playlist, materials] = await Promise.all([
-    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, created_at').eq('id', cellId).single(),
+    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, reading_plan_id, created_at').eq('id', cellId).single(),
     db.rpc('cell_member_cards', { p_cell: cellId }),
     db.from('cell_schedule').select('id, role_name, member_id').eq('cell_id', cellId).is('meeting_date', null),
     db.from('cell_meetings').select('id, date, time, extra, cancelled').eq('cell_id', cellId).order('date', { ascending: true }),
@@ -337,6 +350,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
     db.from('cell_materials').select('id, name, kind, path, created_at').eq('cell_id', cellId).order('created_at', { ascending: false }),
   ])
   const all = [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden, polls, votes, counts, playlist, materials]
+  const hist = myRole === 'lider' ? await db.rpc('cell_history', { p_cell: cellId }) : null
   if (all.some((r) => r.error) || !row.data) return null
   const c = row.data
   const list = (cards.data ?? []) as Card[]
@@ -350,6 +364,8 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   const lastAttendance = (userId: string) => past.filter((m) => (att.data ?? []).some((a) => a.meeting_id === m.id && a.user_id === userId)).map((m) => !!(att.data ?? []).find((a) => a.meeting_id === m.id && a.user_id === userId)?.present)
 
   const localMember = (id: string) => local?.members.find((x) => x.id === id)
+  // Fotos privadas: link temporário, só de quem deixa mostrar (o banco já esconde as outras).
+  const photos = new Map(await Promise.all(list.filter((x) => x.photo_path).map(async (x) => [x.user_id, await signedUrl('avatars', x.photo_path!)] as const)))
   const members: Member[] = list
     .filter((x) => x.status === 'approved')
     .map((x) => ({
@@ -362,9 +378,12 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
       active: x.active,
       lastAttendance: lastAttendance(x.user_id),
       ...(x.is_me ? { isMe: true } : {}),
-      showReadingProgress: x.show_books,
-      ...(x.books_read != null ? { readingProgress: Math.round((x.books_read / 66) * 100) } : {}),
+      showReadingProgress: x.show_reading,
+      ...(x.reading_progress != null ? { readingProgress: x.reading_progress } : {}),
+      ...(photos.get(x.user_id) ? { photoUri: photos.get(x.user_id)! } : {}),
     }))
+  const myCard = list.find((x) => x.is_me)
+  const h = ((hist?.data ?? []) as { meetings: number; avg_attendance: number; answered: number }[])[0]
 
   const schedRows = (schedule.data ?? []).map((s) => ({ id: s.id, role: s.role_name, memberId: asMe(s.member_id) }))
   const order = (r: string) => (DEFAULT_ROLES.indexOf(r) < 0 ? 99 : DEFAULT_ROLES.indexOf(r))
@@ -445,10 +464,16 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
         .filter((q) => q.status !== 'declined')
         .map((q) => ({ memberId: asMe(q.user_id) ?? '', status: q.status as 'pending' | 'accepted' })),
     })),
-    readingPlan: local?.readingPlan ?? { planId: '', joined: false },
-    history: local?.history ?? { meetings: past.length, avgAttendance: 0, answered: 0 },
+    readingPlan: { planId: c.reading_plan_id ?? '', joined: !!myCard?.reading_joined },
+    history: h ? { meetings: h.meetings, avgAttendance: h.avg_attendance, answered: h.answered } : (local?.history ?? { meetings: past.length, avgAttendance: 0, answered: 0 }),
     hidden: [...new Set([...(local?.hidden ?? []), ...hiddenIds])],
   }
+}
+
+/** Divide a célula: a função do banco cria a nova e muda as pessoas de célula numa só operação. */
+export function multiplyOps(cellId: string, newId: string, name: string, leaderId: string, memberIds: string[]): SyncOp[] {
+  if (!isUuid(cellId) || !isUuid(leaderId)) return []
+  return [{ kind: 'rpc', fn: 'multiply_cell', args: { p_cell: cellId, p_new_id: newId, p_name: name, p_new_leader: leaderId, p_members: memberIds.filter(isUuid) } }]
 }
 
 // ─── Entrar com código ───────────────────────────────────────────────────────
