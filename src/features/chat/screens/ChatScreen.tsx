@@ -16,6 +16,9 @@ import { useSermons } from '../../sermon/SermonContext'
 import { askBible, transcribeQuestion, type ChatContextRef } from '../answer'
 import { askRemote, ChatBlocked } from '../remote'
 import { IS_REMOTE } from '../../../lib/supabase'
+import { currentUserId } from '../../../lib/sync'
+import { useFaithConsent } from '../../settings/SettingsContext'
+import { saveConversation } from '../sync'
 import { useChat, type Conversation, type Message } from '../ChatContext'
 import { DAILY_LIMIT, isCrisis } from '../rules'
 import { getTranslation } from '../../bible/translations'
@@ -51,6 +54,7 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
   const toast = useToast()
   const audio = useAudio()
   const chat = useChat()
+  const faith = useFaithConsent()
   const { profile } = useSession()
   const { sermons } = useSermons()
   const [input, setInput] = useState('')
@@ -86,7 +90,11 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
     }
     setTyping(true)
     try {
-      const answer = IS_REMOTE ? await askRemote(q, null, c.context?.label ?? null) : await askBible(q, c.context, sermon)
+      // Com consentimento de fé, a conversa fica guardada no banco: o servidor grava pergunta e resposta nela.
+      const uid = currentUserId()
+      const title = c.messages.length === 0 && !c.context ? q.slice(0, 60) : c.title
+      const saved = IS_REMOTE && faith && uid ? await saveConversation({ id: c.id, title, context: c.context }, uid) : false
+      const answer = IS_REMOTE ? await askRemote(q, saved ? c.id : null, c.context?.label ?? null) : await askBible(q, c.context, sermon)
       const msg: Message = { id: replyId, role: 'assistant', text: answer.text, answer }
       if (existing) chat.replaceMessage(c.id, replyId, { ...msg, failed: false })
       else chat.addMessage(c.id, msg)

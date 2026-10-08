@@ -1,10 +1,14 @@
 import { verseText } from '../bible/text'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
+import { enqueue, flush, pendingOps, useUserId } from '../../lib/sync'
+import { uuid } from '../../lib/uuid'
+import { useFaithConsent } from '../settings/SettingsContext'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import type { Answer, ChatContextRef } from './answer'
 import { DAILY_LIMIT } from './rules'
+import { deleteAllOps, deleteConversationOps, mergeChat, pullChat } from './sync'
 
 export interface Message {
   id: string
@@ -81,6 +85,24 @@ export function ChatProvider({ children, initial }: { children: ReactNode; initi
   }, [state, initial])
   useDataReset((s) => setState({ conversations: s ? sample() : [], usage: { date: today(), count: 0 } }))
 
+  // Ao entrar, traz as conversas guardadas no banco. Sem consentimento de fé, o banco não guarda conversas.
+  const uid = useUserId()
+  const faith = useFaithConsent()
+  useEffect(() => {
+    if (!uid || sampleData || initial || !faith) return
+    let alive = true
+    flush()
+      .then(() => (pendingOps().length ? null : pullChat(uid)))
+      .then((remote) => {
+        if (alive && remote) setState((s) => ({ ...s, conversations: mergeChat(s.conversations, remote) }))
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [uid, sampleData, faith]) // eslint-disable-line react-hooks/exhaustive-deps
+  const remote = !sampleData && !initial
+
   const used = state.usage.date === today() ? state.usage.count : 0
 
   const value = useMemo<ChatValue>(
@@ -88,7 +110,7 @@ export function ChatProvider({ children, initial }: { children: ReactNode; initi
       conversations: state.conversations,
       remaining: Math.max(0, DAILY_LIMIT - used),
       newConversation: (context) => {
-        const c: Conversation = { id: `c${Date.now().toString(36)}`, title: context?.label ?? 'Nova conversa', createdAt: today(), context, messages: [] }
+        const c: Conversation = { id: uuid(), title: context?.label ?? 'Nova conversa', createdAt: today(), context, messages: [] }
         setState((s) => ({ ...s, conversations: [c, ...s.conversations] }))
         return c
       },
@@ -103,10 +125,16 @@ export function ChatProvider({ children, initial }: { children: ReactNode; initi
         setState((s) => ({ ...s, conversations: s.conversations.map((c) => (c.id === convId ? { ...c, messages: c.messages.map((x) => (x.id === msgId ? { ...x, ...m } : x)) } : c)) })),
       fillTodayLimit: () => setState((s) => ({ ...s, usage: { date: today(), count: DAILY_LIMIT } })),
       countQuestion: () => setState((s) => ({ ...s, usage: { date: today(), count: (s.usage.date === today() ? s.usage.count : 0) + 1 } })),
-      removeConversation: (id) => setState((s) => ({ ...s, conversations: s.conversations.filter((c) => c.id !== id) })),
-      clearAll: () => setState((s) => ({ ...s, conversations: [] })),
+      removeConversation: (id) => {
+        if (remote) enqueue(...deleteConversationOps(id))
+        setState((s) => ({ ...s, conversations: s.conversations.filter((c) => c.id !== id) }))
+      },
+      clearAll: () => {
+        if (remote) enqueue(...deleteAllOps())
+        setState((s) => ({ ...s, conversations: [] }))
+      },
     }),
-    [state, used],
+    [state, used, remote],
   )
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

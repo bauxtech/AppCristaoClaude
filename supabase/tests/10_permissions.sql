@@ -391,6 +391,16 @@ select tests.ok('com consentimento, a pessoa grava diário, pedido e tradição'
   tests.allowed($$insert into public.prayer_diary (user_id, text) values (auth.uid(), 'Diário do Gil')$$)
   and tests.allowed($$insert into public.prayer_requests (user_id, text) values (auth.uid(), 'Pedido do Gil')$$)
   and tests.allowed($$update public.profiles set tradition = 'Batista' where id = auth.uid()$$));
+select tests.ok('com consentimento, a pessoa guarda a própria conversa do chat',
+  tests.allowed($$insert into public.chat_conversations (id, user_id, title) values ('70000000-0000-0000-0000-000000000001', auth.uid(), 'Ansiedade')$$)
+  and tests.allowed($$insert into public.chat_messages (conversation_id, user_id, role, text) values ('70000000-0000-0000-0000-000000000001', auth.uid(), 'user', 'O que Jesus disse?')$$));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-00000000000a'); -- Ana
+select tests.ok('ninguém lê a conversa do chat de outra pessoa', tests.rows($$select * from public.chat_conversations where user_id = '00000000-0000-0000-0000-000000000011'$$) = 0
+  and tests.rows($$select * from public.chat_messages where user_id = '00000000-0000-0000-0000-000000000011'$$) = 0);
+select tests.ok('ninguém grava mensagem na conversa de outra pessoa', tests.denied($$insert into public.chat_messages (conversation_id, user_id, role, text) values ('70000000-0000-0000-0000-000000000001', auth.uid(), 'user', 'x')$$));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000011'); -- Gil
 select public.withdraw_faith_consent();
 select tests.ok('retirar o consentimento apaga diário, pedidos e tradição no servidor',
   tests.rows($$select * from public.prayer_diary$$) = 0 and tests.rows($$select * from public.prayer_requests where user_id = auth.uid()$$) = 0
@@ -399,6 +409,9 @@ select tests.ok('retirar o consentimento apaga diário, pedidos e tradição no 
 select tests.ok('sem consentimento, o banco não aceita diário nem pedido novo',
   tests.denied($$insert into public.prayer_diary (user_id, text) values (auth.uid(), 'x')$$)
   and tests.denied($$insert into public.prayer_requests (user_id, text) values (auth.uid(), 'x')$$));
+select tests.ok('retirar o consentimento apaga as conversas do chat, e o banco não aceita conversa nova',
+  tests.rows($$select * from public.chat_conversations$$) = 0 and tests.rows($$select * from public.chat_messages$$) = 0
+  and tests.denied($$insert into public.chat_conversations (user_id, title) values (auth.uid(), 'x')$$));
 update public.profiles set tradition = 'Batista' where id = auth.uid();
 select tests.ok('sem consentimento, a tradição não fica guardada', (select tradition from public.profiles where id = auth.uid()) is null);
 reset role;

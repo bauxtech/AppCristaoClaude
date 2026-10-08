@@ -54,7 +54,8 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Áudio do culto: o padrão é guardar só o texto. Quando a pessoa escolhe guardar o áudio, ele fica 30 dias.
 - Carona: botão que abre o WhatsApp quando o pedido é aceito.
 - Exclusão da conta: dados apagados em 30 dias.
-- Retirar o consentimento de fé: apaga do servidor o diário, os pedidos de oração e a tradição. No aparelho, eles continuam. Sem consentimento, o banco não aceita gravar esses dados. Dar o consentimento de novo envia o que está no aparelho.
+- Histórico do chat: guardado no servidor só com o consentimento de fé.
+- Retirar o consentimento de fé: apaga do servidor o diário, os pedidos de oração, o histórico do chat e a tradição. No aparelho, eles continuam. Sem consentimento, o banco não aceita gravar esses dados. Dar o consentimento de novo envia o que está no aparelho.
 - Denúncia: vai para a equipe do app. O conteúdo some na hora para quem denunciou.
 - Conteúdo diário: escrito pela IA. O versículo vem sempre do texto bíblico do app, nunca da IA.
 - Chat: só fala de Bíblia e fé cristã, cita só o texto bíblico do app e mostra a fonte. Se a pessoa falar em se machucar, mostra o CVV, telefone 188.

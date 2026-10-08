@@ -173,6 +173,7 @@ const CONSENT_LOSES = [
   'Resumos adaptados ao seu progresso',
   'Diário e pedidos de oração guardados na nuvem: passam a ficar só neste celular e são apagados da nuvem',
   'Pedidos compartilhados com a célula saem da célula',
+  'Histórico do chat na nuvem: as conversas ficam só neste celular e são apagadas da nuvem',
 ]
 
 export function RevokeConsentScreen() {
