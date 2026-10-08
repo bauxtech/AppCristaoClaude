@@ -72,7 +72,9 @@ Deno.serve(async (req) => {
         .eq('id', sermon.id)
     } catch (e) {
       console.error('sermon', e)
-      await db.from('sermons').update({ status: 'failed' }).eq('id', sermon.id)
+      // Guarda só a etapa que falhou (sem texto do culto), para o app e o suporte saberem o motivo.
+      const reason = e instanceof Error ? e.message.slice(0, 120) : 'erro'
+      await db.from('sermons').update({ status: 'failed', summary: { reason } }).eq('id', sermon.id)
     }
   })()
 
