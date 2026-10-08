@@ -35,6 +35,7 @@ O app guarda dado de fé e pedido de oração, que são dados sensíveis pela LG
 
 **O que revisar**
 - `supabase/migrations/`: tabelas, regras de acesso (RLS) e funções.
+- `supabase/setup/rotinas.sql`: rotinas diárias com pg_cron e pg_net, senha lida do Vault. Conferir que anon e authenticated têm uso do schema net e execução de net.http_post (padrão do pg_net no Supabase) e se convém revogar.
 - `supabase/functions/`: funções do servidor.
 - `src/lib/supabase.ts` e `src/lib/store.ts`: como o app fala com o servidor e com a loja.
 - `src/lib/sync.ts`: fila que guarda as mudanças no aparelho e envia ao banco.
