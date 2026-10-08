@@ -2,10 +2,11 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.131.0'
 import type { AskJson } from './claude-types.ts'
 
-// Modelo padrão. Trocar de modelo muda custo e qualidade: decisão do Thiago.
-// CHAT_MODEL e SUMMARY_MODEL trocam só o chat ou só o resumo do culto.
+// Modelos decididos pelo Thiago (8/10), depois da comparação de custo e qualidade:
+// chat no Haiku 5.5; resumo do culto e conteúdo do dia no Opus 5.5.
+// CLAUDE_MODEL, CHAT_MODEL e SUMMARY_MODEL trocam o modelo sem publicar de novo.
 export const MODEL = Deno.env.get('CLAUDE_MODEL') ?? 'claude-opus-5-5'
-export const CHAT_MODEL = Deno.env.get('CHAT_MODEL') ?? MODEL
+export const CHAT_MODEL = Deno.env.get('CHAT_MODEL') ?? 'claude-haiku-5-5'
 export const SUMMARY_MODEL = Deno.env.get('SUMMARY_MODEL') ?? MODEL
 
 const client = new Anthropic()

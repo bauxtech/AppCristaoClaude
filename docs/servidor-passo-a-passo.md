@@ -44,7 +44,7 @@ O login é por código no celular. O Supabase envia o código por um serviço de
 1. Crie a chave em console.anthropic.com.
 2. No Supabase, em **Edge Functions > Secrets**, crie `ANTHROPIC_API_KEY`.
 
-O modelo padrão é o Claude Opus 5.5. Para trocar, crie o segredo `CLAUDE_MODEL`. Trocar de modelo muda custo e qualidade, e é uma decisão sua.
+Modelos decididos em 8/10, depois da comparação de custo e qualidade: o chat usa o Claude Haiku 5.5, e o resumo do culto e o conteúdo do dia usam o Claude Opus 5.5. A transcrição usa o gpt-4o-mini-transcribe da OpenAI. Para trocar sem publicar de novo, crie os segredos `CHAT_MODEL`, `SUMMARY_MODEL`, `CLAUDE_MODEL` ou `OPENAI_TRANSCRIBE_MODEL`. Trocar de modelo muda custo e qualidade, e é uma decisão sua.
 
 ## 5. Segredo das rotinas
 

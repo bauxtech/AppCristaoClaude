@@ -14,6 +14,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Página web da célula: Next.js, lendo o mesmo banco.
 - Banco, login e arquivos: Supabase, região São Paulo.
 - Funções do servidor: Edge Functions do Supabase. Transcrição pela API da OpenAI. Resumo do culto e chat pela API do Claude.
+- Modelos, decididos por custo e qualidade: chat no Claude Haiku 5.5; resumo do culto e conteúdo do dia no Claude Opus 5.5; transcrição no gpt-4o-mini-transcribe. Todo assinante precisa dar lucro mesmo no uso máximo do plano.
 - Assinatura: RevenueCat, com a compra nativa da App Store e do Google Play.
 - Avisos: serviço de notificação do Expo.
 - Nenhuma chave de API no app nem no repositório. Segredos ficam no Supabase e no EAS.

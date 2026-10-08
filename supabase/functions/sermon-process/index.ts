@@ -7,7 +7,8 @@ import { admin, asUser, brMonth, cors, json, userId } from '../_shared/http.ts'
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void }
 
-const OPENAI_MODEL = Deno.env.get('OPENAI_TRANSCRIBE_MODEL') ?? 'whisper-1'
+// Decidido pelo Thiago (8/10): metade do preço do whisper-1 e acertou mais palavras no teste.
+const OPENAI_MODEL = Deno.env.get('OPENAI_TRANSCRIBE_MODEL') ?? 'gpt-4o-mini-transcribe'
 
 async function transcribe(audio: Blob, name: string) {
   const form = new FormData()
