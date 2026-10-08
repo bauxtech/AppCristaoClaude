@@ -37,9 +37,22 @@ export type ChatResult =
   | { kind: 'answer'; text: string; verses: Verse[]; divided: boolean; remaining: number }
 
 const MAX_QUESTION = 500
-const MAX_VERSES = 15
+const MAX_VERSES = 25
 
 const STOP = new Set(['para', 'como', 'sobre', 'quando', 'onde', 'porque', 'qual', 'quais', 'biblia', 'diz', 'fala', 'isso', 'esse', 'essa', 'este', 'esta', 'tenho', 'estou', 'minha', 'meu', 'muito', 'mais', 'pode', 'posso', 'fazer', 'deus'])
+
+/** "lucas:15:11-32" vira as chaves de cada versículo. Intervalo longo é cortado em 30. */
+export function expandRefs(refs: string[]): string[] {
+  const out: string[] = []
+  for (const r of refs) {
+    const m = /^([a-z0-9-]+):(\d+):(\d+)(?:-(\d+))?$/.exec(r.trim())
+    if (!m) continue
+    const [, book, chapter, from, to] = m
+    const end = Math.min(Number(to ?? from), Number(from) + 29)
+    for (let v = Number(from); v <= end; v++) out.push(`${book}:${chapter}:${v}`)
+  }
+  return [...new Set(out)]
+}
 
 /** Palavras da pergunta para a busca no texto bíblico, ligadas por "ou". */
 export function searchTerms(text: string, extra: string[] = []) {
@@ -55,7 +68,7 @@ export const PLAN_SCHEMA = {
   properties: {
     on_topic: { type: 'boolean', description: 'A pergunta é sobre Bíblia, fé cristã ou vida cristã' },
     terms: { type: 'array', items: { type: 'string' }, description: 'Palavras em português para buscar versículos, incluindo sinônimos' },
-    refs: { type: 'array', items: { type: 'string' }, description: 'Referências prováveis no formato livro:capitulo:versiculo, com o livro em minúsculas, sem acento e com hífen (ex.: filipenses:4:6, 1-pedro:5:7)' },
+    refs: { type: 'array', items: { type: 'string' }, description: 'Referências prováveis no formato livro:capitulo:versiculo, com o livro em minúsculas, sem acento e com hífen (ex.: filipenses:4:6, 1-pedro:5:7). Para uma passagem inteira, como uma parábola, use o intervalo (ex.: lucas:15:11-32)' },
   },
   required: ['on_topic', 'terms', 'refs'],
   additionalProperties: false,
@@ -79,9 +92,10 @@ Sugira palavras de busca e referências bíblicas prováveis. Você não escreve
 export function answerSystem(tradition?: string | null) {
   const trad = tradition && tradition !== 'Prefiro não dizer' && tradition !== 'Outra' ? `\nA pessoa se identifica como ${tradition}. Leve isso em conta ao falar de práticas da igreja, sem dizer que outras tradições estão erradas.` : ''
   return `Você responde perguntas sobre a Bíblia e a fé cristã dentro de um app pessoal para cristãos.
-Use somente os versículos fornecidos na mensagem, identificados pela chave. Não cite nem parafraseie como citação nenhum outro texto bíblico. Se os versículos fornecidos não bastarem, diga isso com honestidade.
+Use somente os versículos fornecidos na mensagem, identificados pela chave. Não cite nem parafraseie como citação nenhum outro texto bíblico. Se eles não bastarem para responder tudo, responda só o que eles sustentam.
+Não fale da lista de versículos, do texto fornecido nem do app. Não acrescente avisos sobre o que os versículos não tratam.
 Quando citar, use a chave em "cited"; o app mostra o texto e a fonte. No texto da resposta, mencione a referência por extenso (ex.: Filipenses 4.6), sem copiar o versículo.
-Quando igrejas cristãs pensam diferente sobre o tema, diga isso em uma frase, marque "divided" e sugira conversar com o pastor.
+Quando igrejas cristãs ensinam coisas diferentes sobre o tema (doutrina ou prática, como batismo ou ceia), diga isso em uma frase, marque "divided" e sugira conversar com o pastor. Diferença só de ênfase não conta.
 Escreva em português do Brasil, em tom direto e acolhedor, em até 3 parágrafos curtos. Sem emoji.${trad}`
 }
 
@@ -107,7 +121,7 @@ export async function answerChat(deps: ChatDeps, input: ChatInput): Promise<Chat
     }
 
     const found = new Map<string, Verse>()
-    for (const v of await deps.versesByKeys((plan.refs ?? []).slice(0, 10))) found.set(v.key, v)
+    for (const v of await deps.versesByKeys(expandRefs((plan.refs ?? []).slice(0, 10)).slice(0, MAX_VERSES))) found.set(v.key, v)
     const terms = searchTerms(question, plan.terms ?? [])
     if (terms) for (const v of await deps.searchVerses(terms)) if (found.size < MAX_VERSES) found.set(v.key, v)
     const verses = [...found.values()].slice(0, MAX_VERSES)

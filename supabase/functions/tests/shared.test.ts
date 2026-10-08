@@ -1,6 +1,6 @@
 // Testes da lógica das funções do servidor. As chamadas ao Claude, à OpenAI e ao banco são simuladas.
 import { describe, expect, test, vi } from 'vitest'
-import { answerChat, searchTerms, type ChatDeps } from '../_shared/chat.ts'
+import { answerChat, expandRefs, searchTerms, type ChatDeps } from '../_shared/chat.ts'
 import { DAILY_REFS, refForDay, writeDaily } from '../_shared/daily.ts'
 import { patchFromEvent, validWebhookAuth } from '../_shared/revenuecat.ts'
 import { processSermon, type SermonDeps } from '../_shared/sermon.ts'
@@ -73,6 +73,11 @@ describe('chat no servidor', () => {
   test('tema em que as igrejas pensam diferente é marcado', async () => {
     const r = await answerChat(chatDeps(), { question: 'batismo de criança é bíblico?' })
     expect(r.kind === 'answer' && r.divided).toBe(true)
+  })
+
+  test('passagem inteira vira cada versículo, com limite', () => {
+    expect(expandRefs(['lucas:15:11-13', 'joao:3:16', 'texto solto'])).toEqual(['lucas:15:11', 'lucas:15:12', 'lucas:15:13', 'joao:3:16'])
+    expect(expandRefs(['salmos:119:1-176'])).toHaveLength(30)
   })
 
   test('busca liga as palavras por "ou"', () => {
