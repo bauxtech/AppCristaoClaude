@@ -16,6 +16,15 @@ import { verseLabel, type Sermon } from '../data'
 import { useSermons } from '../SermonContext'
 import { SuggestedSong } from '../../music/screens/MusicScreens'
 
+const FAIL_TEXT: Record<NonNullable<Sermon['failReason']>, string> = {
+  too_big: 'O áudio passou de 25 MB, o limite da transcrição.',
+  no_audio: 'O áudio não foi encontrado no aparelho.',
+  limit: 'Você já usou os 5 cultos deste mês.',
+  no_access: 'A transcrição faz parte da assinatura.',
+  empty: 'Não deu para entender a fala do áudio. Confira se o som foi gravado.',
+  error: 'Não foi possível processar agora. Tente de novo.',
+}
+
 function useSermon() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { sermons } = useSermons()
@@ -51,7 +60,8 @@ export function ResultScreen() {
         <Card style={{ gap: 8, borderColor: colors.danger }}>
           <AppText variant="title">A transcrição falhou</AppText>
           <AppText variant="body" tone="secondary">
-            {s.audioUri ? 'O áudio continua guardado no aparelho. Tente de novo.' : 'Tente de novo.'}
+            {FAIL_TEXT[s.failReason ?? 'error']}
+            {s.audioUri ? ' O áudio continua guardado no aparelho.' : ''}
           </AppText>
         </Card>
         <Button label="Tentar de novo" onPress={() => retry(s.id)} />
@@ -124,6 +134,12 @@ function Ready({ s }: { s: Sermon }) {
                   </AppText>
                 </View>
               ))}
+            </Card>
+          ) : null}
+          {s.application ? (
+            <Card style={{ gap: 8 }}>
+              <SectionLabel>Aplicação</SectionLabel>
+              <AppText variant="body">{s.application}</AppText>
             </Card>
           ) : null}
           <Card style={{ gap: 4 }}>

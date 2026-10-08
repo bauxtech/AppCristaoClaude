@@ -1,11 +1,14 @@
 import { AudioQuality, IOSOutputFormat, type RecordingOptions } from 'expo-audio'
 
-/** Voz em AAC mono, 64 kbps: cerca de 29 MB por hora. Suficiente para transcrever uma pregação. */
+/**
+ * Voz em AAC mono, 24 kbps a 16 kHz: cerca de 11 MB por hora. A transcrição aceita até 25 MB por arquivo,
+ * então cabe um culto de até 2 horas. A transcrição trabalha em 16 kHz, então a qualidade da fala não muda.
+ */
 export const VOICE_RECORDING: RecordingOptions = {
   extension: '.m4a',
-  sampleRate: 44100,
+  sampleRate: 16000,
   numberOfChannels: 1,
-  bitRate: 64000,
+  bitRate: 24000,
   android: { outputFormat: 'mpeg4', audioEncoder: 'aac' },
   ios: {
     outputFormat: IOSOutputFormat.MPEG4AAC,
@@ -14,5 +17,5 @@ export const VOICE_RECORDING: RecordingOptions = {
     linearPCMIsBigEndian: false,
     linearPCMIsFloat: false,
   },
-  web: { mimeType: 'audio/webm', bitsPerSecond: 64000 },
+  web: { mimeType: 'audio/webm', bitsPerSecond: 24000 },
 }

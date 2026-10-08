@@ -107,5 +107,5 @@ Os valores são os mesmos do passo 1.
 
 ## Limites que você precisa conhecer
 
-- **Tamanho do áudio:** a transcrição aceita arquivos de até 25 MB. Uma hora de culto gravada a 64 kbps passa disso. Antes do lançamento, o app precisa gravar em qualidade menor (fala fica boa em 32 kbps) ou dividir o arquivo.
+- **Tamanho do áudio:** a transcrição aceita arquivos de até 25 MB. O app grava a 24 kbps (cerca de 11 MB por hora), então cabe um culto de até 2 horas. Áudio importado maior que 25 MB aparece como falha, com o motivo.
 - **Tempo das funções:** as funções do Supabase têm limite de tempo. Um culto muito longo pode precisar ser processado em partes.
