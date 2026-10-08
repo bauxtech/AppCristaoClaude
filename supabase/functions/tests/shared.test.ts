@@ -4,6 +4,7 @@ import { answerChat, expandRefs, searchTerms, type ChatDeps } from '../_shared/c
 import { DAILY_REFS, refForDay, writeDaily } from '../_shared/daily.ts'
 import { patchFromEvent, validWebhookAuth } from '../_shared/revenuecat.ts'
 import { processSermon, type SermonDeps } from '../_shared/sermon.ts'
+import { brMinutes, chunks, decide } from '../_shared/push.ts'
 
 const VERSES = { 'filipenses:4:6': 'Não estejais ansiosos por coisa alguma.', 'salmos:23:1': 'O Senhor é o meu pastor; nada me faltará.' }
 
@@ -149,5 +150,28 @@ describe('RevenueCat', () => {
     expect(validWebhookAuth('Bearer errado', 'certo')).toBe(false)
     expect(validWebhookAuth(null, 'certo')).toBe(false)
     expect(validWebhookAuth('Bearer x', undefined)).toBe(false)
+  })
+})
+
+describe('avisos para o celular', () => {
+  const noon = new Date('2026-10-08T15:00:00Z') // 12h em São Paulo
+  const night = new Date('2026-10-09T02:00:00Z') // 23h em São Paulo
+  test('horário de São Paulo', () => {
+    expect(brMinutes(noon)).toBe(12 * 60)
+    expect(brMinutes(night)).toBe(23 * 60)
+  })
+  test('tipo desligado não vai; padrão do app vale para quem não mexeu', () => {
+    expect(decide({ types: { orou: false } }, 'orou', noon)).toBe('skip')
+    expect(decide(null, 'orou', noon)).toBe('send')
+    expect(decide(null, 'novoPedido', noon)).toBe('skip')
+    expect(decide(null, null, noon)).toBe('send')
+  })
+  test('no horário de silêncio, espera para depois', () => {
+    const prefs = { quietFrom: '22:00', quietTo: '07:00' }
+    expect(decide(prefs, 'orou', night)).toBe('later')
+    expect(decide(prefs, 'orou', noon)).toBe('send')
+  })
+  test('envia em lotes de 100', () => {
+    expect(chunks(Array.from({ length: 250 }, (_, i) => i)).map((c) => c.length)).toEqual([100, 100, 50])
   })
 })

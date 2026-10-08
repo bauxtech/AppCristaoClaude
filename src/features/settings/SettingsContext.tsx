@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
 import { syncReminders } from '../../lib/reminders'
 import { useRelockOnBackground } from '../../lib/relock'
@@ -7,6 +7,9 @@ import { useDataReset } from '../../state/useDataReset'
 import { sampleNotices, type Notice } from './notices'
 import { defaultNotificationPrefs, type NotificationPrefs } from './prefs'
 import { pushFaithConsent, setFaithConsentFlag } from '../../lib/account'
+import { IS_REMOTE } from '../../lib/supabase'
+import { enqueue, useUserId } from '../../lib/sync'
+import { dismissOps, markReadOps, pullNotices, serverPrefs } from './notices-sync'
 
 export const DELETE_DAYS = 30
 export const REPORT_REASONS = ['Conteúdo impróprio', 'Assédio', 'Spam', 'Outro']
@@ -51,6 +54,8 @@ interface SettingsValue extends SettingsState {
   markRead: (id: string) => void
   markAllRead: () => void
   dismissNotice: (id: string) => void
+  /** Traz os avisos do banco de novo (ao abrir a central). */
+  refreshNotices: () => Promise<void>
   setNotif: (p: Partial<NotificationPrefs>) => void
   setType: (k: keyof NotificationPrefs['types'], v: boolean) => void
   /** Com fromServer, o valor veio do banco e não é enviado de volta (não muda a data do consentimento). */
@@ -101,15 +106,43 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
 
   useEffect(() => setFaithConsentFlag(state.faithConsent), [state.faithConsent])
 
+  // Com servidor: os tipos de aviso e o horário de silêncio vão para o banco, que decide o que manda para o celular.
+  const uid = useUserId()
+  const remote = IS_REMOTE && !sampleData && !initial
+  const prefsKey = JSON.stringify(serverPrefs(state.notif))
+  useEffect(() => {
+    if (remote && uid) enqueue({ kind: 'update', table: 'profiles', values: { notify_prefs: serverPrefs(state.notif) }, match: { id: '$uid' } })
+  }, [prefsKey, uid, remote]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Avisos da central vêm do banco. Ler e apagar também vão para lá.
+  const refreshNotices = useCallback(async () => {
+    if (!remote || !uid) return
+    const list = await pullNotices(uid)
+    if (list) setState((s) => ({ ...s, notices: list }))
+  }, [remote, uid])
+  useEffect(() => {
+    void refreshNotices()
+  }, [refreshNotices])
+
   const value = useMemo<SettingsValue>(
     () => ({
       ...state,
       notesUnlocked,
       setNotesUnlocked,
       unreadCount: state.notices.filter((n) => !n.read).length,
-      markRead: (id) => setState((s) => ({ ...s, notices: s.notices.map((n) => (n.id === id ? { ...n, read: true } : n)) })),
-      markAllRead: () => setState((s) => ({ ...s, notices: s.notices.map((n) => ({ ...n, read: true })) })),
-      dismissNotice: (id) => setState((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) })),
+      refreshNotices,
+      markRead: (id) => {
+        if (remote) enqueue(...markReadOps([id]))
+        setState((s) => ({ ...s, notices: s.notices.map((n) => (n.id === id ? { ...n, read: true } : n)) }))
+      },
+      markAllRead: () => {
+        if (remote) enqueue(...markReadOps(state.notices.filter((n) => !n.read).map((n) => n.id)))
+        setState((s) => ({ ...s, notices: s.notices.map((n) => ({ ...n, read: true })) }))
+      },
+      dismissNotice: (id) => {
+        if (remote) enqueue(...dismissOps(id))
+        setState((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) }))
+      },
       setNotif: (p) => setState((s) => ({ ...s, notif: { ...s.notif, ...p } })),
       setType: (k, v) => setState((s) => ({ ...s, notif: { ...s.notif, types: { ...s.notif.types, [k]: v } } })),
       update: (p, opts) => {
@@ -127,7 +160,7 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
       },
       cancelDeletion: () => setState((s) => ({ ...s, deletionAt: null })),
     }),
-    [state, notesUnlocked],
+    [state, notesUnlocked, remote, refreshNotices],
   )
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

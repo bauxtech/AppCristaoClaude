@@ -51,6 +51,9 @@ jest.mock('expo-notifications', () => ({
   setNotificationChannelAsync: jest.fn(async () => {}),
   cancelAllScheduledNotificationsAsync: jest.fn(async () => {}),
   scheduleNotificationAsync: jest.fn(async () => 'id'),
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  getExpoPushTokenAsync: jest.fn(async () => ({ data: 'ExponentPushToken[teste]' })),
 }))
 jest.mock('@react-native-community/netinfo', () => ({
   addEventListener: jest.fn(() => () => {}),

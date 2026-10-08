@@ -36,3 +36,21 @@ export async function unregisterPushToken(uid: string): Promise<void> {
   const token = await devicePushToken()
   if (token) await supabase.from('push_tokens').delete().match({ user_id: uid, token })
 }
+
+/**
+ * Aviso que chega com o app aberto atualiza a central. Tocar no aviso abre a tela dele,
+ * só se for uma tela do próprio app.
+ */
+export function watchPushes(onReceive: () => void, open: (href: string) => void): () => void {
+  if (Platform.OS === 'web') return () => {}
+  const a = Notifications.addNotificationReceivedListener(() => onReceive())
+  const b = Notifications.addNotificationResponseReceivedListener((r) => {
+    onReceive()
+    const href = (r.notification.request.content.data as { href?: unknown } | undefined)?.href
+    if (typeof href === 'string') open(href)
+  })
+  return () => {
+    a.remove()
+    b.remove()
+  }
+}

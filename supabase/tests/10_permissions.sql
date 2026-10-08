@@ -583,3 +583,35 @@ select tests.ok('novo líder lidera a nova célula, sem o endereço da antiga',
 reset role;
 select tests.ok('pedido compartilhado vai junto com a pessoa para a nova célula',
   (select shared_cell_id = '10000000-0000-0000-0000-000000000003' from public.prayer_requests where id = '20000000-0000-0000-0000-000000000009'));
+
+-- ─── Avisos ──────────────────────────────────────────────────────────────────
+
+delete from public.notifications;
+-- Ana ora pelo pedido do Beto (inserido direto: o gatilho é o mesmo que roda pelo app).
+insert into public.prayer_prayed (request_id, user_id) values ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-00000000000a') on conflict do nothing;
+select tests.ok('quem orou gera o aviso "Orei por você" para o dono do pedido, sem o texto do pedido',
+  exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-00000000000b' and pref = 'orou' and body = 'Ana orou pelo seu pedido.'));
+select tests.as_user('00000000-0000-0000-0000-00000000000e'); -- Edu
+select tests.ok('ninguém lê o aviso de outra pessoa', tests.rows($$select * from public.notifications where user_id = '00000000-0000-0000-0000-00000000000b'$$) = 0);
+select tests.ok('ninguém cria aviso direto no banco', tests.denied($$insert into public.notifications (user_id, type, title, body) values ('00000000-0000-0000-0000-00000000000b', 'system', 'x', 'x')$$));
+select tests.ok('ninguém chama a função que cria avisos', tests.denied($$select public.notify('00000000-0000-0000-0000-00000000000b', null, 'system', 'x', 'x', null, null)$$));
+reset role;
+insert into public.blocks (blocker_id, blocked_id) values ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000a') on conflict do nothing;
+delete from public.notifications;
+delete from public.prayer_prayed where user_id = '00000000-0000-0000-0000-00000000000a' and request_id = '20000000-0000-0000-0000-000000000002';
+insert into public.prayer_prayed (request_id, user_id) values ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-00000000000a');
+select tests.ok('quem bloqueou não recebe aviso de quem foi bloqueado', not exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-00000000000b'));
+delete from public.blocks where blocker_id = '00000000-0000-0000-0000-00000000000b';
+
+-- Pedido de entrada avisa o líder; entrada aprovada avisa a pessoa; o visitante não recebe aviso de pedido.
+delete from public.notifications;
+insert into public.cell_members (cell_id, user_id, role, status) values ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000011', 'membro', 'pending');
+select tests.ok('pedido de entrada avisa o líder', exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-00000000000e' and title = 'Novo pedido de entrada'));
+update public.cell_members set status = 'approved' where cell_id = '10000000-0000-0000-0000-000000000002' and user_id = '00000000-0000-0000-0000-000000000011';
+select tests.ok('entrada aprovada avisa a pessoa', exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-000000000011' and title = 'Entrada aprovada'));
+insert into public.cell_members (cell_id, user_id, role, status) values ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-00000000000d', 'visitante', 'approved') on conflict do nothing;
+delete from public.notifications;
+insert into public.prayer_requests (user_id, text, shared_cell_id) values ('00000000-0000-0000-0000-00000000000e', 'Pedido novo na célula 2', '10000000-0000-0000-0000-000000000002');
+select tests.ok('pedido compartilhado avisa os membros, sem o texto, e não avisa o visitante',
+  exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-000000000011' and pref = 'novoPedido' and body not like '%Pedido novo%')
+  and not exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-00000000000d'));

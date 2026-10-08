@@ -1,5 +1,5 @@
-import { router } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { router, useFocusEffect } from 'expo-router'
+import { useCallback, useEffect, useState } from 'react'
 import { Linking, Pressable, View } from 'react-native'
 import { AppText, Button, Card, Chip, ErrorState, Icon, IconButton, Page, SectionLabel, SkeletonCard, Switch, useToast } from '../../../components'
 import { useRemoteState } from '../../../state/connection'
@@ -59,6 +59,8 @@ export function NoticesScreen() {
   const visible = filter === 'unread' ? notices.filter((n) => !n.read) : notices
   const groups = groupNotices(visible)
   const remote = useRemoteState()
+  // Ao abrir a central, busca os avisos novos do banco.
+  useFocusEffect(useCallback(() => void s.refreshNotices(), [s.refreshNotices]))
 
   function open(n: Notice) {
     s.markRead(n.id)

@@ -6,7 +6,7 @@ import { Literata_400Regular } from '@expo-google-fonts/literata/400Regular'
 import { Literata_400Regular_Italic } from '@expo-google-fonts/literata/400Regular_Italic'
 import { Literata_500Medium } from '@expo-google-fonts/literata/500Medium'
 import { useFonts } from 'expo-font'
-import { Stack } from 'expo-router'
+import { router, Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useState } from 'react'
@@ -25,10 +25,12 @@ import { PrayerProvider } from '../features/prayer/PrayerContext'
 import { SermonProvider } from '../features/sermon/SermonContext'
 import { ChatProvider } from '../features/chat/ChatContext'
 import { ProfileProvider } from '../features/profile/ProfileContext'
-import { SettingsProvider } from '../features/settings/SettingsContext'
+import { SettingsProvider, useSettings } from '../features/settings/SettingsContext'
 import { SubscriptionProvider } from '../features/subscription/SubscriptionContext'
 import { SessionProvider } from '../state/session'
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider'
+import { isInternalRoute } from '../lib/links'
+import { watchPushes } from '../lib/push'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
@@ -38,6 +40,9 @@ function RootStack() {
   useEffect(() => watchSession(configureStore), [])
   // Fila de sincronização com o banco: acompanha o login e a volta da internet.
   useEffect(() => startSync(), [])
+  // Avisos do servidor: atualizam a central e, ao tocar, abrem a tela do aviso.
+  const { refreshNotices } = useSettings()
+  useEffect(() => watchPushes(() => void refreshNotices(), (href) => isInternalRoute(href) && router.push(href as '/avisos')), [refreshNotices])
   // Splash de 2 segundos ao abrir. Logado cai no Hoje; sem login, na apresentação.
   const [splash, setSplash] = useState(true)
   const endSplash = useCallback(() => setSplash(false), [])
