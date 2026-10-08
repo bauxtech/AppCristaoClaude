@@ -1,6 +1,8 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import { inQuietHours, type NotificationPrefs } from '../features/settings/prefs'
+import { registerPushToken } from './push'
+import { currentUserId } from './sync'
 
 // Lembretes diários de leitura e oração, agendados no próprio aparelho.
 // Os avisos que dependem de outras pessoas (célula, "Orei por você") chegam pelo servidor depois.
@@ -30,6 +32,9 @@ export async function askReminderPermission(): Promise<ReminderPermission> {
   if (Platform.OS === 'web') return 'unavailable'
   try {
     const p = await Notifications.requestPermissionsAsync()
+    // Com a permissão, este aparelho passa a receber também os avisos do servidor.
+    const uid = currentUserId()
+    if (p.granted && uid) void registerPushToken(uid)
     return p.granted ? 'granted' : 'denied'
   } catch {
     return 'unavailable'

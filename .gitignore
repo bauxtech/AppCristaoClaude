@@ -17,3 +17,6 @@ coverage/
 
 # Arquivos temporários do CLI do Supabase
 supabase/.temp/
+
+# Firebase: vem pela variável GOOGLE_SERVICES_JSON do EAS
+google-services.json

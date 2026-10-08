@@ -16,8 +16,9 @@ import { usePrayer } from '../../prayer/PrayerContext'
 import { useProfile } from '../../profile/ProfileContext'
 import { useSermons } from '../../sermon/SermonContext'
 import { DELETE_DAYS, REPORT_REASONS, useSettings } from '../SettingsContext'
-import { clearOutbox, flush, pendingOps } from '../../../lib/sync'
+import { clearOutbox, currentUserId, flush, pendingOps } from '../../../lib/sync'
 import { cancelDeletionRemote, requestDeletionRemote, withdrawFaithConsentRemote } from '../../../lib/account'
+import { unregisterPushToken } from '../../../lib/push'
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 export const longDate = (iso: string) => {
@@ -414,10 +415,12 @@ export function SignOutScreen() {
   // Itens ainda não enviados ao banco (sem internet). Sair agora perde esses itens.
   const [unsent, setUnsent] = useState(0)
 
-  function leave() {
+  async function leave() {
     if (wipe) deleteLocalFiles([...sermons.map((s) => s.audioUri), ...prayer.requests.map((r) => r.videoUri), profile.photoUri])
-    // Os lembretes deste aparelho param junto com a conta.
+    // Os lembretes deste aparelho param junto com a conta, e os avisos do servidor deixam de vir para cá.
     cancelAllReminders()
+    const uid = currentUserId()
+    if (uid) await unregisterPushToken(uid).catch(() => {})
     // O que ainda estava para enviar era da conta que saiu.
     clearOutbox()
     signOutRemote()

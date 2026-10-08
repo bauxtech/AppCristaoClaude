@@ -3,6 +3,7 @@ import { getItem, setItem } from '../lib/storage'
 import { enqueue, useUserId } from '../lib/sync'
 import { supabase } from '../lib/supabase'
 import { pushProfile } from '../lib/account'
+import { registerPushToken } from '../lib/push'
 
 // Estado da conta enquanto o login real (Supabase) não entra.
 // Tudo aqui é de exemplo e fica só no aparelho.
@@ -169,6 +170,10 @@ export function SessionProvider({
 
   // Ao entrar: traz do banco os dias com leitura ou oração, para o total aparecer em qualquer celular.
   const uid = useUserId()
+  // Ao entrar: o servidor passa a saber para qual aparelho mandar os avisos desta conta.
+  useEffect(() => {
+    if (uid && !sampleData) void registerPushToken(uid)
+  }, [uid, sampleData])
   useEffect(() => {
     if (!uid || sampleData || !supabase) return
     let alive = true
