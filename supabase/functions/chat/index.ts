@@ -1,7 +1,7 @@
 // POST /functions/v1/chat  { question, conversationId?, context? }
 // Chat bíblico. Confere login, assinatura e o limite de 20 perguntas por dia no servidor.
 import { answerChat } from '../_shared/chat.ts'
-import { askJson } from '../_shared/claude.ts'
+import { askJsonFor, CHAT_MODEL } from '../_shared/claude.ts'
 import { DAILY_LIMIT } from '../_shared/rules.ts'
 import { admin, asUser, brDay, cors, json, userId } from '../_shared/http.ts'
 
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
       refund: async () => void (await db.rpc('refund_usage', { p_user: uid, p_kind: 'chat_day', p_period: day })),
       searchVerses: async (q) => ((await user.rpc('search_verses', { p_query: q, p_limit: 12 })).data ?? []).map((v: { verse_key: string; text: string }) => ({ key: v.verse_key, text: v.text })),
       versesByKeys: async (keys) => (keys.length ? ((await user.rpc('verses_by_keys', { p_keys: keys })).data ?? []) : []).map((v: { verse_key: string; text: string }) => ({ key: v.verse_key, text: v.text })),
-      askJson,
+      askJson: askJsonFor(CHAT_MODEL),
     },
     {
       question,

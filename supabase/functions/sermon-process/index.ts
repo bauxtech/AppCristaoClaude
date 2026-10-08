@@ -1,7 +1,7 @@
 // POST /functions/v1/sermon-process  { sermonId, keepAudio }
 // O app sobe o áudio em sermon-audio/<id da pessoa>/... e chama esta função.
 // Confere login, assinatura e o limite de 5 cultos por mês. Responde na hora e processa em segundo plano.
-import { askJson } from '../_shared/claude.ts'
+import { askJsonFor, SUMMARY_MODEL } from '../_shared/claude.ts'
 import { audioExpiry, MAX_AUDIO_BYTES, MONTHLY_LIMIT, processSermon } from '../_shared/sermon.ts'
 import { admin, asUser, brMonth, cors, json, userId } from '../_shared/http.ts'
 
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
         refund: async () => void (await db.rpc('refund_usage', { p_user: uid, p_kind: 'sermon_month', p_period: month })),
         transcribe: () => transcribe(file, sermon.audio_path.split('/').pop() ?? 'culto.m4a'),
         versesByKeys: async (keys) => (keys.length ? ((await db.rpc('verses_by_keys', { p_keys: keys })).data ?? []) : []).map((v: { verse_key: string; text: string }) => ({ key: v.verse_key, text: v.text })),
-        askJson,
+        askJson: askJsonFor(SUMMARY_MODEL),
       })
 
       if (result.kind !== 'ready') {
