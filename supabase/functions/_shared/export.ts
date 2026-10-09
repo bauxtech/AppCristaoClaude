@@ -35,7 +35,11 @@ export const EXPORT_TABLES: [table: string, owner: string][] = [
   ['ride_requests', 'user_id'],
   ['hidden_content', 'user_id'],
   ['notifications', 'user_id'],
+  ['blocks', 'blocker_id'],
 ]
+
+/** Lidas pelo servidor, filtradas pela pessoa: o app não lê essas tabelas direto (denúncias). */
+export const ADMIN_EXPORT_TABLES: [table: string, owner: string][] = [['reports', 'reporter_id']]
 
 /** Campos que não fazem sentido para a pessoa nem devem sair (endereço técnico do aparelho). */
 export const SKIP_TABLES = new Set(['push_tokens', 'usage_counters'])

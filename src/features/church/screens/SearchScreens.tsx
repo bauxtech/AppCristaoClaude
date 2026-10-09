@@ -24,6 +24,7 @@ const SEARCH_TEXT: Record<Exclude<SearchResult['kind'], 'ok'>, string> = {
   not_found: 'Não achamos esse CNPJ na Receita.',
   not_religious: 'Esse CNPJ não é de uma organização religiosa. Confira o número ou cadastre à mão.',
   inactive: 'Esse CNPJ não está ativo na Receita. Cadastre à mão, se a igreja funciona.',
+  limit: 'Você chegou ao limite de buscas por CNPJ de hoje. Tente amanhã ou busque pelo nome.',
   failed: 'Não foi possível buscar agora. Confira a internet e tente de novo.',
 }
 

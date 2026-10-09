@@ -62,7 +62,7 @@ export function rowToChurch(r: Row, uid: string | null): Church {
   }
 }
 
-export type SearchResult = { kind: 'ok'; list: Church[] } | { kind: 'invalid' | 'not_found' | 'not_religious' | 'inactive' | 'failed' }
+export type SearchResult = { kind: 'ok'; list: Church[] } | { kind: 'invalid' | 'not_found' | 'not_religious' | 'inactive' | 'limit' | 'failed' }
 
 /** CNPJ completo: busca nos dados da Receita pelo servidor. Texto: procura entre as igrejas já no app. */
 export async function searchChurches(q: string, uid: string | null): Promise<SearchResult> {
@@ -72,7 +72,7 @@ export async function searchChurches(q: string, uid: string | null): Promise<Sea
     try {
       const r = await callFunction<{ kind: string; church?: Row }>('church-lookup', { cnpj: digits })
       if (r.kind === 'found' && r.church) return { kind: 'ok', list: [rowToChurch({ ...r.church }, uid)] }
-      if (r.kind === 'invalid' || r.kind === 'not_found' || r.kind === 'not_religious' || r.kind === 'inactive') return { kind: r.kind }
+      if (r.kind === 'invalid' || r.kind === 'not_found' || r.kind === 'not_religious' || r.kind === 'inactive' || r.kind === 'limit') return { kind: r.kind }
       return { kind: 'failed' }
     } catch {
       return { kind: 'failed' }
