@@ -66,6 +66,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Quem revisa o conteúdo gerado pela IA antes de publicar.
 - Quem pode editar horários de culto e acessibilidade da igreja. Nome e endereço vêm dos dados públicos do CNPJ.
 - Confirmar se a paleta final é a A.
+- Nome final do produto. Até lá, "App Cristão". Decidir antes da primeira publicação na loja: o identificador (com.bauxtech.appcristao) e o endereço de abrir o app (appcristao) não mudam depois de publicar.
 
 ## DADOS E PRIVACIDADE
 - Fé e pedido de oração são dado sensível pela LGPD. Consentimento separado no cadastro, exportar e apagar dados.
