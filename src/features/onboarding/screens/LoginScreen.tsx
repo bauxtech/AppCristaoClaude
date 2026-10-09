@@ -1,21 +1,26 @@
 import { router } from 'expo-router'
 import { Pressable, View } from 'react-native'
-import { AppText, Button, Icon, MIN_TOUCH } from '../../../components'
+import { AppText, Button, Icon, MIN_TOUCH, useToast } from '../../../components'
 import { AppleIcon, GoogleIcon } from '../../../components/BrandIcon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { useOnboarding } from '../OnboardingContext'
 import { useSession } from '../../../state/session'
 import { IS_REMOTE } from '../../../lib/supabase'
+import { GOOGLE_READY, signInWithGoogle } from '../../../lib/google'
+import { configureStore } from '../../../lib/store'
+import { useAccountLoader } from '../useAccountLoader'
+import { useState } from 'react'
 import { OnboardingScaffold } from '../OnboardingScaffold'
 
-function LoginOption({ label, icon, onPress }: { label: string; icon: React.ReactNode; onPress: () => void }) {
+function LoginOption({ label, icon, onPress, busy }: { label: string; icon: React.ReactNode; onPress: () => void; busy?: boolean }) {
   const { colors } = useTheme()
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ busy: !!busy }}
       style={({ pressed }) => ({
         minHeight: MIN_TOUCH + 8,
         flexDirection: 'row',
@@ -43,6 +48,31 @@ export function LoginScreen() {
 
   const login = draft.mode === 'login'
   const { finishOnboarding } = useSession()
+  const accounts = useAccountLoader()
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+
+  /** Google de verdade: o Google confirma a pessoa e o banco abre ou cria a conta. */
+  async function google() {
+    setBusy(true)
+    const r = await signInWithGoogle()
+    if (r === 'cancelled') return setBusy(false)
+    if (r === 'failed') {
+      setBusy(false)
+      toast('Não foi possível entrar com o Google. Tente de novo.')
+      return
+    }
+    setDraft({ social: true })
+    configureStore(r.uid)
+    const res = await accounts.load(r.uid, { ...(r.name ? { name: r.name } : {}), ...(r.email ? { email: r.email } : {}) })
+    setBusy(false)
+    // Entrou com Google sem ter conta: segue o cadastro, sem pedir de novo.
+    if (res === 'no_account') {
+      setDraft({ mode: 'create', social: true })
+      router.push('/termos')
+    }
+    if (res === 'failed') toast('Não foi possível carregar sua conta. Confira a internet e tente de novo.')
+  }
 
   function social() {
     setDraft({ social: true })
@@ -66,7 +96,8 @@ export function LoginScreen() {
             router.push('/celular')
           }}
         />
-        {/* Google e Apple ainda não estão ligados ao servidor: só aparecem na prévia. */}
+        {GOOGLE_READY ? <LoginOption label={busy ? 'Entrando com Google' : 'Entrar com Google'} icon={<GoogleIcon />} busy={busy} onPress={() => (busy ? undefined : void google())} /> : null}
+        {/* Na prévia, sem servidor, Google e Apple só mostram o caminho. Apple chega com a versão do iPhone. */}
         {IS_REMOTE ? null : (
           <>
             <LoginOption label="Entrar com Google" icon={<GoogleIcon />} onPress={social} />

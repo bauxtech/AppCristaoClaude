@@ -19,6 +19,7 @@ import { DELETE_DAYS, REPORT_REASONS, useSettings } from '../SettingsContext'
 import { clearOutbox, currentUserId, flush, pendingOps } from '../../../lib/sync'
 import { cancelDeletionRemote, requestDeletionRemote, withdrawFaithConsentRemote } from '../../../lib/account'
 import { unregisterPushToken } from '../../../lib/push'
+import { signOutGoogle } from '../../../lib/google'
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 export const longDate = (iso: string) => {
@@ -423,6 +424,7 @@ export function SignOutScreen() {
     if (uid) await unregisterPushToken(uid).catch(() => {})
     // O que ainda estava para enviar era da conta que saiu.
     clearOutbox()
+    void signOutGoogle()
     signOutRemote()
     session.signOut()
     router.replace('/entrar')

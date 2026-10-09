@@ -1,6 +1,5 @@
 import { router } from 'expo-router'
 import { IS_REMOTE, sendLoginCode, verifyLoginCode } from '../../../lib/supabase'
-import { fetchProfile } from '../../../lib/account'
 import { configureStore } from '../../../lib/store'
 import { useEffect, useRef, useState } from 'react'
 import { TextInput, View } from 'react-native'
@@ -12,7 +11,7 @@ import { DEMO_CODES, DEMO_EXISTING_PHONE } from '../data'
 import { useOnboarding } from '../OnboardingContext'
 import { OnboardingScaffold } from '../OnboardingScaffold'
 import { checkCode, CODE_MESSAGES, formatPhoneNumber, onlyDigits } from '../validation'
-import { useSettings } from '../../settings/SettingsContext'
+import { useAccountLoader } from '../useAccountLoader'
 
 const RESEND_SECONDS = 30
 
@@ -21,7 +20,7 @@ export function CodeScreen() {
   const toast = useToast()
   const { draft, setDraft } = useOnboarding()
   const { updateProfile, finishOnboarding } = useSession()
-  const settings = useSettings()
+  const accounts = useAccountLoader()
   const [loadFailed, setLoadFailed] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
@@ -53,34 +52,11 @@ export function CodeScreen() {
     }
   }
 
-  /** Código certo: traz a conta do banco. Se a leitura falha, não trata como conta nova (o cadastro refeito apagaria o que existe). */
+  /** Código certo: traz a conta do banco e segue para a próxima tela. */
   async function loadAccount(uid: string) {
-    const remote = await fetchProfile(uid)
-    if (remote === 'failed') {
-      setLoadFailed(uid)
-      return
-    }
-    setLoadFailed(null)
-    const existing = remote !== 'missing' && !!remote.profile.name
-    if (remote !== 'missing' && existing) {
-      updateProfile({ ...remote.profile, phone: remote.profile.phone || phoneLabel }, { fromServer: true })
-      settings.update({ faithConsent: remote.faithConsent }, { fromServer: true })
-      // Exclusão pedida em outro celular: mostra o prazo e o botão de cancelar.
-      if (remote.deletionRequestedAt) {
-        settings.scheduleDeletion(new Date(remote.deletionRequestedAt))
-        finishOnboarding()
-        router.replace('/configuracoes/exclusao')
-        return
-      }
-      // Conta com nome mas sem termos aceitos passa pelos termos.
-      if (!remote.termsAccepted) {
-        setDraft({ mode: 'create' })
-        router.push('/termos')
-        return
-      }
-    }
-    if (remote === 'missing' || !remote.profile.phone) updateProfile({ phone: phoneLabel })
-    afterCode(existing)
+    const r = await accounts.load(uid, { phone: phoneLabel })
+    setLoadFailed(r === 'failed' ? uid : null)
+    if (r === 'no_account') setNoAccount(true)
   }
 
   function verify() {

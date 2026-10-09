@@ -65,3 +65,9 @@ jest.mock('react-native-purchases', () => ({
   PURCHASES_ERROR_CODE: { PURCHASE_CANCELLED_ERROR: '1' },
 }))
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async () => null), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }))
+jest.mock('@react-native-google-signin/google-signin', () => ({
+  GoogleSignin: { configure: jest.fn(), hasPlayServices: jest.fn(async () => true), signIn: jest.fn(), signOut: jest.fn(async () => {}) },
+  isSuccessResponse: (r) => r?.type === 'success',
+  isErrorWithCode: (e) => !!e?.code,
+  statusCodes: { SIGN_IN_CANCELLED: 'cancelled', IN_PROGRESS: 'in_progress' },
+}))
