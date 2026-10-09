@@ -35,7 +35,11 @@ function useRemoteSearch(q: string) {
   useEffect(() => {
     if (!IS_REMOTE) return
     const text = q.trim()
-    if (text.length < 2) return setState(null)
+    if (text.length < 2) {
+      setState(null)
+      setBusy(false)
+      return
+    }
     let alive = true
     setBusy(true)
     const t = setTimeout(() => {
@@ -49,6 +53,7 @@ function useRemoteSearch(q: string) {
     return () => {
       alive = false
       clearTimeout(t)
+      setBusy(false)
     }
   }, [q])
   return { state, busy }

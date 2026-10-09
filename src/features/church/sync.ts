@@ -78,7 +78,8 @@ export async function searchChurches(q: string, uid: string | null): Promise<Sea
       return { kind: 'failed' }
     }
   }
-  const text = q.replace(/[%,()*\\]/g, ' ').trim()
+  // Só letras, números, espaço, ponto e hífen: o texto entra no filtro do banco sem mudar o sentido dele.
+  const text = q.replace(/[^\p{L}\p{N} .-]/gu, ' ').replace(/\s+/g, ' ').trim()
   if (text.length < 2) return { kind: 'ok', list: [] }
   const { data, error } = await supabase.from('churches').select(SELECT).or(`name.ilike.%${text}%,city.ilike.%${text}%`).limit(20)
   if (error) return { kind: 'failed' }

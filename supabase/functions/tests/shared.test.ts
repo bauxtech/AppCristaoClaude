@@ -6,7 +6,7 @@ import { patchFromEvent, validWebhookAuth } from '../_shared/revenuecat.ts'
 import { processSermon, type SermonDeps } from '../_shared/sermon.ts'
 import { brMinutes, chunks, decide } from '../_shared/push.ts'
 import { isReligious, toChurchRow, validCnpj } from '../_shared/church.ts'
-import { EXPORT_TABLES, SKIP_TABLES, exportFile } from '../_shared/export.ts'
+import { ADMIN_EXPORT_TABLES, EXPORT_EITHER, EXPORT_TABLES, SKIP_TABLES, exportFile } from '../_shared/export.ts'
 
 const VERSES = { 'filipenses:4:6': 'Não estejais ansiosos por coisa alguma.', 'salmos:23:1': 'O Senhor é o meu pastor; nada me faltará.' }
 
@@ -210,6 +210,11 @@ describe('baixar meus dados', () => {
     const tables = EXPORT_TABLES.map(([t]) => t)
     for (const t of ['profiles', 'prayer_diary', 'prayer_requests', 'chat_messages', 'sermons', 'bible_notes', 'notes']) expect(tables).toContain(t)
     for (const t of SKIP_TABLES) expect(tables).not.toContain(t)
+  })
+  test('escala, trocas e denúncias também vão no arquivo, sem repetir tabela', () => {
+    const all = [...EXPORT_TABLES.map(([t]) => t), ...EXPORT_EITHER.map(([t]) => t), ...ADMIN_EXPORT_TABLES.map(([t]) => t)]
+    for (const t of ['cell_schedule', 'cell_swaps', 'reports']) expect(all).toContain(t)
+    expect(new Set(all).size).toBe(all.length)
   })
   test('cabeçalho do arquivo', () => {
     const f = exportFile('u1', { notes: [] }, new Date('2026-10-09T03:00:00Z'))

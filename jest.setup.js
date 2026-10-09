@@ -69,6 +69,7 @@ jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn(async () => null),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
+  AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 0,
   getItem: (k) => (globalThis.__secureStore ? (globalThis.__secureStore[k] ?? null) : null),
   setItem: (k, v) => {
     if (globalThis.__secureStore) globalThis.__secureStore[k] = v
@@ -80,3 +81,4 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
   isErrorWithCode: (e) => !!e?.code,
   statusCodes: { SIGN_IN_CANCELLED: 'cancelled', IN_PROGRESS: 'in_progress' },
 }))
+

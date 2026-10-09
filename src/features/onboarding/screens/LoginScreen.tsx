@@ -1,13 +1,13 @@
 import { router } from 'expo-router'
 import { Pressable, View } from 'react-native'
-import { AppText, Button, Icon, MIN_TOUCH, useToast } from '../../../components'
+import { AppText, Button, Card, Icon, MIN_TOUCH, useToast } from '../../../components'
 import { AppleIcon, GoogleIcon } from '../../../components/BrandIcon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { useOnboarding } from '../OnboardingContext'
 import { useSession } from '../../../state/session'
-import { IS_REMOTE } from '../../../lib/supabase'
-import { GOOGLE_READY, signInWithGoogle } from '../../../lib/google'
+import { IS_REMOTE, signOutRemote } from '../../../lib/supabase'
+import { GOOGLE_READY, signInWithGoogle, signOutGoogle } from '../../../lib/google'
 import { configureStore } from '../../../lib/store'
 import { useAccountLoader } from '../useAccountLoader'
 import { useState } from 'react'
@@ -51,6 +51,7 @@ export function LoginScreen() {
   const accounts = useAccountLoader()
   const toast = useToast()
   const [busy, setBusy] = useState(false)
+  const [noAccount, setNoAccount] = useState(false)
 
   /** Google de verdade: o Google confirma a pessoa e o banco abre ou cria a conta. */
   async function google() {
@@ -66,12 +67,27 @@ export function LoginScreen() {
     configureStore(r.uid)
     const res = await accounts.load(r.uid, { ...(r.name ? { name: r.name } : {}), ...(r.email ? { email: r.email } : {}) })
     setBusy(false)
-    // Entrou com Google sem ter conta: segue o cadastro, sem pedir de novo.
     if (res === 'no_account') {
+      // Criar conta: segue o cadastro. Entrar: avisa antes, porque a pessoa pode ter conta pelo celular.
+      if (login) return setNoAccount(true)
       setDraft({ mode: 'create', social: true })
       router.push('/termos')
     }
     if (res === 'failed') toast('Não foi possível carregar sua conta. Confira a internet e tente de novo.')
+  }
+
+  function createWithGoogle() {
+    setNoAccount(false)
+    setDraft({ mode: 'create', social: true })
+    router.push('/termos')
+  }
+
+  /** Desiste da conta nova: desfaz o login do Google para não ficar meio entrado. */
+  function cancelGoogle() {
+    setNoAccount(false)
+    setDraft({ social: false })
+    void signOutGoogle()
+    void signOutRemote()
   }
 
   function social() {
@@ -92,6 +108,7 @@ export function LoginScreen() {
           label="Número de celular, por SMS ou WhatsApp"
           icon={<Icon name="phone" size={22} color={colors.primary} />}
           onPress={() => {
+            if (noAccount) cancelGoogle()
             setDraft({ social: false })
             router.push('/celular')
           }}
@@ -105,6 +122,16 @@ export function LoginScreen() {
           </>
         )}
       </View>
+      {noAccount ? (
+        <Card style={{ gap: 8 }} accessibilityLiveRegion="polite">
+          <AppText variant="bodyStrong">Não achamos conta com esse Google</AppText>
+          <AppText variant="small" tone="secondary">
+            Se você se cadastrou pelo celular, entre pelo celular.
+          </AppText>
+          <Button label="Criar conta com este Google" size="sm" onPress={createWithGoogle} />
+          <Button label="Não criar conta" variant="text" size="sm" onPress={cancelGoogle} />
+        </Card>
+      ) : null}
       <View style={{ gap: 4, alignItems: 'center' }}>
         <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
           {login ? 'Ao entrar, você concorda com os documentos abaixo.' : 'Ao criar a conta, você concorda com os documentos abaixo.'}

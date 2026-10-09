@@ -16,8 +16,12 @@ Deno.serve(async (req) => {
 
   const db = admin()
   const digits = onlyDigits(cnpj)
-  const { data: known } = await db.from('churches').select('id, cnpj, name, address, neighborhood, city').eq('cnpj', digits).maybeSingle()
-  if (known) return json({ kind: 'found', church: known })
+  // Só vale como "já conhecida" a igreja gravada pelo servidor com os dados da Receita (sem created_by).
+  const { data: known } = await db.from('churches').select('id, cnpj, name, address, neighborhood, city, created_by').eq('cnpj', digits).maybeSingle()
+  if (known && !known.created_by) {
+    const { created_by: _c, ...church } = known
+    return json({ kind: 'found', church })
+  }
 
   const left = (await db.rpc('consume_usage', { p_user: uid, p_kind: 'cnpj_day', p_period: brDay(), p_limit: CNPJ_DAILY_LIMIT })).data as number
   if (typeof left === 'number' && left < 0) return json({ kind: 'limit' })
@@ -30,7 +34,8 @@ Deno.serve(async (req) => {
   if (!isReligious(data)) return json({ kind: 'not_religious' })
   if (data.descricao_situacao_cadastral && data.descricao_situacao_cadastral.toUpperCase() !== 'ATIVA') return json({ kind: 'inactive' })
 
-  const { data: row, error } = await db.from('churches').upsert(toChurchRow(digits, data), { onConflict: 'cnpj' }).select('id, cnpj, name, address, neighborhood, city').single()
+  // Se havia uma linha com esse CNPJ gravada por alguém, os dados da Receita tomam o lugar e ela deixa de ser de quem gravou.
+  const { data: row, error } = await db.from('churches').upsert({ ...toChurchRow(digits, data), created_by: null }, { onConflict: 'cnpj' }).select('id, cnpj, name, address, neighborhood, city').single()
   if (error || !row) return json({ kind: 'unavailable' }, 502)
   return json({ kind: 'found', church: row })
 })

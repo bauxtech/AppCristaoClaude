@@ -36,7 +36,14 @@ export const EXPORT_TABLES: [table: string, owner: string][] = [
   ['hidden_content', 'user_id'],
   ['notifications', 'user_id'],
   ['blocks', 'blocker_id'],
+  ['cell_schedule', 'member_id'],
 ]
+
+/** Tabelas em que a pessoa aparece em mais de uma coluna. */
+export const EXPORT_EITHER: [table: string, owners: string[]][] = [['cell_swaps', ['from_id', 'to_id']]]
+
+/** Tamanho da página de leitura. O PostgREST devolve no máximo 1000 linhas por vez. */
+export const PAGE = 1000
 
 /** Lidas pelo servidor, filtradas pela pessoa: o app não lê essas tabelas direto (denúncias). */
 export const ADMIN_EXPORT_TABLES: [table: string, owner: string][] = [['reports', 'reporter_id']]
@@ -49,7 +56,8 @@ export function exportFile(uid: string, parts: Record<string, unknown[]>, now = 
     app: 'App Cristão',
     gerado_em: now.toISOString(),
     conta: uid,
-    observacao: 'Dados guardados no servidor. Áudios e arquivos guardados só no celular não entram neste arquivo.',
+    observacao:
+      'Dados guardados no servidor sobre a sua conta. Não entram: os arquivos (foto de perfil, áudio de culto guardado, materiais e vídeos), que você vê e baixa no próprio app, e o que está guardado só no seu celular.',
     dados: parts,
   }
 }

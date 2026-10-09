@@ -20,7 +20,7 @@ import { clearOutbox, currentUserId, flush, pendingOps } from '../../../lib/sync
 import { cancelDeletionRemote, requestDeletionRemote, withdrawFaithConsentRemote } from '../../../lib/account'
 import { unregisterPushToken } from '../../../lib/push'
 import { signOutGoogle } from '../../../lib/google'
-import { downloadMyData } from '../../../lib/export'
+import { clearExportFiles, downloadMyData } from '../../../lib/export'
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 export const longDate = (iso: string) => {
@@ -457,6 +457,7 @@ export function SignOutScreen() {
     if (uid) await unregisterPushToken(uid).catch(() => {})
     // O que ainda estava para enviar era da conta que saiu.
     clearOutbox()
+    clearExportFiles()
     void signOutGoogle()
     signOutRemote()
     session.signOut()
@@ -538,6 +539,7 @@ export function DeleteAccountScreen() {
             const r = await requestDeletionRemote()
             setDeleting(false)
             if (!r.ok) return setDeleteError(r.message)
+            clearExportFiles()
             s.scheduleDeletion()
             router.replace('/configuracoes/exclusao')
           }}

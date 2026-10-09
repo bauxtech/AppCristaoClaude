@@ -7,6 +7,7 @@ import { AppState, Platform } from 'react-native'
 // O arquivo é criptografado (XChaCha20-Poly1305). A chave fica no armazenamento seguro do celular
 // (Keychain no iPhone, Keystore no Android) e nunca sai dele. O backup do Android está desligado
 // (app.json, allowBackup: false). Na web (só para teste), fica sem criptografia no navegador.
+// Se o arquivo não abre, ele é guardado de lado com outro nome e nada é gravado por cima.
 
 const FILE_NAME = 'app-estado.json'
 const KEY_NAME = 'app-estado-chave'
@@ -14,6 +15,7 @@ const KEY_NAME = 'app-estado-chave'
 // ─── Bytes, texto e base64 (sem depender do que o motor de JavaScript oferece) ─
 
 export function utf8Encode(s: string): Uint8Array {
+  if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(s)
   const out: number[] = []
   for (let i = 0; i < s.length; i++) {
     let c = s.charCodeAt(i)
@@ -33,6 +35,7 @@ export function utf8Encode(s: string): Uint8Array {
 }
 
 export function utf8Decode(b: Uint8Array): string {
+  if (typeof TextDecoder !== 'undefined') return new TextDecoder().decode(b)
   let s = ''
   const chunk: number[] = []
   const flush = () => {
@@ -82,31 +85,45 @@ export function fromBase64(s: string): Uint8Array {
 
 // ─── Criptografia ────────────────────────────────────────────────────────────
 
-/** Bytes aleatórios do sistema. Null quando o app instalado ainda não tem o módulo (APK antigo). */
-function randomBytes(n: number): Uint8Array | null {
+/** O app instalado tem o módulo de bytes aleatórios? APK antigo não tem e segue sem criptografia, como antes. */
+function cryptoModule(): typeof import('expo-crypto') | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Crypto = require('expo-crypto') as typeof import('expo-crypto')
-    return Crypto.getRandomBytes(n)
+    return require('expo-crypto') as typeof import('expo-crypto')
   } catch {
     return null
   }
 }
 
-let cachedKey: Uint8Array | null | undefined
-
-/** Chave do arquivo, guardada no armazenamento seguro. Criada na primeira vez. */
-function key(): Uint8Array | null {
-  if (cachedKey !== undefined) return cachedKey
+/** Bytes aleatórios do sistema. Null quando o app instalado ainda não tem o módulo (APK antigo). */
+function randomBytes(n: number): Uint8Array | null {
   try {
-    const saved = SecureStore.getItem(KEY_NAME)
+    return cryptoModule()?.getRandomBytes(n) ?? null
+  } catch {
+    return null
+  }
+}
+
+// A chave só abre depois do primeiro desbloqueio do celular e não vai para backup nem para outro aparelho.
+const KEY_OPTIONS: SecureStore.SecureStoreOptions = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY }
+
+/**
+ * Chave do arquivo, guardada no armazenamento seguro. Criada na primeira vez.
+ * 'none': o app não tem como criptografar (APK antigo). 'error': falha ao ler a chave agora (tenta de novo depois).
+ */
+let cachedKey: Uint8Array | null = null
+function key(): Uint8Array | 'none' | 'error' {
+  if (cachedKey) return cachedKey
+  if (!cryptoModule()) return 'none'
+  try {
+    const saved = SecureStore.getItem(KEY_NAME, KEY_OPTIONS)
     if (saved) return (cachedKey = fromBase64(saved))
     const fresh = randomBytes(32)
-    if (!fresh) return (cachedKey = null)
-    SecureStore.setItem(KEY_NAME, toBase64(fresh))
+    if (!fresh) return 'error'
+    SecureStore.setItem(KEY_NAME, toBase64(fresh), KEY_OPTIONS)
     return (cachedKey = fresh)
   } catch {
-    return (cachedKey = null)
+    return 'error'
   }
 }
 
@@ -126,6 +143,25 @@ const isSealed = (x: unknown): x is Sealed => !!x && typeof x === 'object' && (x
 
 let cache: Record<string, unknown> | null = null
 let pending: ReturnType<typeof setTimeout> | null = null
+let firstPendingAt = 0
+/** O arquivo do celular não abriu: nada é gravado por cima dele nesta sessão. */
+let unreadable = false
+
+function file() {
+  return new File(Paths.document, FILE_NAME)
+}
+
+/** Guarda o arquivo que não abriu com outro nome, para não perder os dados se a chave voltar a funcionar. */
+function setAside(f: File) {
+  try {
+    const copy = new File(Paths.document, `app-estado-ilegivel-${Date.now()}.json`)
+    copy.create()
+    copy.write(f.textSync())
+    return true
+  } catch {
+    return false
+  }
+}
 
 function readAll(): Record<string, unknown> {
   if (cache) return cache
@@ -134,27 +170,39 @@ function readAll(): Record<string, unknown> {
       const raw = globalThis.localStorage?.getItem(FILE_NAME)
       return (cache = raw ? JSON.parse(raw) : {})
     }
-    const f = new File(Paths.document, FILE_NAME)
+    const f = file()
     if (!f.exists) return (cache = {})
     const parsed = JSON.parse(f.textSync())
     if (isSealed(parsed)) {
       const k = key()
-      // Sem a chave (app reinstalado), o arquivo antigo não abre: começa vazio e o banco traz a conta de volta.
-      cache = k ? JSON.parse(open(parsed, k)) : {}
-      return cache!
+      if (k instanceof Uint8Array) {
+        try {
+          return (cache = JSON.parse(open(parsed, k)))
+        } catch {
+          // Chave diferente ou arquivo estragado: guarda o arquivo de lado e começa vazio.
+          if (!setAside(f)) unreadable = true
+          return (cache = {})
+        }
+      }
+      // Sem conseguir ler a chave agora: não começa vazio por cima do arquivo. Fica só na memória até a chave voltar.
+      unreadable = true
+      return (cache = {})
     }
     // Arquivo de antes da criptografia: lê e grava de novo já criptografado.
     cache = parsed as Record<string, unknown>
     scheduleWrite()
     return cache
   } catch {
+    unreadable = true
     return (cache = {})
   }
 }
 
 function writeNow() {
+  if (pending) clearTimeout(pending)
   pending = null
-  if (!cache) return
+  firstPendingAt = 0
+  if (!cache || unreadable) return
   try {
     const raw = JSON.stringify(cache)
     if (Platform.OS === 'web') {
@@ -162,9 +210,17 @@ function writeNow() {
       return
     }
     const k = key()
-    const nonce = k ? randomBytes(24) : null
-    const content = k && nonce ? JSON.stringify(seal(raw, k, nonce)) : raw
-    const f = new File(Paths.document, FILE_NAME)
+    let content: string
+    if (k instanceof Uint8Array) {
+      const nonce = randomBytes(24)
+      // Sem nonce, não grava: nunca vai dado em texto aberto para o disco quando dá para criptografar.
+      if (!nonce) return
+      content = JSON.stringify(seal(raw, k, nonce))
+    } else if (k === 'none') {
+      // APK antigo, sem o módulo: grava como antes da criptografia até a pessoa instalar o novo.
+      content = raw
+    } else return // erro passageiro com a chave: tenta na próxima gravação
+    const f = file()
     if (!f.exists) f.create()
     f.write(content)
   } catch {
@@ -172,19 +228,19 @@ function writeNow() {
   }
 }
 
-/** Junta as gravações de um mesmo instante numa só (criptografar o arquivo inteiro a cada letra digitada pesa). */
+/** Junta as gravações: grava 400 ms depois da última mudança, e no máximo 3 segundos depois da primeira. */
 function scheduleWrite() {
-  if (pending) return
-  pending = setTimeout(writeNow, 400)
+  const now = Date.now()
+  if (!firstPendingAt) firstPendingAt = now
+  if (pending) clearTimeout(pending)
+  const wait = Math.max(0, Math.min(400, firstPendingAt + 3000 - now))
+  pending = setTimeout(writeNow, wait)
 }
 
 // Antes de o app ir para segundo plano, grava o que falta.
 if (Platform.OS !== 'web') {
   AppState.addEventListener('change', (s) => {
-    if (s !== 'active' && pending) {
-      clearTimeout(pending)
-      writeNow()
-    }
+    if (s !== 'active' && pending) writeNow()
   })
 }
 
@@ -203,12 +259,13 @@ export function setItem(key: string, value: unknown) {
 export function resetStorageCacheForTests() {
   if (pending) clearTimeout(pending)
   pending = null
+  firstPendingAt = 0
   cache = null
-  cachedKey = undefined
+  cachedKey = null
+  unreadable = false
 }
 
 /** Só para testes: grava agora. */
 export function flushStorageForTests() {
-  if (pending) clearTimeout(pending)
   writeNow()
 }

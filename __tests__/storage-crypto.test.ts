@@ -95,7 +95,32 @@ describe('arquivo no celular', () => {
       a.setItem('x', 'segredo')
       a.flushStorageForTests()
     })
+    const before = disk['app-estado.json']
     delete keychain['app-estado-chave']
-    withApp((b) => expect(b.getItem('x', 'vazio')).toBe('vazio'))
+    withApp((b) => {
+      expect(b.getItem('x', 'vazio')).toBe('vazio')
+      b.setItem('y', 1)
+      b.flushStorageForTests()
+    })
+    // O arquivo que não abriu fica guardado com outro nome, para não perder os dados.
+    const aside = Object.keys(disk).find((k) => k.startsWith('app-estado-ilegivel-'))
+    expect(aside && disk[aside]).toBe(before)
+  })
+
+  test('sem conseguir ler a chave agora, nada é gravado por cima nem em texto aberto', () => {
+    withApp((a) => {
+      a.setItem('diary', 'Pedido muito pessoal')
+      a.flushStorageForTests()
+    })
+    const before = disk['app-estado.json']
+    const store = (globalThis as { __secureStore?: Record<string, string> }).__secureStore
+    ;(globalThis as { __secureStore?: unknown }).__secureStore = new Proxy({}, { get: () => { throw new Error('Keystore indisponível') } })
+    withApp((b) => {
+      b.setItem('outro', 'x')
+      b.flushStorageForTests()
+    })
+    ;(globalThis as { __secureStore?: unknown }).__secureStore = store
+    expect(disk['app-estado.json']).toBe(before)
+    expect(Object.values(disk).join()).not.toContain('Pedido muito pessoal')
   })
 })

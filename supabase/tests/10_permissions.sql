@@ -695,3 +695,9 @@ reset role;
 
 -- Limite de buscas por CNPJ.
 select tests.ok('contador aceita o limite de buscas por CNPJ', public.consume_usage('00000000-0000-0000-0000-00000000000b', 'cnpj_day', '2026-10-09', 30) = 29);
+
+-- ─── Correções da revisão 4 ─────────────────────────────────────────────────
+select tests.as_user('00000000-0000-0000-0000-00000000000b'); -- Beto, que cadastrou a igreja 90..02 à mão
+select tests.ok('igreja cadastrada à mão não ganha CNPJ depois',
+  tests.denied($$update public.churches set cnpj = '11444777000161', name = 'Igreja Falsa' where id = '90000000-0000-0000-0000-000000000002'$$));
+reset role;
