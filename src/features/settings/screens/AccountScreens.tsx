@@ -20,6 +20,7 @@ import { clearOutbox, currentUserId, flush, pendingOps } from '../../../lib/sync
 import { cancelDeletionRemote, requestDeletionRemote, withdrawFaithConsentRemote } from '../../../lib/account'
 import { unregisterPushToken } from '../../../lib/push'
 import { signOutGoogle } from '../../../lib/google'
+import { downloadMyData } from '../../../lib/export'
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 export const longDate = (iso: string) => {
@@ -62,8 +63,40 @@ export function useDataCounts() {
   ]
 }
 
-/** Pede o arquivo. Sem e-mail, pede para cadastrar antes. */
+/**
+ * Com servidor: o servidor junta tudo o que guarda da pessoa e o app entrega o arquivo para salvar ou enviar.
+ * Sem servidor (prévia): o pedido por e-mail, como no protótipo.
+ */
 export function DownloadDataCard({ onDone }: { onDone?: () => void }) {
+  if (IS_REMOTE) return <DownloadNowCard onDone={onDone} />
+  return <DownloadByEmailCard onDone={onDone} />
+}
+
+function DownloadNowCard({ onDone }: { onDone?: () => void }) {
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+  async function download() {
+    setBusy(true)
+    const r = await downloadMyData()
+    setBusy(false)
+    if (r === 'ok') {
+      toast('Arquivo pronto')
+      onDone?.()
+    } else toast(r === 'no_login' ? 'Entre na sua conta para baixar os dados.' : 'Não foi possível baixar agora. Confira a internet e tente de novo.')
+  }
+  return (
+    <Card style={{ gap: 8 }}>
+      <AppText variant="bodyStrong">Baixar meus dados</AppText>
+      <AppText variant="small" tone="secondary">
+        Um arquivo com tudo o que o servidor guarda da sua conta: anotações, progresso, pedidos, diário, conversas do chat e cultos. Você escolhe onde salvar ou para quem enviar.
+      </AppText>
+      <Button label={busy ? 'Juntando os dados' : 'Baixar arquivo'} variant="soft" size="sm" busy={busy} onPress={() => void download()} />
+    </Card>
+  )
+}
+
+/** Pede o arquivo. Sem e-mail, pede para cadastrar antes. */
+function DownloadByEmailCard({ onDone }: { onDone?: () => void }) {
   const toast = useToast()
   const { profile } = useSession()
   const [confirm, setConfirm] = useState(false)

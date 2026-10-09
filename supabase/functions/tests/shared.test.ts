@@ -6,6 +6,7 @@ import { patchFromEvent, validWebhookAuth } from '../_shared/revenuecat.ts'
 import { processSermon, type SermonDeps } from '../_shared/sermon.ts'
 import { brMinutes, chunks, decide } from '../_shared/push.ts'
 import { isReligious, toChurchRow, validCnpj } from '../_shared/church.ts'
+import { EXPORT_TABLES, SKIP_TABLES, exportFile } from '../_shared/export.ts'
 
 const VERSES = { 'filipenses:4:6': 'Não estejais ansiosos por coisa alguma.', 'salmos:23:1': 'O Senhor é o meu pastor; nada me faltará.' }
 
@@ -201,5 +202,17 @@ describe('igreja pelo CNPJ', () => {
       uf: 'sp',
     })
     expect(row).toEqual({ cnpj: '11222333000181', name: 'Igreja Evangelica Batista do Bairro', address: 'Rua das Flores, 100, Pinheiros, Sao Paulo, SP', neighborhood: 'Pinheiros', city: 'Sao Paulo, SP' })
+  })
+})
+
+describe('baixar meus dados', () => {
+  test('o arquivo traz as partes sensíveis (diário, pedidos, chat, cultos) e nada do aparelho de avisos', () => {
+    const tables = EXPORT_TABLES.map(([t]) => t)
+    for (const t of ['profiles', 'prayer_diary', 'prayer_requests', 'chat_messages', 'sermons', 'bible_notes', 'notes']) expect(tables).toContain(t)
+    for (const t of SKIP_TABLES) expect(tables).not.toContain(t)
+  })
+  test('cabeçalho do arquivo', () => {
+    const f = exportFile('u1', { notes: [] }, new Date('2026-10-09T03:00:00Z'))
+    expect(f).toMatchObject({ conta: 'u1', gerado_em: '2026-10-09T03:00:00.000Z', dados: { notes: [] } })
   })
 })

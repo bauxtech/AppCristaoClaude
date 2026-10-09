@@ -104,7 +104,7 @@ Os valores são os mesmos do passo 1.
 - **Preço do plano.**
 - **Quem revisa o conteúdo do dia:** por enquanto ele nasce como rascunho. O segredo `DAILY_AUTO_PUBLISH=true` publica direto.
 - **Quem edita os horários de culto e a acessibilidade da igreja.**
-- **E-mail para o arquivo de Meus dados:** precisa de um serviço de envio de e-mail, que é mais uma conta.
+- **E-mail para o arquivo de Meus dados:** por enquanto o app baixa o arquivo na hora (função export-data) e a pessoa escolhe onde salvar ou para quem enviar. Mandar por e-mail precisa de um serviço de envio de e-mail, que é mais uma conta.
 - **Roteiro e materiais na página web pública:** hoje não aparecem.
 
 ## Limites que você precisa conhecer
