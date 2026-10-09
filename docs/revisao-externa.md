@@ -39,7 +39,7 @@ O app guarda dado de fé e pedido de oração, que são dados sensíveis pela LG
 - `supabase/functions/`: funções do servidor.
 - `src/lib/supabase.ts` e `src/lib/store.ts`: como o app fala com o servidor e com a loja.
 - `src/lib/sync.ts`: fila que guarda as mudanças no aparelho e envia ao banco.
-- Pendente antes da loja: a fila e o estado do app (diário, pedidos de oração, notas) ficam no aparelho em texto aberto, num arquivo da pasta do app. Precisam ser criptografados com chave no armazenamento seguro do celular (expo-secure-store). Na versão web, ficam no localStorage do navegador.
+- Estado do app no aparelho (diário, pedidos de oração, notas, fila de envio): arquivo criptografado com XChaCha20-Poly1305 (@noble/ciphers), chave de 32 bytes aleatória no armazenamento seguro do celular (expo-secure-store), nonce novo a cada gravação (src/lib/storage.ts). Conferir a escolha e o tratamento de chave perdida (app reinstalado começa vazio e o banco traz a conta). Na versão web, só de teste, fica no localStorage sem criptografia.
 
 **Testes de permissão**
 - Rodam num Postgres local com `npm run test:db`. Hoje são 107 testes.
@@ -66,7 +66,7 @@ O app guarda dado de fé e pedido de oração, que são dados sensíveis pela LG
    - O webhook do RevenueCat confere o segredo.
    - O chat e o culto conferem a assinatura e os limites no servidor.
 5. **Chaves:** nenhuma chave secreta no app nem no repositório. No app só ficam a chave anon do Supabase e as chaves públicas do RevenueCat, que são públicas por desenho.
-6. **Dado no aparelho:** enquanto o servidor não está ligado, o app guarda os dados num arquivo da pasta do app, sem criptografia. O backup do Android está desligado. Quando o banco entrar, os dados de outras pessoas deixam de ser gravados no aparelho.
+6. **Dado no aparelho:** o app guarda os dados num arquivo criptografado da pasta do app, com a chave no armazenamento seguro do celular. O backup do Android está desligado.
 7. **Avisos:** o texto de pedido de oração e de diário não vai no corpo do aviso, que aparece na tela bloqueada.
 
 **Revisão interna já feita:** uma sessão separada do Claude revisou o app. Os pontos de prioridade alta e média já foram corrigidos (commit "Correções da revisão de segurança").

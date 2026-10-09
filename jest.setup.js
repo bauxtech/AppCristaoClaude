@@ -64,7 +64,16 @@ jest.mock('react-native-purchases', () => ({
   default: { configure: jest.fn(), getOfferings: jest.fn(), purchasePackage: jest.fn(), restorePurchases: jest.fn() },
   PURCHASES_ERROR_CODE: { PURCHASE_CANCELLED_ERROR: '1' },
 }))
-jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async () => null), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }))
+// Armazenamento seguro: os testes que precisam dele põem um objeto em globalThis.__secureStore.
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn(async () => null),
+  setItemAsync: jest.fn(),
+  deleteItemAsync: jest.fn(),
+  getItem: (k) => (globalThis.__secureStore ? (globalThis.__secureStore[k] ?? null) : null),
+  setItem: (k, v) => {
+    if (globalThis.__secureStore) globalThis.__secureStore[k] = v
+  },
+}))
 jest.mock('@react-native-google-signin/google-signin', () => ({
   GoogleSignin: { configure: jest.fn(), hasPlayServices: jest.fn(async () => true), signIn: jest.fn(), signOut: jest.fn(async () => {}) },
   isSuccessResponse: (r) => r?.type === 'success',
