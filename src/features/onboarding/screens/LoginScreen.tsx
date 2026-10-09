@@ -6,6 +6,7 @@ import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { useOnboarding } from '../OnboardingContext'
 import { useSession } from '../../../state/session'
+import { IS_REMOTE } from '../../../lib/supabase'
 import { OnboardingScaffold } from '../OnboardingScaffold'
 
 function LoginOption({ label, icon, onPress }: { label: string; icon: React.ReactNode; onPress: () => void }) {
@@ -65,8 +66,13 @@ export function LoginScreen() {
             router.push('/celular')
           }}
         />
-        <LoginOption label="Entrar com Google" icon={<GoogleIcon />} onPress={social} />
-        <LoginOption label="Entrar com Apple" icon={<AppleIcon color={colors.text} />} onPress={social} />
+        {/* Google e Apple ainda não estão ligados ao servidor: só aparecem na prévia. */}
+        {IS_REMOTE ? null : (
+          <>
+            <LoginOption label="Entrar com Google" icon={<GoogleIcon />} onPress={social} />
+            <LoginOption label="Entrar com Apple" icon={<AppleIcon color={colors.text} />} onPress={social} />
+          </>
+        )}
       </View>
       <View style={{ gap: 4, alignItems: 'center' }}>
         <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
