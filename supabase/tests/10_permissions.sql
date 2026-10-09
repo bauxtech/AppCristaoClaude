@@ -648,3 +648,33 @@ select public.withdraw_faith_consent();
 reset role;
 select tests.ok('retirar o consentimento apaga quem orou', not exists (select 1 from public.prayer_prayed where user_id = '00000000-0000-0000-0000-000000000011'));
 update public.profiles set faith_consent = true where id = '00000000-0000-0000-0000-000000000011';
+
+-- ─── Igreja, ministérios e cursos ───────────────────────────────────────────
+
+insert into public.churches (id, cnpj, name, city) values ('90000000-0000-0000-0000-000000000001', '11222333000181', 'Igreja do CNPJ', 'São Paulo, SP');
+select tests.as_user('00000000-0000-0000-0000-00000000000b'); -- Beto
+select tests.ok('ninguém cadastra igreja com CNPJ pelo app (só o servidor, com os dados da Receita)',
+  tests.denied($$insert into public.churches (name, cnpj, created_by) values ('Falsa', '99999999000199', auth.uid())$$));
+select tests.ok('pessoa cadastra igreja à mão',
+  tests.allowed($$insert into public.churches (id, name, city, created_by) values ('90000000-0000-0000-0000-000000000002', 'Igreja do Bairro', 'Recife, PE', auth.uid())$$));
+select tests.ok('quem cadastrou à mão informa horários e acessibilidade',
+  tests.allowed($$insert into public.church_services (church_id, weekday, time) values ('90000000-0000-0000-0000-000000000002', 0, '18:00')$$)
+  and tests.allowed($$insert into public.church_accessibility (church_id, libras, libras_services) values ('90000000-0000-0000-0000-000000000002', true, 'Domingo à noite')$$));
+select tests.ok('ninguém muda nome nem horários da igreja do CNPJ',
+  tests.denied($$update public.churches set name = 'Outro' where id = '90000000-0000-0000-0000-000000000001'$$)
+  and tests.denied($$insert into public.church_services (church_id, weekday, time) values ('90000000-0000-0000-0000-000000000001', 1, '19:00')$$));
+select tests.ok('pessoa vincula a igreja à própria conta', tests.allowed($$insert into public.user_churches (user_id, church_id, is_main) values (auth.uid(), '90000000-0000-0000-0000-000000000001', true)$$));
+select tests.ok('pessoa guarda o próprio ministério e curso',
+  tests.allowed($$insert into public.ministries (user_id, data) values (auth.uid(), '{"area":"Louvor"}')$$)
+  and tests.allowed($$insert into public.courses (user_id, data) values (auth.uid(), '{"name":"Discipulado"}')$$));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-00000000000e'); -- Edu
+select tests.ok('ninguém muda a igreja cadastrada por outra pessoa',
+  tests.denied($$update public.churches set name = 'Outro' where id = '90000000-0000-0000-0000-000000000002'$$)
+  and tests.denied($$update public.church_accessibility set libras = false where church_id = '90000000-0000-0000-0000-000000000002'$$));
+select tests.ok('ninguém vê as igrejas, ministérios e cursos de outra pessoa',
+  tests.rows($$select * from public.user_churches where user_id = '00000000-0000-0000-0000-00000000000b'$$) = 0
+  and tests.rows($$select * from public.ministries where user_id = '00000000-0000-0000-0000-00000000000b'$$) = 0
+  and tests.rows($$select * from public.courses where user_id = '00000000-0000-0000-0000-00000000000b'$$) = 0);
+select tests.ok('igreja e horários são públicos para quem está logado', tests.rows($$select * from public.church_services where church_id = '90000000-0000-0000-0000-000000000002'$$) = 1);
+reset role;

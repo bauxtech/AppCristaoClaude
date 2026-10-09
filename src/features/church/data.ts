@@ -38,6 +38,8 @@ export interface Church {
   denomination?: string
   /** "cnpj": nome e endereço vêm dos dados públicos. "manual": a pessoa cadastrou. */
   source: 'cnpj' | 'manual'
+  /** Cadastrada à mão por esta pessoa: só ela muda horários e acessibilidade no servidor. */
+  mine?: boolean
   services: Service[]
   accessibility: Accessibility
   events: ChurchEvent[]

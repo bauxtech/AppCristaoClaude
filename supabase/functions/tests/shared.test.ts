@@ -5,6 +5,7 @@ import { DAILY_REFS, refForDay, writeDaily } from '../_shared/daily.ts'
 import { patchFromEvent, validWebhookAuth } from '../_shared/revenuecat.ts'
 import { processSermon, type SermonDeps } from '../_shared/sermon.ts'
 import { brMinutes, chunks, decide } from '../_shared/push.ts'
+import { isReligious, toChurchRow, validCnpj } from '../_shared/church.ts'
 
 const VERSES = { 'filipenses:4:6': 'Não estejais ansiosos por coisa alguma.', 'salmos:23:1': 'O Senhor é o meu pastor; nada me faltará.' }
 
@@ -173,5 +174,32 @@ describe('avisos para o celular', () => {
   })
   test('envia em lotes de 100', () => {
     expect(chunks(Array.from({ length: 250 }, (_, i) => i)).map((c) => c.length)).toEqual([100, 100, 50])
+  })
+})
+
+describe('igreja pelo CNPJ', () => {
+  test('confere os dígitos do CNPJ', () => {
+    expect(validCnpj('11.222.333/0001-81')).toBe(true)
+    expect(validCnpj('11.222.333/0001-82')).toBe(false)
+    expect(validCnpj('11111111111111')).toBe(false)
+    expect(validCnpj('123')).toBe(false)
+  })
+  test('só aceita organização religiosa, pela atividade principal ou secundária', () => {
+    expect(isReligious({ cnae_fiscal: 9491000 })).toBe(true)
+    expect(isReligious({ cnae_fiscal: '4711301', cnaes_secundarios: [{ codigo: 9491000 }] })).toBe(true)
+    expect(isReligious({ cnae_fiscal: 4711301 })).toBe(false)
+  })
+  test('monta nome, endereço, bairro e cidade a partir da Receita', () => {
+    const row = toChurchRow('11.222.333/0001-81', {
+      razao_social: 'IGREJA EVANGELICA BATISTA DO BAIRRO',
+      nome_fantasia: '',
+      descricao_tipo_de_logradouro: 'RUA',
+      logradouro: 'DAS FLORES',
+      numero: '100',
+      bairro: 'PINHEIROS',
+      municipio: 'SAO PAULO',
+      uf: 'sp',
+    })
+    expect(row).toEqual({ cnpj: '11222333000181', name: 'Igreja Evangelica Batista do Bairro', address: 'Rua das Flores, 100, Pinheiros, Sao Paulo, SP', neighborhood: 'Pinheiros', city: 'Sao Paulo, SP' })
   })
 })

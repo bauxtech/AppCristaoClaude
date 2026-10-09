@@ -1,5 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { getItem, setItem } from '../../lib/storage'
+import { IS_REMOTE } from '../../lib/supabase'
+import { enqueue, flush, pendingOps, useUserId } from '../../lib/sync'
+import { isUuid, uuid } from '../../lib/uuid'
+import { churchDiffOps, mergeChurch, pullChurch } from './sync'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { DIRECTORY, sampleCourses, sampleMinistries, type Church, type ChurchEvent, type Course, type Ministry } from './data'
@@ -50,6 +54,48 @@ export function ChurchProvider({ children, initial }: { children: ReactNode; ini
     if (!initial) setItem('church', state)
   }, [state, initial])
 
+  // Com servidor: cada mudança manda a diferença para o banco. O que veio do banco não volta para lá.
+  const remote = IS_REMOTE && !sampleData && !initial
+  const prevRef = useRef(state)
+  const fromServer = useRef(false)
+  useEffect(() => {
+    const prev = prevRef.current
+    prevRef.current = state
+    if (fromServer.current) {
+      fromServer.current = false
+      return
+    }
+    if (remote && prev !== state) enqueue(...churchDiffOps(prev, state))
+  }, [state, remote])
+
+  // Ao entrar: manda o que estava no aparelho (primeira vez) e traz do banco as igrejas, ministérios e cursos.
+  const uid = useUserId()
+  useEffect(() => {
+    if (!remote || !uid) return
+    let alive = true
+    const flag = `churchSynced:${uid}`
+    if (!getItem(flag, false)) enqueue(...churchDiffOps({ churches: [], ministries: [], courses: [] }, prevRef.current))
+    flush()
+      .then(() => (pendingOps().length ? null : pullChurch(uid)))
+      .then((r) => {
+        if (!alive || !r || pendingOps().length) return
+        fromServer.current = true
+        setState((s) => {
+          const merged = mergeChurch(s, r)
+          const keepMain = merged.churches.find((x) => x.relation === 'frequento')?.church.id ?? merged.churches[0]?.church.id ?? null
+          return { ...s, ...merged, mainId: keepMain }
+        })
+        setItem(flag, true)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [uid, remote])
+
+  /** Com servidor, itens novos ganham id no formato do banco. */
+  const withIds = <T extends { id: string }>(list: T[]) => (remote ? list.map((x) => (isUuid(x.id) ? x : { ...x, id: uuid() })) : list)
+
   // A igreja escolhida no primeiro acesso entra como a que a pessoa frequenta.
   useEffect(() => {
     if (initial || !profile.church || state.churches.some((x) => x.church.name === profile.church)) return
@@ -81,11 +127,11 @@ export function ChurchProvider({ children, initial }: { children: ReactNode; ini
           const mainId = s.mainId ?? s.churches[0]?.church.id
           return { ...s, savedEvents: [...s.savedEvents, id], churches: s.churches.map((x) => (x.church.id === mainId ? { ...x, church: { ...x.church, events: [...x.church.events, { ...e, id }] } } : x)) }
         }),
-      setMinistries: (fn) => setState((s) => ({ ...s, ministries: fn(s.ministries) })),
-      setCourses: (fn) => setState((s) => ({ ...s, courses: fn(s.courses) })),
+      setMinistries: (fn) => setState((s) => ({ ...s, ministries: withIds(fn(s.ministries)) })),
+      setCourses: (fn) => setState((s) => ({ ...s, courses: withIds(fn(s.courses)) })),
       updateCourse: (id, fn) => setState((s) => ({ ...s, courses: s.courses.map((c) => (c.id === id ? fn(c) : c)) })),
     }),
-    [state, main],
+    [state, main, remote], // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   return <ChurchContext.Provider value={value}>{children}</ChurchContext.Provider>
