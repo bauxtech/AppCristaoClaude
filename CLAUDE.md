@@ -59,6 +59,9 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Retirar o consentimento de fé: apaga do servidor o diário, os pedidos de oração, o histórico do chat, o registro de que a pessoa orou pelos pedidos de outros e a tradição. No aparelho, eles continuam. Sem consentimento, o banco não aceita gravar esses dados. Dar o consentimento de novo envia o que está no aparelho.
 - Denúncia: vai para a equipe do app. O conteúdo some na hora para quem denunciou.
 - Conteúdo diário: escrito pela IA. O versículo vem sempre do texto bíblico do app, nunca da IA.
+- Igreja: busca só pelo CNPJ (Receita) e cadastro à mão. Sem Google Places, por custo.
+- Música: só sugestões, sem conexão com Spotify. Só músicas brasileiras. A lista é escolhida pela IA e pode ser trocada pela equipe.
+- Culto longo: o servidor divide o áudio em partes de até 10 minutos antes da transcrição.
 - Chat: só fala de Bíblia e fé cristã, cita só o texto bíblico do app e mostra a fonte. Se a pessoa falar em se machucar, mostra o CVV, telefone 188.
 
 ## EM ABERTO, PERGUNTAR ANTES DE CODAR
