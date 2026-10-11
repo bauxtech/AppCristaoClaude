@@ -144,7 +144,7 @@ export function useChurch() {
 }
 
 /**
- * Quem pode editar horários de culto: EM ABERTO (CLAUDE.md). Por enquanto qualquer pessoa edita na prévia.
+ * Horários e acessibilidade: qualquer pessoa edita os da própria igreja, só para ela (decisão do Thiago, 11/10).
  * Nome e endereço de igreja vinda do CNPJ não são editáveis.
  */
 export function canEditServices() {

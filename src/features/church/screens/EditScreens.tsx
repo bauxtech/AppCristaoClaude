@@ -9,7 +9,9 @@ import { canEditServices, useChurch } from '../ChurchContext'
 import { IS_REMOTE } from '../../../lib/supabase'
 
 /** Igreja do CNPJ ainda não tem quem edite no servidor (decisão em aberto): o que a pessoa informa fica no celular dela. */
-const LOCAL_ONLY = 'Por enquanto, o que você informa sobre esta igreja fica só no seu celular. Outras pessoas ainda não veem.'
+const ONLY_YOU = 'O que você informar aqui fica na sua conta e só você vê.'
+/** Igreja cadastrada à mão por esta pessoa: o que ela informa vale para todos. Nas outras, só para ela. */
+const sharedByMe = (c: { source?: string; mine?: boolean }) => !IS_REMOTE || (c.source === 'manual' && !!c.mine)
 import type { Accessibility, Service } from '../data'
 import { ACCESS_ITEMS } from './format'
 
@@ -34,11 +36,11 @@ export function EditServicesScreen() {
       <AppText variant="body" tone="secondary">
         {main.name}
       </AppText>
-      {IS_REMOTE && main.source === 'cnpj' ? (
+      {sharedByMe(main) ? null : (
         <AppText variant="small" tone="secondary">
-          {LOCAL_ONLY}
+          {ONLY_YOU}
         </AppText>
-      ) : null}
+      )}
       <Card style={{ gap: 4 }}>
         <SectionLabel>Horários</SectionLabel>
         {sorted.length === 0 ? <AppText variant="body" tone="secondary">Nenhum horário ainda.</AppText> : null}
@@ -97,7 +99,7 @@ export function EditAccessibilityScreen() {
   if (!main) return <Page title="Informar acessibilidade">{null}</Page>
   return (
     <Page title="Informar acessibilidade">
-      <AppText variant="body" tone="secondary">{IS_REMOTE && main.source === 'cnpj' ? `Conte o que existe em ${main.name}. ${LOCAL_ONLY}` : `Conte o que existe em ${main.name}. Outras pessoas veem o que você informar.`}</AppText>
+      <AppText variant="body" tone="secondary">{sharedByMe(main) ? `Conte o que existe em ${main.name}. Outras pessoas veem o que você informar.` : `Conte o que existe em ${main.name}. ${ONLY_YOU}`}</AppText>
       {ACCESS_ITEMS.map((it) => (
         <Card key={it.key} style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

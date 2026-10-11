@@ -58,16 +58,14 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Histórico do chat: guardado no servidor só com o consentimento de fé.
 - Retirar o consentimento de fé: apaga do servidor o diário, os pedidos de oração, o histórico do chat, o registro de que a pessoa orou pelos pedidos de outros e a tradição. No aparelho, eles continuam. Sem consentimento, o banco não aceita gravar esses dados. Dar o consentimento de novo envia o que está no aparelho.
 - Denúncia: vai para a equipe do app. O conteúdo some na hora para quem denunciou.
-- Conteúdo diário: escrito pela IA. O versículo vem sempre do texto bíblico do app, nunca da IA.
-- Igreja: busca só pelo CNPJ (Receita) e cadastro à mão. Sem Google Places, por custo.
+- Conteúdo diário: escrito pela IA e publicado direto, sem revisão. O versículo vem sempre do texto bíblico do app, nunca da IA.
+- Igreja: busca só pelo CNPJ (Receita) e cadastro à mão. Sem Google Places, por custo. Nome e endereço vêm do CNPJ. Horários de culto e acessibilidade: cada pessoa edita os da própria igreja e só ela vê. Na igreja cadastrada à mão, o que quem cadastrou informa vale para todos até a pessoa guardar os dela.
 - Música: só sugestões, sem conexão com Spotify. Só músicas brasileiras. A lista é escolhida pela IA e pode ser trocada pela equipe.
 - Culto longo: o servidor divide o áudio em partes de até 10 minutos antes da transcrição.
 - Chat: só fala de Bíblia e fé cristã, cita só o texto bíblico do app e mostra a fonte. Se a pessoa falar em se machucar, mostra o CVV, telefone 188.
 
 ## EM ABERTO, PERGUNTAR ANTES DE CODAR
 - Preço do plano. Até lá, R$ 00,00.
-- Quem revisa o conteúdo gerado pela IA antes de publicar.
-- Quem pode editar horários de culto e acessibilidade da igreja. Nome e endereço vêm dos dados públicos do CNPJ.
 - Confirmar se a paleta final é a A.
 - Nome final do produto. Até lá, "App Cristão". Decidir antes da primeira publicação na loja: o identificador (com.bauxtech.appcristao) e o endereço de abrir o app (appcristao) não mudam depois de publicar.
 

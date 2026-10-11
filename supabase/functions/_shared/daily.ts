@@ -1,5 +1,5 @@
 // Conteúdo diário escrito pela IA. O versículo vem sempre do texto bíblico do app, nunca da IA.
-// EM ABERTO (CLAUDE.md): quem revisa antes de publicar. Até decidir, nasce como rascunho (published = false).
+// Publicado direto, sem revisão (CLAUDE.md).
 
 import type { AskJson } from './claude-types.ts'
 import type { Verse } from './chat.ts'

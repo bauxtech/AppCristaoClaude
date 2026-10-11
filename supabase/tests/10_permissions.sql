@@ -664,6 +664,10 @@ select tests.ok('ninguém muda nome nem horários da igreja do CNPJ',
   tests.denied($$update public.churches set name = 'Outro' where id = '90000000-0000-0000-0000-000000000001'$$)
   and tests.denied($$insert into public.church_services (church_id, weekday, time) values ('90000000-0000-0000-0000-000000000001', 1, '19:00')$$));
 select tests.ok('pessoa vincula a igreja à própria conta', tests.allowed($$insert into public.user_churches (user_id, church_id, is_main) values (auth.uid(), '90000000-0000-0000-0000-000000000001', true)$$));
+select tests.ok('pessoa guarda os próprios horários e acessibilidade da igreja do CNPJ',
+  tests.allowed($$update public.user_churches set services = '[{"day":0,"time":"19:00"}]', accessibility = '{"libras":true}' where user_id = auth.uid() and church_id = '90000000-0000-0000-0000-000000000001'$$));
+select tests.ok('horários fora do formato são recusados',
+  tests.denied($$update public.user_churches set services = '"domingo"' where user_id = auth.uid()$$));
 select tests.ok('pessoa guarda o próprio ministério e curso',
   tests.allowed($$insert into public.ministries (user_id, data) values (auth.uid(), '{"area":"Louvor"}')$$)
   and tests.allowed($$insert into public.courses (user_id, data) values (auth.uid(), '{"name":"Discipulado"}')$$));
@@ -672,6 +676,8 @@ select tests.as_user('00000000-0000-0000-0000-00000000000e'); -- Edu
 select tests.ok('ninguém muda a igreja cadastrada por outra pessoa',
   tests.denied($$update public.churches set name = 'Outro' where id = '90000000-0000-0000-0000-000000000002'$$)
   and tests.denied($$update public.church_accessibility set libras = false where church_id = '90000000-0000-0000-0000-000000000002'$$));
+select tests.ok('ninguém muda os horários que outra pessoa guardou da igreja dela',
+  tests.denied($$update public.user_churches set services = '[]' where user_id = '00000000-0000-0000-0000-00000000000b'$$));
 select tests.ok('ninguém vê as igrejas, ministérios e cursos de outra pessoa',
   tests.rows($$select * from public.user_churches where user_id = '00000000-0000-0000-0000-00000000000b'$$) = 0
   and tests.rows($$select * from public.ministries where user_id = '00000000-0000-0000-0000-00000000000b'$$) = 0

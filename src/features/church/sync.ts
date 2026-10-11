@@ -4,8 +4,9 @@ import { isUuid } from '../../lib/uuid'
 import type { Accessibility, Church, Course, Ministry, Service } from './data'
 
 // Igreja, ministérios e cursos no banco.
-// Igreja do CNPJ: nome e endereço vêm da Receita, pelo servidor. Quem a cadastrou à mão informa horários e acessibilidade.
-// Igreja do CNPJ ainda não tem quem edite horários e acessibilidade no servidor (CLAUDE.md, EM ABERTO): ficam no aparelho.
+// Igreja do CNPJ: nome e endereço vêm da Receita, pelo servidor.
+// Horários e acessibilidade: cada pessoa edita os da própria igreja, só para ela (user_churches.services e .accessibility).
+// Igreja cadastrada à mão: os dados de quem cadastrou valem para todos até a pessoa guardar os dela.
 // Ministérios e cursos são da própria pessoa. Arquivos (certificado, materiais) ficam só no aparelho.
 
 export type ChurchRelation = 'frequento' | 'visito'
@@ -29,10 +30,22 @@ type Row = {
 }
 type AccessRow = { libras: boolean | null; ramp: boolean | null; audio_description: boolean | null; reserved: boolean | null; libras_services: string | null; updated_at: string }
 
+/** O que a pessoa guardou para ela no vínculo com a igreja. */
+type OwnInfo = { services?: { day: number; time: string }[] | null; accessibility?: Accessibility | null }
+
 const SELECT = 'id, cnpj, name, address, neighborhood, city, denomination, created_by, church_services(id, weekday, time), church_accessibility(libras, ramp, audio_description, reserved, libras_services, updated_at)'
 
 export function formatCnpj(d: string) {
   return d.length === 14 ? `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}` : d
+}
+
+/** Usa os horários e a acessibilidade que a pessoa guardou para ela, quando existem. */
+export function withOwnInfo(c: Church, own: OwnInfo): Church {
+  return {
+    ...c,
+    ...(own.services ? { services: own.services.map((x, i) => ({ id: `${c.id}-${i}`, day: x.day, time: x.time })).sort((a, b) => a.day - b.day || a.time.localeCompare(b.time)) } : {}),
+    ...(own.accessibility ? { accessibility: own.accessibility } : {}),
+  }
 }
 
 export function rowToChurch(r: Row, uid: string | null): Church {
@@ -132,7 +145,20 @@ export function churchDiffOps(prev: SyncedChurch, next: SyncedChurch): SyncOp[] 
         ops.push({ kind: 'upsert', table: 'church_accessibility', row: { church_id: c.id, libras: a.libras ?? null, ramp: a.ramp ?? null, reserved: a.reserved ?? null, audio_description: a.audiodesc ?? null, libras_services: a.librasServices ?? null, updated_by: '$uid' } })
       }
     }
-    if (!old || old.relation !== x.relation) ops.push({ kind: 'upsert', table: 'user_churches', row: { user_id: '$uid', church_id: c.id, is_main: x.relation === 'frequento' } })
+    // Igreja que não foi cadastrada por esta pessoa: horários e acessibilidade ficam no vínculo dela, só para ela.
+    const own = !(c.source === 'manual' && c.mine)
+    const ownChanged = own && !!old && (servicesKey(old.church.services) !== servicesKey(c.services) || accessKey(old.church.accessibility) !== accessKey(c.accessibility))
+    if (!old || old.relation !== x.relation || ownChanged)
+      ops.push({
+        kind: 'upsert',
+        table: 'user_churches',
+        row: {
+          user_id: '$uid',
+          church_id: c.id,
+          is_main: x.relation === 'frequento',
+          ...(ownChanged ? { services: c.services.map((v) => ({ day: v.day, time: v.time })), accessibility: c.accessibility } : {}),
+        },
+      })
   }
   for (const x of prev.churches) if (isUuid(x.church.id) && !after.has(x.church.id)) ops.push({ kind: 'delete', table: 'user_churches', match: { user_id: '$uid', church_id: x.church.id } })
 
@@ -155,8 +181,8 @@ export function mergeChurch(local: SyncedChurch, remote: SyncedChurch): SyncedCh
     churches: [
       ...remote.churches.map((x) => {
         const l = local.churches.find((y) => y.church.id === x.church.id)?.church
-        // Igreja do CNPJ: horários e acessibilidade informados no aparelho continuam (o servidor ainda não guarda).
-        return l && x.church.source === 'cnpj' && !x.church.services.length ? { ...x, church: { ...x.church, services: l.services, accessibility: { ...l.accessibility, ...x.church.accessibility }, events: l.events } } : { ...x, church: { ...x.church, events: l?.events ?? [] } }
+        // Igreja do CNPJ sem nada guardado no servidor: horários informados no aparelho antes desta versão continuam.
+        return l && x.church.source === 'cnpj' && !x.church.services.length && l.services.length ? { ...x, church: { ...x.church, services: l.services, accessibility: { ...l.accessibility, ...x.church.accessibility }, events: l.events } } : { ...x, church: { ...x.church, events: l?.events ?? [] } }
       }),
       ...local.churches.filter((x) => !isUuid(x.church.id) && !ids.has(x.church.id)),
     ],
@@ -176,7 +202,7 @@ export function mergeChurch(local: SyncedChurch, remote: SyncedChurch): SyncedCh
 export async function pullChurch(uid: string): Promise<SyncedChurch | null> {
   if (!supabase) return null
   const [links, ministries, courses] = await Promise.all([
-    supabase.from('user_churches').select(`is_main, churches(${SELECT})`).eq('user_id', uid),
+    supabase.from('user_churches').select(`is_main, services, accessibility, churches(${SELECT})`).eq('user_id', uid),
     supabase.from('ministries').select('id, data').eq('user_id', uid),
     supabase.from('courses').select('id, data').eq('user_id', uid),
   ])
@@ -184,7 +210,10 @@ export async function pullChurch(uid: string): Promise<SyncedChurch | null> {
   return {
     churches: (links.data ?? [])
       .filter((l) => l.churches)
-      .map((l) => ({ church: rowToChurch((Array.isArray(l.churches) ? l.churches[0] : l.churches) as unknown as Row, uid), relation: (l.is_main ? 'frequento' : 'visito') as ChurchRelation })),
+      .map((l) => ({
+        church: withOwnInfo(rowToChurch((Array.isArray(l.churches) ? l.churches[0] : l.churches) as unknown as Row, uid), l as OwnInfo),
+        relation: (l.is_main ? 'frequento' : 'visito') as ChurchRelation,
+      })),
     ministries: (ministries.data ?? []).map((m) => ({ ...(m.data as Omit<Ministry, 'id'>), id: m.id })),
     courses: (courses.data ?? []).map((c) => ({ ...(c.data as Omit<Course, 'id'>), id: c.id })),
   }

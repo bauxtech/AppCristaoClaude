@@ -1,5 +1,5 @@
 // Rotina diária (agendada no Supabase): escreve o conteúdo do dia seguinte.
-// Só roda com o segredo CRON_SECRET. Nasce como rascunho até decidirem quem revisa (DAILY_AUTO_PUBLISH=true publica direto).
+// Só roda com o segredo CRON_SECRET. Publica direto, sem revisão (decisão do Thiago, 11/10). DAILY_AUTO_PUBLISH=false volta a guardar como rascunho.
 import { askJson } from '../_shared/claude.ts'
 import { writeDaily } from '../_shared/daily.ts'
 import { validWebhookAuth } from '../_shared/revenuecat.ts'
@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     },
     tomorrow,
   )
-  const published = Deno.env.get('DAILY_AUTO_PUBLISH') === 'true'
+  const published = Deno.env.get('DAILY_AUTO_PUBLISH') !== 'false'
   const { error } = await db.from('daily_content').insert({ ...content, published })
   if (error) return json({ error: error.message }, 500)
   return json({ status: published ? 'publicado' : 'rascunho', day: tomorrow })
