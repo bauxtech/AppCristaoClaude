@@ -91,3 +91,14 @@ describe('página da célula', () => {
     }
   })
 })
+
+describe('endereço do convite', () => {
+  test('lê o código de /c/<código>/', async () => {
+    const { codeFromPath } = await import('../lib/api')
+    expect(codeFromPath('/c/ABC123/')).toBe('ABC123')
+    expect(codeFromPath('/c/abc123')).toBe('abc123')
+    expect(codeFromPath('/c/_/')).toBeNull()
+    expect(codeFromPath('/')).toBeNull()
+    expect(codeFromPath('/c/ABC123/outra')).toBeNull()
+  })
+})

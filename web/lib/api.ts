@@ -101,6 +101,13 @@ export function normalizeCode(raw: string) {
 }
 
 /** Dados públicos. Nunca inclui endereço completo, membros, telefones ou pedidos. */
+/** Código da célula no endereço da página: /c/ABC123/ vira ABC123. */
+export function codeFromPath(path: string): string | null {
+  const m = /^\/c\/([^/]+)\/?$/.exec(path)
+  if (!m || m[1] === '_') return null
+  return decodeURIComponent(m[1])
+}
+
 export async function getPublicCell(rawCode: string, now = new Date()): Promise<PublicCell | null> {
   const code = normalizeCode(rawCode)
   if (REMOTE) {

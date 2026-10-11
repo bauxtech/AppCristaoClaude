@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getPublicCell, isValidPhone, leaveContact, leavePrayer } from '../lib/api'
+import { codeFromPath, getPublicCell, isValidPhone, leaveContact, leavePrayer, REMOTE } from '../lib/api'
 import type { PrivateAddress, PublicCell } from '../lib/data'
 import { formatMeeting, maskPhone, weekly } from '../lib/format'
 import { AlertIcon, CheckIcon } from './Icons'
 
-type Load = { state: 'loading' } | { state: 'missing' } | { state: 'ok'; cell: PublicCell }
+type Load = { state: 'loading' } | { state: 'missing' } | { state: 'error' } | { state: 'ok'; cell: PublicCell }
 
 /** Página pública da célula. Mostra só o bairro até a pessoa deixar nome e telefone. */
 export function CellPage({ code }: { code: string }) {
@@ -14,7 +14,11 @@ export function CellPage({ code }: { code: string }) {
 
   useEffect(() => {
     let alive = true
-    getPublicCell(code).then((cell) => alive && setLoad(cell ? { state: 'ok', cell } : { state: 'missing' }))
+    // Com o banco, a página é uma só para todos os códigos: o código vem do endereço aberto.
+    const real = REMOTE ? (codeFromPath(window.location.pathname) ?? code) : code
+    getPublicCell(real)
+      .then((cell) => alive && setLoad(cell ? { state: 'ok', cell } : { state: 'missing' }))
+      .catch(() => alive && setLoad({ state: 'error' }))
     return () => {
       alive = false
     }
@@ -29,6 +33,7 @@ export function CellPage({ code }: { code: string }) {
       </main>
     )
   }
+  if (load.state === 'error') return <Unavailable title="Não foi possível abrir o convite" text="Confira a internet e abra o link de novo." />
   if (load.state === 'missing') return <Unavailable title="Este convite não vale mais" text="O link está errado ou a célula mudou de código. Peça um novo convite para quem te chamou." />
   const cell = load.cell
   if (cell.status === 'archived') return <Unavailable title={`${cell.name} não está mais se reunindo`} text="A célula foi arquivada pelo líder. Peça a quem te convidou o convite de outra célula." />
