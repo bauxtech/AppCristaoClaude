@@ -109,5 +109,5 @@ Os valores são os mesmos do passo 1.
 
 ## Limites que você precisa conhecer
 
-- **Tamanho do áudio:** a transcrição aceita arquivos de até 25 MB. O app grava a 24 kbps (cerca de 11 MB por hora), então cabe um culto de até 2 horas. Áudio importado maior que 25 MB aparece como falha, com o motivo.
-- **Tempo das funções:** as funções do Supabase têm limite de tempo. Um culto muito longo pode precisar ser processado em partes.
+- **Tamanho e duração do áudio:** a transcrição recusa áudio com mais de uns 23 minutos ou 25 MB. O servidor divide o áudio em partes iguais de até 10 minutos (m4a, mp3 e wav) e junta o texto. O app envia até 50 MB: a gravação do app (24 kbps, cerca de 11 MB por hora) cabe até umas 4 horas. Outros formatos importados (ogg, webm, flac) vão inteiros e só funcionam se forem curtos.
+- **Tempo das funções:** as partes são transcritas 4 de cada vez. Um culto de 2 horas vira 12 partes.

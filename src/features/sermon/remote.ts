@@ -8,7 +8,8 @@ import type { Sermon, VerseRef } from './data'
 // a não ser que a pessoa tenha escolhido guardar (30 dias).
 
 /** Limite da transcrição por arquivo. */
-export const MAX_AUDIO_BYTES = 25 * 1024 * 1024
+/** O mesmo limite do servidor e do armazenamento. O servidor divide o áudio para a transcrição. */
+export const MAX_AUDIO_BYTES = 50 * 1024 * 1024
 
 export type FailReason = 'too_big' | 'no_audio' | 'limit' | 'no_access' | 'empty' | 'no_login' | 'error'
 

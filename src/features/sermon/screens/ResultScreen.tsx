@@ -17,7 +17,7 @@ import { useSermons } from '../SermonContext'
 import { SuggestedSong } from '../../music/screens/MusicScreens'
 
 const FAIL_TEXT: Record<NonNullable<Sermon['failReason']>, string> = {
-  too_big: 'O áudio passou de 25 MB, o limite da transcrição.',
+  too_big: 'O áudio passou de 50 MB, o limite de envio.',
   no_audio: 'O áudio não foi encontrado no aparelho.',
   limit: 'Você já usou os 5 cultos deste mês.',
   no_access: 'A transcrição faz parte da assinatura.',

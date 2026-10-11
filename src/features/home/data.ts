@@ -47,7 +47,6 @@ export const commitments: { icon: IconName; title: string; when: string; href: s
 
 export const cellRequests = { count: 2 }
 
-export const songOfDay = { title: 'Oceans (Where Feet May Fail)', artist: 'Hillsong United' }
 
 /** Total de dias com leitura ou oração. Não existe sequência (regra decidida). */
 export const totalDays = 48

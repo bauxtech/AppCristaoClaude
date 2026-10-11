@@ -120,7 +120,7 @@ export const DEFAULT_ROLES = ['Recebe em casa', 'Lanche', 'Louvor', 'Palavra', '
 
 export const SAMPLE_PLAN: PlanSection[] = [
   { id: 'p1', title: 'Quebra-gelo', content: 'Pergunta: Qual foi o melhor momento da sua semana?', minutes: 10 },
-  { id: 'p2', title: 'Louvor', content: 'Oceans, Hillsong United\nHow Great Is Our God, Chris Tomlin', minutes: 15 },
+  { id: 'p2', title: 'Louvor', content: 'Ousado Amor, Isaias Saad\nLugar Secreto, Gabriela Rocha', minutes: 15 },
   { id: 'p3', title: 'Palavra', content: 'Tema: Vivendo com propósito (baseado no culto de domingo)\nTexto base: João 15:1-17', minutes: 20 },
   { id: 'p4', title: 'Perguntas para reflexão', content: '1. Como você tem buscado viver com propósito?\n2. O que significa "permanecer em Cristo" no seu dia a dia?', minutes: 10 },
   { id: 'p5', title: 'Oração', content: 'Pedidos do grupo. Oração pelos ausentes.', minutes: 10 },
@@ -196,12 +196,12 @@ export function sampleCell(myRole: CellRole, myName: string): Cell {
       { id: 'mt3', name: 'Foto retiro 2024.jpg', kind: 'Imagem', size: '3,1 MB', date: '20 de setembro' },
     ],
     playlist: [
-      { id: 'pl1', title: 'Oceans', artist: 'Hillsong United' },
-      { id: 'pl2', title: 'How Great Is Our God', artist: 'Chris Tomlin' },
-      { id: 'pl3', title: 'Reckless Love', artist: 'Cory Asbury' },
-      { id: 'pl4', title: 'Way Maker', artist: 'Sinach' },
-      { id: 'pl5', title: '10,000 Reasons', artist: 'Matt Redman' },
-      { id: 'pl6', title: 'Goodness of God', artist: 'Bethel Music' },
+      { id: 'pl1', title: 'Ousado Amor', artist: 'Isaias Saad' },
+      { id: 'pl2', title: 'Me Atraiu', artist: 'Gabriela Rocha' },
+      { id: 'pl3', title: 'Galileu', artist: 'Fernandinho' },
+      { id: 'pl4', title: 'Raridade', artist: 'Anderson Freire' },
+      { id: 'pl5', title: 'Deus de Promessas', artist: 'Davi Sacer' },
+      { id: 'pl6', title: 'Bondade de Deus', artist: 'Isaias Saad' },
       { id: 'pl7', title: 'Lugar Secreto', artist: 'Gabriela Rocha' },
     ],
     prayers: [

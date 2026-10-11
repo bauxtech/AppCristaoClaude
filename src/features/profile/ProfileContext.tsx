@@ -66,7 +66,7 @@ export function profileInitial(sample: boolean): ProfileState {
       { id: 'mk2', type: 'Batismo', date: '2020-07-12', desc: 'Igreja Batista Central de São Paulo' },
     ],
     notes: [{ id: 'n1', source: 'Célula', ref: 'Reunião de 30 de setembro', text: 'Refletimos sobre a prática da oração diária. Como criar um hábito e manter mesmo em dias corridos.', date: '2026-09-30' }],
-    favoriteSongs: [{ title: 'Oceans (Where Feet May Fail)', artist: 'Hillsong United' }],
+    favoriteSongs: [{ title: 'Lugar Secreto', artist: 'Gabriela Rocha' }],
   }
 }
 

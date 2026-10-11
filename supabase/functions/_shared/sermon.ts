@@ -6,8 +6,24 @@ import type { Verse } from './chat.ts'
 
 export const MONTHLY_LIMIT = 5
 export const AUDIO_DAYS = 30
-/** Limite da API de transcrição por arquivo. Áudio maior precisa ser dividido no app. */
-export const MAX_AUDIO_BYTES = 25 * 1024 * 1024
+/** Limite do arquivo enviado pelo app (o mesmo do armazenamento). O servidor divide em partes para a transcrição. */
+export const MAX_AUDIO_BYTES = 50 * 1024 * 1024
+/** Limite da transcrição por arquivo, para formatos que o servidor não sabe dividir. */
+export const MAX_PART_BYTES = 25 * 1024 * 1024
+
+/** Transcreve as partes, algumas ao mesmo tempo, e junta o texto na ordem. */
+export async function transcribeParts<T>(parts: T[], one: (part: T) => Promise<string>, parallel = 4): Promise<string> {
+  const out = new Array<string>(parts.length)
+  let next = 0
+  const worker = async () => {
+    while (next < parts.length) {
+      const i = next++
+      out[i] = (await one(parts[i])).trim()
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(parallel, parts.length) }, worker))
+  return out.filter(Boolean).join('\n\n')
+}
 
 export const SUMMARY_SCHEMA = {
   type: 'object',

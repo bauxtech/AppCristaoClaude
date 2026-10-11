@@ -1,5 +1,5 @@
 // Músicas sugeridas pelo app. Nada toca dentro do app: tudo abre no Spotify, YouTube ou Deezer.
-// As playlists por momento são de exemplo, com as músicas que aparecem no protótipo. A equipe monta as definitivas.
+// Só músicas brasileiras, escolhidas pela IA a pedido do Thiago. A equipe pode trocar a lista quando quiser.
 
 export interface Song {
   title: string
@@ -20,25 +20,46 @@ export const MOMENTS: { id: MomentId; label: string; icon: 'cup' | 'sun' | 'peop
 
 export const PLAYLISTS: Record<MomentId, Song[]> = {
   oracao: [
-    { title: 'Oceans (Where Feet May Fail)', artist: 'Hillsong United' },
     { title: 'Lugar Secreto', artist: 'Gabriela Rocha' },
+    { title: "Aquieta Minh'alma", artist: 'Ministério Zoe' },
+    { title: 'Preciso de Ti', artist: 'Diante do Trono' },
+    { title: 'Sonda-me, Usa-me', artist: 'Aline Barros' },
   ],
   manha: [
-    { title: 'Reckless Love', artist: 'Cory Asbury' },
-    { title: '10,000 Reasons', artist: 'Matt Redman' },
+    { title: 'Bondade de Deus', artist: 'Isaias Saad' },
+    { title: 'Uma Nova História', artist: 'Fernandinho' },
+    { title: 'Deus de Promessas', artist: 'Davi Sacer' },
+    { title: 'Recomeçar', artist: 'Aline Barros' },
   ],
   celula: [
-    { title: 'Way Maker', artist: 'Sinach' },
-    { title: 'Goodness of God', artist: 'Bethel Music' },
+    { title: 'Ousado Amor', artist: 'Isaias Saad' },
+    { title: 'Me Atraiu', artist: 'Gabriela Rocha' },
+    { title: 'Ninguém Explica Deus', artist: 'Preto no Branco' },
+    { title: 'Raridade', artist: 'Anderson Freire' },
   ],
   culto: [
-    { title: 'How Great Is Our God', artist: 'Chris Tomlin' },
-    { title: 'Oceans (Where Feet May Fail)', artist: 'Hillsong United' },
+    { title: 'Galileu', artist: 'Fernandinho' },
+    { title: 'Faz Chover', artist: 'Fernandinho' },
+    { title: 'A Ele a Glória', artist: 'Diante do Trono' },
+    { title: 'Ressuscita-me', artist: 'Aline Barros' },
   ],
   familia: [
-    { title: 'Goodness of God', artist: 'Bethel Music' },
-    { title: '10,000 Reasons', artist: 'Matt Redman' },
+    { title: 'Casa do Pai', artist: 'Aline Barros' },
+    { title: 'Advogado Fiel', artist: 'Bruna Karla' },
+    { title: 'Teus Sonhos', artist: 'Fernandinho' },
+    { title: 'Deus Me Ama', artist: 'Thalles Roberto' },
   ],
+}
+
+/** Todas as músicas sugeridas, sem repetir. */
+export const ALL_SONGS: Song[] = Object.values(PLAYLISTS)
+  .flat()
+  .filter((s, i, all) => all.findIndex((x) => x.title === s.title && x.artist === s.artist) === i)
+
+/** Música do dia: muda à meia-noite e passa por todas antes de repetir. */
+export function songForDay(d = new Date()): Song {
+  const day = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000)
+  return ALL_SONGS[day % ALL_SONGS.length]
 }
 
 export const SERVICES = ['Spotify', 'YouTube', 'Deezer'] as const

@@ -2,7 +2,8 @@
 // O app sobe o áudio em sermon-audio/<id da pessoa>/... e chama esta função.
 // Confere login, assinatura e o limite de 5 cultos por mês. Responde na hora e processa em segundo plano.
 import { askJsonFor, SUMMARY_MODEL } from '../_shared/claude.ts'
-import { audioExpiry, MAX_AUDIO_BYTES, MONTHLY_LIMIT, processSermon } from '../_shared/sermon.ts'
+import { audioExpiry, MAX_AUDIO_BYTES, MAX_PART_BYTES, MONTHLY_LIMIT, processSermon, transcribeParts } from '../_shared/sermon.ts'
+import { splitAudio, type AudioPart } from '../_shared/audio-split.ts'
 import { admin, asUser, brMonth, cors, json, userId } from '../_shared/http.ts'
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void }
@@ -10,9 +11,9 @@ declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void }
 // Decidido pelo Thiago (8/10): metade do preço do whisper-1 e acertou mais palavras no teste.
 const OPENAI_MODEL = Deno.env.get('OPENAI_TRANSCRIBE_MODEL') ?? 'gpt-4o-mini-transcribe'
 
-async function transcribe(audio: Blob, name: string) {
+async function transcribe(part: AudioPart) {
   const form = new FormData()
-  form.append('file', audio, name)
+  form.append('file', new Blob([part.bytes as Uint8Array<ArrayBuffer>], { type: part.type }), part.name)
   form.append('model', OPENAI_MODEL)
   form.append('language', 'pt')
   form.append('response_format', 'text')
@@ -46,13 +47,16 @@ Deno.serve(async (req) => {
     try {
       const { data: file, error } = await db.storage.from('sermon-audio').download(sermon.audio_path)
       if (error || !file) throw new Error('Áudio não encontrado')
-      if (file.size > MAX_AUDIO_BYTES) throw new Error('Áudio maior que 25 MB')
+      if (file.size > MAX_AUDIO_BYTES) throw new Error('Áudio maior que 50 MB')
+      // A transcrição recusa áudio longo (mais de uns 23 minutos): vai em partes de até 10 minutos.
+      const parts = splitAudio(new Uint8Array(await file.arrayBuffer()))
+      if (parts.length === 1 && parts[0].bytes.length > MAX_PART_BYTES) throw new Error('Formato de áudio sem divisão e maior que 25 MB')
 
       const result = await processSermon({
         hasAccess: async () => (await db.rpc('has_access', { p_user: uid })).data === true,
         consume: async () => (await db.rpc('consume_usage', { p_user: uid, p_kind: 'sermon_month', p_period: month, p_limit: MONTHLY_LIMIT })).data as number,
         refund: async () => void (await db.rpc('refund_usage', { p_user: uid, p_kind: 'sermon_month', p_period: month })),
-        transcribe: () => transcribe(file, sermon.audio_path.split('/').pop() ?? 'culto.m4a'),
+        transcribe: () => transcribeParts(parts, transcribe),
         versesByKeys: async (keys) => (keys.length ? ((await db.rpc('verses_by_keys', { p_keys: keys })).data ?? []) : []).map((v: { verse_key: string; text: string }) => ({ key: v.verse_key, text: v.text })),
         askJson: askJsonFor(SUMMARY_MODEL),
       })

@@ -1,8 +1,8 @@
 import { AudioQuality, IOSOutputFormat, type RecordingOptions } from 'expo-audio'
 
 /**
- * Voz em AAC mono, 24 kbps a 16 kHz: cerca de 11 MB por hora. A transcrição aceita até 25 MB por arquivo,
- * então cabe um culto de até 2 horas. A transcrição trabalha em 16 kHz, então a qualidade da fala não muda.
+ * Voz em AAC mono, 24 kbps a 16 kHz: cerca de 11 MB por hora. O app envia até 50 MB (umas 4 horas)
+ * e o servidor divide em partes de até 10 minutos para a transcrição. A transcrição trabalha em 16 kHz, então a qualidade da fala não muda.
  */
 export const VOICE_RECORDING: RecordingOptions = {
   extension: '.m4a',

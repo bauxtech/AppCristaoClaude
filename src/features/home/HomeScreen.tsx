@@ -21,15 +21,16 @@ import { slugify } from '../bible/books'
 import { planState } from '../bible/plans'
 import { useChurch } from '../church/ChurchContext'
 import { upcomingCommitments } from './commitments'
-import { SERVICES, songUrl } from '../music/catalog'
+import { SERVICES, songForDay, songUrl } from '../music/catalog'
 import { verseText } from '../bible/text'
-import { moods, passage, reflection, songOfDay, wordForNow } from './data'
+import { moods, passage, reflection, wordForNow } from './data'
 import { PrayerMomentsSection, ReadingPlansSection } from './HomeSections'
 
 const SOON = 'Disponível em breve'
 
 export function HomeScreen() {
   const { colors } = useTheme()
+  const songOfDay = songForDay()
   const insets = useSafeAreaInsets()
   const toast = useToast()
   const audio = useAudio()

@@ -114,8 +114,8 @@ describe('música', () => {
       { onboarded: true, sampleData: false },
     )
     expect(screen.getByText(/Você ainda não favoritou nenhuma música/)).toBeTruthy()
-    await fireEvent.press(screen.getByRole('button', { name: 'Favoritar Reckless Love' }))
-    expect(screen.getAllByRole('button', { name: 'Tirar Reckless Love das favoritas' })).toHaveLength(2)
+    await fireEvent.press(screen.getByRole('button', { name: 'Favoritar Bondade de Deus' }))
+    expect(screen.getAllByRole('button', { name: 'Tirar Bondade de Deus das favoritas' })).toHaveLength(2)
     expect(screen.queryByText(/Você ainda não favoritou nenhuma música/)).toBeNull()
     await fireEvent.press(screen.getAllByRole('button', { name: 'Deezer' })[0])
     expect(open).toHaveBeenCalledWith(expect.stringContaining('deezer.com/search/'))

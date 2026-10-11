@@ -41,7 +41,7 @@ const DEMO: Record<string, PublicCell> = {
       ref: 'João 15:1-17',
       sections: [
         { title: 'Quebra-gelo', content: 'Pergunta: Qual foi o melhor momento da sua semana?', minutes: 10 },
-        { title: 'Louvor', content: 'Oceans, Hillsong United\nHow Great Is Our God, Chris Tomlin', minutes: 15 },
+        { title: 'Louvor', content: 'Ousado Amor, Isaias Saad\nLugar Secreto, Gabriela Rocha', minutes: 15 },
         { title: 'Palavra', content: 'Tema: Vivendo com propósito (baseado no culto de domingo)\nTexto base: João 15:1-17', minutes: 20 },
         { title: 'Perguntas para reflexão', content: '1. Como você tem buscado viver com propósito?\n2. O que significa "permanecer em Cristo" no seu dia a dia?', minutes: 10 },
         { title: 'Oração', content: 'Pedidos do grupo. Oração pelos ausentes.', minutes: 10 },
