@@ -10,14 +10,14 @@ export const SPLASH_MS = 2000
 export function Splash({ onDone }: { onDone: () => void }) {
   const { colors } = useTheme()
   useEffect(() => {
-    AccessibilityInfo.announceForAccessibility?.('App Cristão')
+    AccessibilityInfo.announceForAccessibility?.('acasa')
     const t = setTimeout(onDone, SPLASH_MS)
     return () => clearTimeout(t)
   }, [onDone])
   return (
     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }} accessibilityViewIsModal>
       <AppText accessibilityRole="header" style={{ fontFamily: fonts.bold, fontSize: 34, color: colors.primaryText, letterSpacing: -0.5 }}>
-        App Cristão
+        acasa
       </AppText>
     </View>
   )

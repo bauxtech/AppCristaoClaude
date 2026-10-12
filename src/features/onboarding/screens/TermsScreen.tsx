@@ -79,7 +79,7 @@ export function TermsScreen() {
           </View>
           <AppText variant="body">{`Para continuar, é preciso ${joinList(missing)}.`}</AppText>
           {underAge ? (
-            <AppText variant="body">Por enquanto, o App Cristão é só para maiores de 18 anos.</AppText>
+            <AppText variant="body">Por enquanto, o acasa é só para maiores de 18 anos.</AppText>
           ) : null}
         </Card>
       ) : null}

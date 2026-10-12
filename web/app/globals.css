@@ -1,18 +1,18 @@
-/* Mesma paleta A do app: claro, escuro e alto contraste. Fonte Figtree. */
+/* Mesma paleta do app acasa: claro, escuro e alto contraste. Fonte Nunito. */
 :root {
-  --bg: #F4F7FD; --card: #FFFFFF; --text: #0F1E3C; --text2: #4B5A7A; --line: #D1DCF0; --line-strong: #6B7A99;
-  --primary: #1A56DB; --on-primary: #FFFFFF; --primary-soft: #DBEAFE; --accent: #A14A07; --danger: #B91C1C; --danger-soft: #FEE2E2;
+  --bg: #F6F4EE; --card: #E8DCC9; --text: #1F1F1F; --text2: #4F534B; --line: #D6CBB6; --line-strong: #73786D;
+  --primary: #254C3A; --on-primary: #F6F4EE; --primary-soft: #DCE5D8; --accent: #7F4512; --danger: #A11F1F; --danger-soft: #F6DEDA;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0D1117; --card: #161B22; --text: #E8EFF8; --text2: #8DA0BC; --line: #2A3650; --line-strong: #66799A;
-    --primary: #6FA3FF; --on-primary: #0D1117; --primary-soft: #1A2D4A; --accent: #F59E0B; --danger: #FF6B6B; --danger-soft: #3A1515;
+    --bg: #131915; --card: #1D2520; --text: #F1EEE6; --text2: #B7BFB3; --line: #2F3A33; --line-strong: #728077;
+    --primary: #A9C4AE; --on-primary: #13241B; --primary-soft: #22362B; --accent: #E8B66B; --danger: #FF8A80; --danger-soft: #3A1A18;
     color-scheme: dark;
   }
 }
 @media (prefers-contrast: more) {
-  :root { --bg: #FFFFFF; --card: #FFFFFF; --text: #000000; --text2: #2B2B2B; --line: #4A4A4A; --line-strong: #000000; --primary: #0B3FB0; --on-primary: #FFFFFF; --danger: #9B0000; }
+  :root { --bg: #FFFFFF; --card: #FFFFFF; --text: #000000; --text2: #2B2B2B; --line: #4A4A4A; --line-strong: #000000; --primary: #173326; --on-primary: #FFFFFF; --danger: #9B0000; }
 }
 @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
   :root { --bg: #000000; --card: #0A0A0A; --text: #FFFFFF; --text2: #D0D0D0; --line: #8A8A8A; --line-strong: #FFFFFF; --primary: #9CC3FF; --on-primary: #000000; --danger: #FF9B9B; }
@@ -20,7 +20,7 @@
 
 * { box-sizing: border-box; }
 html { font-size: 100%; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 1rem; line-height: 1.5; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 1rem; line-height: 1.5; }
 .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px 48px; }
 .skip { position: absolute; left: -9999px; }
 .skip:focus { left: 16px; top: 8px; background: var(--card); color: var(--text); padding: 12px 16px; border-radius: 12px; z-index: 10; }

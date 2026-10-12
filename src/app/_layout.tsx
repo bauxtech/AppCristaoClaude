@@ -1,7 +1,7 @@
-import { Figtree_400Regular } from '@expo-google-fonts/figtree/400Regular'
-import { Figtree_500Medium } from '@expo-google-fonts/figtree/500Medium'
-import { Figtree_600SemiBold } from '@expo-google-fonts/figtree/600SemiBold'
-import { Figtree_700Bold } from '@expo-google-fonts/figtree/700Bold'
+import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular'
+import { Nunito_500Medium } from '@expo-google-fonts/nunito/500Medium'
+import { Nunito_600SemiBold } from '@expo-google-fonts/nunito/600SemiBold'
+import { Nunito_700Bold } from '@expo-google-fonts/nunito/700Bold'
 import { Literata_400Regular } from '@expo-google-fonts/literata/400Regular'
 import { Literata_400Regular_Italic } from '@expo-google-fonts/literata/400Regular_Italic'
 import { Literata_500Medium } from '@expo-google-fonts/literata/500Medium'
@@ -75,10 +75,10 @@ function RootStack() {
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    Figtree_400Regular,
-    Figtree_500Medium,
-    Figtree_600SemiBold,
-    Figtree_700Bold,
+    Nunito_400Regular,
+    Nunito_500Medium,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
     Literata_400Regular,
     Literata_400Regular_Italic,
     Literata_500Medium,

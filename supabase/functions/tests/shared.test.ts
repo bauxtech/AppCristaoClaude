@@ -243,26 +243,26 @@ describe('assinatura pela loja', () => {
   test('o plano vem do entitlement do RevenueCat, o maior quando há mais de um', async () => {
     const { planFrom } = await import('../_shared/revenuecat.ts')
     expect(planFrom(['essencial', 'lider'])).toBe('lider')
-    expect(planFrom([], 'amora_completo_anual')).toBe('completo')
+    expect(planFrom([], 'acasa_completo_anual')).toBe('completo')
     expect(planFrom(null, 'outra_coisa')).toBeNull()
   })
   test('compra e renovação marcam o plano e o início do período (zera os cultos)', async () => {
     const { patchFromEvent } = await import('../_shared/revenuecat.ts')
-    expect(patchFromEvent({ type: 'RENEWAL', app_user_id: user, product_id: 'amora_completo_mensal', entitlement_ids: ['completo'], purchased_at_ms: Date.UTC(2026, 9, 12), expiration_at_ms: Date.UTC(2026, 10, 12) })).toMatchObject({
+    expect(patchFromEvent({ type: 'RENEWAL', app_user_id: user, product_id: 'acasa_completo_mensal', entitlement_ids: ['completo'], purchased_at_ms: Date.UTC(2026, 9, 12), expiration_at_ms: Date.UTC(2026, 10, 12) })).toMatchObject({
       status: 'active', plan: 'completo', billing: 'monthly', period_start: '2026-10-12T00:00:00.000Z', renews_at: '2026-11-12T00:00:00.000Z',
     })
     // Troca agendada não muda o plano na hora: com a chave secreta, o webhook consulta o RevenueCat.
-    expect(patchFromEvent({ type: 'PRODUCT_CHANGE', app_user_id: user, product_id: 'amora_lider_mensal', new_product_id: 'amora_completo_mensal' })).toBeNull()
+    expect(patchFromEvent({ type: 'PRODUCT_CHANGE', app_user_id: user, product_id: 'acasa_lider_mensal', new_product_id: 'acasa_completo_mensal' })).toBeNull()
   })
   test('consulta direta: plano ativo, cancelado ou com pagamento falhando', async () => {
     const { patchFromSubscriber } = await import('../_shared/revenuecat.ts')
     const now = new Date('2026-10-12T12:00:00Z')
     const sub = {
-      entitlements: { lider: { expires_date: '2026-11-12T00:00:00Z', product_identifier: 'amora_lider_mensal', purchase_date: '2026-10-12T00:00:00Z' }, essencial: { expires_date: '2026-01-01T00:00:00Z', product_identifier: 'velho', purchase_date: '2025-12-01T00:00:00Z' } },
-      subscriptions: { amora_lider_mensal: { expires_date: '2026-11-12T00:00:00Z', purchase_date: '2026-10-12T00:00:00Z', store: 'app_store' } },
+      entitlements: { lider: { expires_date: '2026-11-12T00:00:00Z', product_identifier: 'acasa_lider_mensal', purchase_date: '2026-10-12T00:00:00Z' }, essencial: { expires_date: '2026-01-01T00:00:00Z', product_identifier: 'velho', purchase_date: '2025-12-01T00:00:00Z' } },
+      subscriptions: { acasa_lider_mensal: { expires_date: '2026-11-12T00:00:00Z', purchase_date: '2026-10-12T00:00:00Z', store: 'app_store' } },
     }
     expect(patchFromSubscriber(user, sub, now)).toMatchObject({ status: 'active', plan: 'lider', store: 'app_store', period_start: '2026-10-12T00:00:00Z', renews_at: '2026-11-12T00:00:00Z' })
-    expect(patchFromSubscriber(user, { ...sub, subscriptions: { amora_lider_mensal: { ...sub.subscriptions.amora_lider_mensal, unsubscribe_detected_at: '2026-10-13T00:00:00Z' } } }, now)?.status).toBe('canceled_active')
+    expect(patchFromSubscriber(user, { ...sub, subscriptions: { acasa_lider_mensal: { ...sub.subscriptions.acasa_lider_mensal, unsubscribe_detected_at: '2026-10-13T00:00:00Z' } } }, now)?.status).toBe('canceled_active')
     expect(patchFromSubscriber(user, { entitlements: { lider: { expires_date: '2026-10-01T00:00:00Z', product_identifier: 'x', purchase_date: '2026-09-01T00:00:00Z' } } }, now)).toEqual({ user_id: user, status: 'expired' })
     expect(patchFromSubscriber(user, {}, now)).toBeNull()
     expect(patchFromSubscriber('$RCAnonymousID:x', sub, now)).toBeNull()
@@ -271,8 +271,8 @@ describe('assinatura pela loja', () => {
     const { patchFromSubscriber } = await import('../_shared/revenuecat.ts')
     const now = new Date('2026-10-12T12:00:00Z')
     const sub = {
-      entitlements: { completo: { expires_date: '2026-11-12T00:00:00Z', product_identifier: 'amora_completo_mensal', purchase_date: '2026-10-12T00:00:00Z' } },
-      subscriptions: { amora_completo_mensal: { expires_date: '2026-11-12T00:00:00Z', purchase_date: '2026-10-12T00:00:00Z', is_sandbox: true } },
+      entitlements: { completo: { expires_date: '2026-11-12T00:00:00Z', product_identifier: 'acasa_completo_mensal', purchase_date: '2026-10-12T00:00:00Z' } },
+      subscriptions: { acasa_completo_mensal: { expires_date: '2026-11-12T00:00:00Z', purchase_date: '2026-10-12T00:00:00Z', is_sandbox: true } },
     }
     expect(patchFromSubscriber(user, sub, now)?.status).toBe('expired')
     expect(patchFromSubscriber(user, sub, now, true)?.plan).toBe('completo')

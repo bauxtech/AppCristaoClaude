@@ -545,7 +545,7 @@ function ExportNotesBody() {
     const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
     const notes = all.filter((n) => pick[n.source])
     const diary = pick.Diário && !diaryLocked ? prayer.diary : []
-    const html = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:24px;color:#0F1E3C}h1{font-size:22px}h2{font-size:15px;margin:18px 0 4px}p{font-size:13px;line-height:1.5;white-space:pre-line}small{color:#4B5A7A}</style></head><body><h1>Minhas anotações</h1>${notes
+    const html = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:24px;color:#1F1F1F}h1{font-size:22px}h2{font-size:15px;margin:18px 0 4px}p{font-size:13px;line-height:1.5;white-space:pre-line}small{color:#4F534B}</style></head><body><h1>Minhas anotações</h1>${notes
       .map((n) => `<h2>${esc(n.source)}: ${esc(n.ref)}</h2>${n.date ? `<small>${esc(formatBR(n.date))}</small>` : ''}<p>${esc(n.text)}</p>`)
       .join('')}${diary.map((d) => `<h2>Diário de oração</h2><small>${esc(formatBR(d.date))}</small><p>${esc(d.text)}</p>`).join('')}</body></html>`
     setBusy(true)

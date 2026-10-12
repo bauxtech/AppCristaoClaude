@@ -284,6 +284,9 @@ export function ConfirmedScreen() {
   )
 }
 
+/** Plano pago sem assinatura da loja por trás: é cortesia (só existe com o servidor). */
+const remoteCourtesy = (sub: ReturnType<typeof useSubscription>) => isPlanId(sub.plan) && !sub.access.storePlan && sub.access.storeStatus == null
+
 const STATUS_LABEL = { trial: 'Teste grátis', active: 'Ativa', canceledActive: 'Cancelada, ativa até o fim do período', paymentFailed: 'Pagamento falhou', free: 'Grátis, só a Bíblia' } as const
 
 export function MyPlanScreen() {
@@ -310,6 +313,24 @@ export function MyPlanScreen() {
         </Card>
         {sub.needsPhoneForTrial ? <ConfirmPhoneCard /> : null}
         <Button label="Ver planos" onPress={() => router.push('/assinatura')} />
+        <LegalLinks />
+      </Page>
+    )
+  }
+
+  // Plano sem compra na loja: cortesia da equipe, liberada pelo servidor.
+  if (remoteCourtesy(sub)) {
+    return (
+      <Page title="Meu plano">
+        <Card style={{ gap: 6 }}>
+          <AppText variant="label" tone="secondary">
+            Plano atual
+          </AppText>
+          <AppText variant="title">{plan.name}</AppText>
+          <AppText variant="body" tone="secondary">
+            Cortesia da equipe. Não há cobrança na loja.
+          </AppText>
+        </Card>
         <LegalLinks />
       </Page>
     )

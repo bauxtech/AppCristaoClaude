@@ -272,7 +272,7 @@ function GetApp() {
     <section className="card" aria-labelledby="app">
       <h2 id="app">Acompanhe pelo app</h2>
       <p className="muted" style={{ marginTop: 0 }}>
-        No App Cristão você confirma presença, vê a escala, pede carona e lê a Bíblia com a célula. 7 dias grátis.
+        No acasa você confirma presença, vê a escala, pede carona e lê a Bíblia com a célula. 7 dias grátis.
       </p>
       <div className="row">
         <span className="btn outline" aria-disabled="true">

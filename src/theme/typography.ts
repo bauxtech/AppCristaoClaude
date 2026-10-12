@@ -1,11 +1,11 @@
-// Fontes e tamanhos. Figtree na interface, Literata no texto bíblico.
+// Fontes e tamanhos. Nunito na interface (marca acasa: geométrica e arredondada), Literata no texto bíblico.
 // Tamanhos em pontos; o sistema aumenta conforme a fonte escolhida no celular.
 
 export const fonts = {
-  regular: 'Figtree_400Regular',
-  medium: 'Figtree_500Medium',
-  semibold: 'Figtree_600SemiBold',
-  bold: 'Figtree_700Bold',
+  regular: 'Nunito_400Regular',
+  medium: 'Nunito_500Medium',
+  semibold: 'Nunito_600SemiBold',
+  bold: 'Nunito_700Bold',
   bible: 'Literata_400Regular',
   bibleItalic: 'Literata_400Regular_Italic',
   bibleMedium: 'Literata_500Medium',

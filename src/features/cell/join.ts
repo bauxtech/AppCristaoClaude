@@ -7,7 +7,7 @@ export function checkInviteCode(code: string): 'ok' | 'expired' | 'invalid' {
   return 'invalid'
 }
 
-/** Lê o código de um QR code do app ("appcristao://celula/entrar?codigo=ABC123") ou de um código solto. */
+/** Lê o código de um QR code do app ("acasa://celula/entrar?codigo=ABC123"; versões antigas usavam appcristao://) ou de um código solto. */
 export function codeFromQr(data: string): string | null {
   const m = /codigo=([A-Za-z0-9]{6})/.exec(data)
   if (m) return m[1].toUpperCase()

@@ -8,7 +8,7 @@ import { callFunction } from './supabase'
 // Quem libera o acesso de verdade é o servidor, pelo webhook do RevenueCat.
 
 const KEY = Platform.OS === 'ios' ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY : Platform.OS === 'android' ? process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY : undefined
-/** Entitlements configurados no painel do RevenueCat, do maior para o menor. Os produtos levam o nome do plano e do período (ex.: amora_completo_anual). */
+/** Entitlements configurados no painel do RevenueCat, do maior para o menor. Os produtos levam o nome do plano e do período (ex.: acasa_completo_anual). */
 export const ENTITLEMENTS = ['lider', 'completo', 'essencial'] as const
 type PlanId = (typeof ENTITLEMENTS)[number]
 type Billing = 'monthly' | 'annual'

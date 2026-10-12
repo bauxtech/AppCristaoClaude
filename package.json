@@ -14,8 +14,8 @@
     "test:functions": "cd web && npx vitest run --root ../supabase/functions"
   },
   "dependencies": {
-    "@expo-google-fonts/figtree": "^0.4.1",
     "@expo-google-fonts/literata": "^0.4.3",
+    "@expo-google-fonts/nunito": "^0.4.2",
     "@expo/metro-runtime": "~57.0.16",
     "@noble/ciphers": "^2.4.0",
     "@react-native-community/netinfo": "12.0.1",

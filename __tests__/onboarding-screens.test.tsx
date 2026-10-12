@@ -22,7 +22,7 @@ describe('abertura', () => {
     jest.useFakeTimers()
     const done = jest.fn()
     await renderApp(<Splash onDone={done} />)
-    expect(screen.getByRole('header', { name: 'App Cristão' })).toBeTruthy()
+    expect(screen.getByRole('header', { name: 'acasa' })).toBeTruthy()
     await act(async () => {
       jest.advanceTimersByTime(2000)
     })

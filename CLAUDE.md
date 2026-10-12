@@ -1,7 +1,7 @@
 # REGRAS DO PROJETO
 
 ## O QUE É
-App pessoal para cristãos. É da pessoa, não da igreja. Junta Bíblia, chat bíblico, oração, gravação e transcrição do culto, igreja, cursos, ministérios e célula, com acessibilidade para surdos e cegos. São 15 fluxos, descritos em docs/.
+App pessoal para cristãos, chamado acasa (sempre em minúsculas, inclusive no começo de frase). É da pessoa, não da igreja. Junta Bíblia, chat bíblico, oração, gravação e transcrição do culto, igreja, cursos, ministérios e célula, com acessibilidade para surdos e cegos. São 15 fluxos, descritos em docs/.
 
 ## QUEM TRABALHA AQUI
 Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O Claude Code escreve e outra sessão do Claude revisa. O Thiago testa no celular e decide.
@@ -11,6 +11,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 
 ## TECNOLOGIA
 - App: React Native com Expo, TypeScript. Build pelo EAS.
+- Identificador do app: com.bauxtech.acasa e endereço acasa:// (decididos em 12/10). Não mudam depois de publicar na loja.
 - Página web da célula: Next.js, lendo o mesmo banco.
 - Banco, login e arquivos: Supabase, região São Paulo.
 - Funções do servidor: Edge Functions do Supabase. Transcrição pela API da OpenAI. Resumo do culto e chat pela API do Claude.
@@ -22,8 +23,9 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 ## DESIGN
 - A referência visual é o repositório do protótipo. Leia os valores no código, não em imagem.
 - Estrutura: 5 abas (Hoje, Bíblia, Célula, Igreja, Eu), botão do chat e oração como painel por cima.
-- Fontes: Figtree na interface e Literata no texto bíblico. Texto bíblico em 19.
-- Paleta: use a A do protótipo como padrão, no claro e no escuro. O seletor de paletas e o controle Demo eram de teste e não entram no app.
+- Fontes: Nunito na interface (geométrica e arredondada) e Literata no texto bíblico. Texto bíblico em 19.
+- Paleta da marca acasa (12/10): verde principal #254C3A (ícone, botões principais, destaques), verde claro #A9BBA7 (elementos secundários e progresso), off-white #F6F4EE (fundo), areia #E8DCC9 (cartões e áreas de apoio), carvão #1F1F1F (textos e ícones). Escuro e alto contraste derivados dela, em src/theme/colors.ts. Verde claro e areia não carregam texto nem informação sozinhos. O seletor de paletas e o controle Demo do protótipo não entram no app; o protótipo continua sendo a referência de layout, não de cor.
+- Ícone: fundo verde principal com o "a" em off-white. Direção visual: fundos claros, bastante espaço em branco e cartões discretos.
 - Componentes primeiro, telas depois.
 - Tela que existe no protótipo: siga o protótipo. Tela que não existe: construa a partir de docs/, com os mesmos componentes.
 - Ao entregar uma tela, compare com o protótipo e liste as diferenças.
@@ -75,8 +77,6 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 ## EM ABERTO, PERGUNTAR ANTES DE CODAR
 - Pagamento por Pix: fora do escopo agora.
 - Preços em real: confirmar na tabela de preços da App Store (R$ 14,90, 39,90, 109,90 e 179,90 não foram confirmados). No Google Play qualquer valor vale.
-- Confirmar se a paleta final é a A.
-- Nome final do produto. Nome provisório Amora, depende da consulta ao INPI. Até decidir, os textos do app continuam "App Cristão". Decidir antes da primeira publicação na loja: o identificador (com.bauxtech.appcristao) e o endereço de abrir o app (appcristao) não mudam depois de publicar.
 
 ## DADOS E PRIVACIDADE
 - Fé e pedido de oração são dado sensível pela LGPD. Consentimento separado no cadastro, exportar e apagar dados.

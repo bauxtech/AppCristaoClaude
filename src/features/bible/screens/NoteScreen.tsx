@@ -3,6 +3,7 @@ import { NotesGate } from '../../settings/NotesLock'
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { AppText, Button, TextField, TopBar, useToast } from '../../../components'
+import { fonts } from '../../../theme/typography'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { useBible, verseKey } from '../BibleContext'
 import { bookBySlug } from '../books'
@@ -33,7 +34,7 @@ function NoteBody() {
       <TopBar title="Anotar" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }} keyboardShouldPersistTaps="handled">
         <View style={{ backgroundColor: colors.primarySoft, borderRadius: 12, padding: 14, gap: 4 }}>
-          <AppText variant="small" tone="brand" style={{ fontFamily: 'Figtree_600SemiBold' }}>
+          <AppText variant="small" tone="brand" style={{ fontFamily: fonts.semibold }}>
             {ref}
           </AppText>
           {verse ? <AppText variant="bibleRef">{verse.text}</AppText> : null}

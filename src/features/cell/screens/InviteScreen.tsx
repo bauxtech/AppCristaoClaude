@@ -25,13 +25,13 @@ export function InviteScreen() {
     )
   }
   const code = formatCode(cell.code)
-  const message = `Entre na célula ${cell.name} pelo App Cristão. Abra o app, toque em Célula, Entrar com convite e digite o código ${code}.`
+  const message = `Entre na célula ${cell.name} pelo app acasa. Abra o acasa, toque em Célula, Entrar com convite e digite o código ${code}.`
 
   return (
     <Page title="Convidar pessoas">
       <Card style={{ alignItems: 'center', gap: 12 }}>
         <View style={{ padding: 12, backgroundColor: '#FFFFFF', borderRadius: 12 }} accessible accessibilityRole="image" accessibilityLabel={`QR code da célula ${cell.name}, com o código ${code}`}>
-          <QRCode value={`appcristao://celula/entrar?codigo=${cell.code}`} size={176} color="#000000" backgroundColor="#FFFFFF" />
+          <QRCode value={`acasa://celula/entrar?codigo=${cell.code}`} size={176} color="#000000" backgroundColor="#FFFFFF" />
         </View>
         <AppText variant="body" tone="secondary" style={{ textAlign: 'center' }}>
           Mostre este QR code para a pessoa escanear no app

@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "App Cristão",
+    "name": "acasa",
     "slug": "app-cristao",
     "owner": "baux-tech",
-    "scheme": "appcristao",
+    "scheme": "acasa",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bauxtech.appcristao"
+      "bundleIdentifier": "com.bauxtech.acasa"
     },
     "android": {
-      "package": "com.bauxtech.appcristao",
+      "package": "com.bauxtech.acasa",
       "adaptiveIcon": {
-        "backgroundColor": "#F4F7FD",
+        "backgroundColor": "#254C3A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -34,9 +34,9 @@
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
-          "backgroundColor": "#F4F7FD",
+          "backgroundColor": "#F6F4EE",
           "dark": {
-            "backgroundColor": "#0D1117"
+            "backgroundColor": "#131915"
           }
         }
       ],

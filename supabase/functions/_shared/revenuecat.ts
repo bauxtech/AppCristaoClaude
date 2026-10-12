@@ -25,7 +25,7 @@ export type PlanId = 'essencial' | 'completo' | 'lider'
 /** Do maior para o menor. Os nomes são os dos entitlements no painel do RevenueCat. */
 export const PLAN_ORDER: PlanId[] = ['lider', 'completo', 'essencial']
 
-/** O maior plano entre os entitlements, ou pelo nome do produto (ex.: amora_completo_anual). */
+/** O maior plano entre os entitlements, ou pelo nome do produto (ex.: acasa_completo_anual). */
 export function planFrom(entitlements: string[] | null | undefined, productId?: string | null): PlanId | null {
   for (const p of PLAN_ORDER) if (entitlements?.includes(p)) return p
   for (const p of PLAN_ORDER) if (productId && new RegExp(p, 'i').test(productId)) return p

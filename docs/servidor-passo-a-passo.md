@@ -59,9 +59,9 @@ No Supabase, em **Edge Functions > Secrets**, crie `CRON_SECRET` com uma senha l
 
    | Plano | Mensal | Anual |
    | --- | --- | --- |
-   | Essencial | `amora_essencial_mensal` (R$ 14,90) | `amora_essencial_anual` (R$ 109,90) |
-   | Completo | `amora_completo_mensal` (R$ 24,90) | `amora_completo_anual` (R$ 179,90) |
-   | Líder | `amora_lider_mensal` (R$ 39,90) | `amora_lider_anual` (R$ 299,90) |
+   | Essencial | `acasa_essencial_mensal` (R$ 14,90) | `acasa_essencial_anual` (R$ 109,90) |
+   | Completo | `acasa_completo_mensal` (R$ 24,90) | `acasa_completo_anual` (R$ 179,90) |
+   | Líder | `acasa_lider_mensal` (R$ 39,90) | `acasa_lider_anual` (R$ 299,90) |
 
    - **App Store Connect**: um único grupo de assinaturas com os 6 produtos, nesta ordem de nível: Líder no topo, depois Completo, depois Essencial. Assim a Apple cuida da troca de plano (subir vale na hora, descer vale na renovação). Ao escolher o preço, confira se o valor em real existe na tabela da Apple. Se não existir, me avise o valor mais próximo.
    - **Google Play Console**: 3 assinaturas (essencial, completo, lider), cada uma com dois planos-base, mensal e anual, usando os identificadores da tabela.
@@ -139,3 +139,22 @@ Os valores são os mesmos do passo 1.
 
 - **Tamanho e duração do áudio:** a transcrição recusa áudio com mais de uns 23 minutos ou 25 MB. O servidor divide o áudio em partes iguais de até 10 minutos (m4a, mp3 e wav) e junta o texto. O app envia até 50 MB: a gravação do app (24 kbps, cerca de 11 MB por hora) cabe até umas 4 horas. Outros formatos importados (ogg, webm, flac) vão inteiros e só funcionam se forem curtos.
 - **Tempo das funções:** as partes são transcritas 4 de cada vez. Um culto de 2 horas vira 12 partes.
+
+## Troca do identificador para com.bauxtech.acasa (12/10)
+
+O app passou a se chamar acasa, com o identificador `com.bauxtech.acasa` e o endereço `acasa://`. Para o Android, isso é um app novo: precisa refazer o que estava ligado ao identificador antigo.
+
+1. **APK novo.** Gere um build novo (eu disparo). O celular instala como outro app; apague o antigo e entre de novo na conta.
+2. **Chave de assinatura do Android.** No primeiro build, o EAS pergunta se pode criar uma chave nova para `com.bauxtech.acasa`: responda sim. Depois, em expo.dev > Projects > app-cristao > Credentials > Android > com.bauxtech.acasa, copie a **SHA-1** dessa chave.
+3. **Firebase (avisos no celular).**
+   - No projeto do Firebase, em Configurações do projeto > Seus apps, clique em **Adicionar app > Android**.
+   - Nome do pacote: `com.bauxtech.acasa`. Cole a SHA-1 do passo 2.
+   - Baixe o `google-services.json` novo.
+   - No EAS, em Environment variables, troque o arquivo da variável `GOOGLE_SERVICES_JSON` pelo novo.
+   - Em Credentials > Android > com.bauxtech.acasa, envie de novo a chave da conta de serviço do Firebase em **FCM V1** (a mesma de antes serve).
+4. **Login com Google.** No Google Cloud Console (mesmo projeto do Firebase), em APIs e serviços > Credenciais:
+   - crie uma credencial **ID do cliente OAuth** do tipo **Android**, com o pacote `com.bauxtech.acasa` e a SHA-1 do passo 2;
+   - o ID de cliente **Web** não muda: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` e o provedor Google no Supabase continuam iguais.
+5. **Lojas e RevenueCat.** Crie os apps nas lojas já com `com.bauxtech.acasa`, e os produtos com os nomes `acasa_<plano>_<mensal|anual>` da tabela da seção 6.
+
+O slug do projeto no EAS continua `app-cristao`: ele não aparece para ninguém e trocar quebraria a ligação com o projeto.
