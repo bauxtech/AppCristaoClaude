@@ -1,10 +1,10 @@
-// Culto: transcrição (OpenAI) e resumo (Claude). Regras: 5 cultos por mês; o áudio só fica
+// Culto: transcrição (OpenAI) e resumo (Claude). Regras: cultos por período conforme o plano (plan_config); o áudio só fica
 // quando a pessoa escolhe, por 30 dias; o versículo mostrado vem sempre do texto do app.
 
 import type { AskJson } from './claude-types.ts'
 import type { Verse } from './chat.ts'
+import type { Usage } from './usage.ts'
 
-export const MONTHLY_LIMIT = 5
 export const AUDIO_DAYS = 30
 /** Limite do arquivo enviado pelo app (o mesmo do armazenamento). O servidor divide em partes para a transcrição. */
 export const MAX_AUDIO_BYTES = 50 * 1024 * 1024
@@ -52,9 +52,8 @@ export interface SermonSummary {
 }
 
 export interface SermonDeps {
-  hasAccess(): Promise<boolean>
-  /** Conta o culto do mês. Devolve quantos restam, ou -1 quando acabou. */
-  consume(): Promise<number>
+  /** Confere o plano e conta o culto do período, no banco. Só no começo: nunca corta uma transcrição já iniciada. */
+  use(): Promise<Usage>
   refund(): Promise<void>
   transcribe(): Promise<string>
   versesByKeys(keys: string[]): Promise<Verse[]>
@@ -63,14 +62,15 @@ export interface SermonDeps {
 
 export type SermonResult =
   | { kind: 'no_access' }
-  | { kind: 'limit'; limit: number }
+  | { kind: 'limit'; limit: number; resetsAt: string | null }
   | { kind: 'empty' }
   | { kind: 'ready'; transcript: string; summary: SermonSummary; remaining: number }
 
 export async function processSermon(deps: SermonDeps): Promise<SermonResult> {
-  if (!(await deps.hasAccess())) return { kind: 'no_access' }
-  const remaining = await deps.consume()
-  if (remaining < 0) return { kind: 'limit', limit: MONTHLY_LIMIT }
+  const usage = await deps.use()
+  if (!usage.ok && usage.reason === 'no_access') return { kind: 'no_access' }
+  if (!usage.ok) return { kind: 'limit', limit: usage.limit, resetsAt: usage.resetsAt }
+  const remaining = usage.remaining
   try {
     const transcript = (await deps.transcribe()).trim()
     if (transcript.length < 40) {

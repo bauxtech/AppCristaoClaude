@@ -2,7 +2,7 @@
 // Chat bíblico. Confere login, assinatura e o limite de 20 perguntas por dia no servidor.
 import { answerChat } from '../_shared/chat.ts'
 import { askJsonFor, CHAT_MODEL } from '../_shared/claude.ts'
-import { DAILY_LIMIT } from '../_shared/rules.ts'
+import { useLimit } from '../_shared/usage.ts'
 import { admin, asUser, brDay, cors, json, userId } from '../_shared/http.ts'
 
 Deno.serve(async (req) => {
@@ -27,11 +27,15 @@ Deno.serve(async (req) => {
     history = (data ?? []) as typeof history
   }
 
+  let refundChat = async () => {}
   const result = await answerChat(
     {
-      hasAccess: async () => (await db.rpc('has_access', { p_user: uid })).data === true,
-      consume: async () => (await db.rpc('consume_usage', { p_user: uid, p_kind: 'chat_day', p_period: day, p_limit: DAILY_LIMIT })).data as number,
-      refund: async () => void (await db.rpc('refund_usage', { p_user: uid, p_kind: 'chat_day', p_period: day })),
+      use: async () => {
+        const r = await useLimit(db, uid, 'chat')
+        refundChat = r.refund
+        return r.usage
+      },
+      refund: () => refundChat(),
       searchVerses: async (q) => ((await user.rpc('search_verses', { p_query: q, p_limit: 12 })).data ?? []).map((v: { verse_key: string; text: string }) => ({ key: v.verse_key, text: v.text })),
       versesByKeys: async (keys) => (keys.length ? ((await user.rpc('verses_by_keys', { p_keys: keys })).data ?? []) : []).map((v: { verse_key: string; text: string }) => ({ key: v.verse_key, text: v.text })),
       askJson: askJsonFor(CHAT_MODEL),

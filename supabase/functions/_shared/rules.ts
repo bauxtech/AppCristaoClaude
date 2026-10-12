@@ -1,7 +1,5 @@
 // Cópia de src/features/chat/rules.ts. O servidor repete as regras do app (o app pode ser alterado; o servidor não).
 
-export const DAILY_LIMIT = 20
-
 const CRISIS = [
   'me machucar', 'me ferir', 'me cortar', 'suicid', 'me matar', 'tirar minha vida', 'tirar a minha vida', 'acabar com tudo', 'nao quero mais viver', 'quero morrer', 'sumir de vez', 'nao aguento mais viver',
   'nao quero viver', 'me mutilar', 'automutila', 'auto mutila', 'me enforcar', 'me jogar', 'tomar todos os remedios', 'tomar todos os comprimidos', 'overdose',

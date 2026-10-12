@@ -14,8 +14,7 @@ function chatDeps(over: Partial<ChatDeps> = {}): ChatDeps & { calls: string[] } 
   const calls: string[] = []
   return {
     calls,
-    hasAccess: async () => true,
-    consume: async () => (calls.push('consume'), 19),
+    use: async () => (calls.push('consume'), { ok: true as const, remaining: 9, limit: 10, resetsAt: '2026-10-13T03:00:00.000Z' }),
     refund: async () => void calls.push('refund'),
     searchVerses: async () => [{ key: 'salmos:23:1', text: VERSES['salmos:23:1'] }],
     versesByKeys: async (keys) => keys.filter((k) => k in VERSES).map((k) => ({ key: k, text: VERSES[k as keyof typeof VERSES] })),
@@ -29,19 +28,19 @@ function chatDeps(over: Partial<ChatDeps> = {}): ChatDeps & { calls: string[] } 
 
 describe('chat no servidor', () => {
   test('crise mostra o CVV antes de tudo, sem gastar pergunta nem chamar a IA', async () => {
-    const d = chatDeps({ hasAccess: async () => false })
+    const d = chatDeps({ use: async () => ({ ok: false, reason: 'no_access' }) })
     expect(await answerChat(d, { question: 'tenho vontade de morrer' })).toEqual({ kind: 'crisis', phone: '188' })
     expect(d.calls).toEqual([])
     expect(d.askJson).not.toHaveBeenCalled()
   })
 
-  test('sem assinatura não responde', async () => {
-    expect((await answerChat(chatDeps({ hasAccess: async () => false }), { question: 'o que é graça' })).kind).toBe('no_access')
+  test('sem plano com chat não responde', async () => {
+    expect((await answerChat(chatDeps({ use: async () => ({ ok: false, reason: 'no_access' }) }), { question: 'o que é graça' })).kind).toBe('no_access')
   })
 
-  test('limite de 20 por dia vem do servidor', async () => {
-    const d = chatDeps({ consume: async () => -1 })
-    expect(await answerChat(d, { question: 'o que é graça' })).toEqual({ kind: 'limit', limit: 20 })
+  test('limite do dia vem do servidor, com a hora em que zera', async () => {
+    const d = chatDeps({ use: async () => ({ ok: false, reason: 'limit', limit: 5, resetsAt: '2026-10-13T03:00:00.000Z' }) })
+    expect(await answerChat(d, { question: 'o que é graça' })).toEqual({ kind: 'limit', limit: 5, resetsAt: '2026-10-13T03:00:00.000Z' })
     expect(d.askJson).not.toHaveBeenCalled()
   })
 
@@ -50,7 +49,7 @@ describe('chat no servidor', () => {
     expect(r.kind).toBe('answer')
     if (r.kind !== 'answer') return
     expect(r.verses).toEqual([{ key: 'filipenses:4:6', text: VERSES['filipenses:4:6'] }])
-    expect(r.remaining).toBe(19)
+    expect(r.remaining).toBe(9)
   })
 
   test('a IA recebe só os versículos encontrados no banco', async () => {
@@ -90,8 +89,7 @@ describe('chat no servidor', () => {
 
 describe('culto no servidor', () => {
   const base = (over: Partial<SermonDeps> = {}): SermonDeps => ({
-    hasAccess: async () => true,
-    consume: async () => 3,
+    use: async () => ({ ok: true as const, remaining: 3, limit: 4, resetsAt: null }),
     refund: vi.fn(async () => {}),
     transcribe: async () => 'Irmãos, hoje vamos ler Filipenses 4 versículo 6 e também o Salmo 23. '.repeat(3),
     versesByKeys: async (keys) => keys.filter((k) => k in VERSES).map((k) => ({ key: k, text: VERSES[k as keyof typeof VERSES] })),
@@ -99,8 +97,8 @@ describe('culto no servidor', () => {
     ...over,
   })
 
-  test('limite de 5 por mês', async () => {
-    expect(await processSermon(base({ consume: async () => -1 }))).toEqual({ kind: 'limit', limit: 5 })
+  test('limite de cultos do período, com a renovação', async () => {
+    expect(await processSermon(base({ use: async () => ({ ok: false, reason: 'limit', limit: 4, resetsAt: '2026-11-01T03:00:00.000Z' }) }))).toEqual({ kind: 'limit', limit: 4, resetsAt: '2026-11-01T03:00:00.000Z' })
   })
 
   test('resumo com versículos só do texto do app', async () => {
@@ -219,5 +217,53 @@ describe('baixar meus dados', () => {
   test('cabeçalho do arquivo', () => {
     const f = exportFile('u1', { notes: [] }, new Date('2026-10-09T03:00:00Z'))
     expect(f).toMatchObject({ conta: 'u1', gerado_em: '2026-10-09T03:00:00.000Z', dados: { notes: [] } })
+  })
+})
+
+describe('limites do plano', () => {
+  test('lê a resposta do banco', async () => {
+    const { usageFrom } = await import('../_shared/usage.ts')
+    expect(usageFrom({ ok: true, remaining: 2, limit: 5, resets_at: 'x' })).toEqual({ ok: true, remaining: 2, limit: 5, resetsAt: 'x' })
+    expect(usageFrom({ ok: false, reason: 'limit', limit: 5, resets_at: 'x' })).toEqual({ ok: false, reason: 'limit', limit: 5, resetsAt: 'x' })
+    expect(usageFrom({ ok: false, reason: 'no_access' })).toEqual({ ok: false, reason: 'no_access' })
+    expect(usageFrom(null)).toEqual({ ok: false, reason: 'no_access' })
+  })
+  test('devolve o uso com o contador e o período certos', async () => {
+    const { useLimit } = await import('../_shared/usage.ts')
+    const calls: unknown[] = []
+    const db = { rpc: async (fn: string, args: Record<string, unknown>) => (calls.push([fn, args]), { data: fn === 'use_limit' ? { ok: true, remaining: 1, limit: 2, counter: 'sermon_period', period: 'p1' } : null, error: null }) }
+    const r = await useLimit(db, 'u1', 'sermon')
+    await r.refund()
+    expect(calls).toEqual([['use_limit', { p_user: 'u1', p_kind: 'sermon' }], ['refund_usage', { p_user: 'u1', p_kind: 'sermon_period', p_period: 'p1' }]])
+  })
+})
+
+describe('assinatura pela loja', () => {
+  const user = '11111111-2222-3333-4444-555555555555'
+  test('o plano vem do entitlement do RevenueCat, o maior quando há mais de um', async () => {
+    const { planFrom } = await import('../_shared/revenuecat.ts')
+    expect(planFrom(['essencial', 'lider'])).toBe('lider')
+    expect(planFrom([], 'amora_completo_anual')).toBe('completo')
+    expect(planFrom(null, 'outra_coisa')).toBeNull()
+  })
+  test('compra e renovação marcam o plano e o início do período (zera os cultos)', async () => {
+    const { patchFromEvent } = await import('../_shared/revenuecat.ts')
+    expect(patchFromEvent({ type: 'RENEWAL', app_user_id: user, product_id: 'amora_completo_mensal', entitlement_ids: ['completo'], purchased_at_ms: Date.UTC(2026, 9, 12), expiration_at_ms: Date.UTC(2026, 10, 12) })).toMatchObject({
+      status: 'active', plan: 'completo', billing: 'monthly', period_start: '2026-10-12T00:00:00.000Z', renews_at: '2026-11-12T00:00:00.000Z',
+    })
+    expect(patchFromEvent({ type: 'PRODUCT_CHANGE', app_user_id: user, product_id: 'amora_essencial_mensal', new_product_id: 'amora_lider_anual' })).toMatchObject({ plan: 'lider', billing: 'annual' })
+  })
+  test('consulta direta: plano ativo, cancelado ou com pagamento falhando', async () => {
+    const { patchFromSubscriber } = await import('../_shared/revenuecat.ts')
+    const now = new Date('2026-10-12T12:00:00Z')
+    const sub = {
+      entitlements: { lider: { expires_date: '2026-11-12T00:00:00Z', product_identifier: 'amora_lider_mensal', purchase_date: '2026-10-12T00:00:00Z' }, essencial: { expires_date: '2026-01-01T00:00:00Z', product_identifier: 'velho', purchase_date: '2025-12-01T00:00:00Z' } },
+      subscriptions: { amora_lider_mensal: { expires_date: '2026-11-12T00:00:00Z', purchase_date: '2026-10-12T00:00:00Z', store: 'app_store' } },
+    }
+    expect(patchFromSubscriber(user, sub, now)).toMatchObject({ status: 'active', plan: 'lider', store: 'app_store', period_start: '2026-10-12T00:00:00Z', renews_at: '2026-11-12T00:00:00Z' })
+    expect(patchFromSubscriber(user, { ...sub, subscriptions: { amora_lider_mensal: { ...sub.subscriptions.amora_lider_mensal, unsubscribe_detected_at: '2026-10-13T00:00:00Z' } } }, now)?.status).toBe('canceled_active')
+    expect(patchFromSubscriber(user, { entitlements: { lider: { expires_date: '2026-10-01T00:00:00Z', product_identifier: 'x', purchase_date: '2026-09-01T00:00:00Z' } } }, now)).toEqual({ user_id: user, status: 'expired' })
+    expect(patchFromSubscriber(user, {}, now)).toBeNull()
+    expect(patchFromSubscriber('$RCAnonymousID:x', sub, now)).toBeNull()
   })
 })

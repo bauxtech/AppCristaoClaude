@@ -497,7 +497,7 @@ select tests.as_user('00000000-0000-0000-0000-00000000000b');
 select tests.ok('busca encontra versículo por palavra parecida (ansiedade)', tests.rows($$select * from public.search_verses('ansiosos')$$) = 1);
 select tests.ok('verses_by_keys só devolve chaves que existem', tests.rows($$select * from public.verses_by_keys(array['salmos:23:1', 'salmos:99:99'])$$) = 1);
 select tests.ok('pessoa não confere o acesso de outra', tests.denied($$select public.has_access('00000000-0000-0000-0000-00000000000a')$$));
-select tests.ok('conta no teste tem acesso', public.my_access());
+select tests.ok('conta no teste tem acesso', (public.my_access() ->> 'plan') = 'trial');
 select tests.ok('pessoa não consome limite pelo servidor', tests.denied($$select public.consume_usage(auth.uid(), 'chat_day', 'x', 20)$$));
 reset role;
 
@@ -507,6 +507,8 @@ update public.subscriptions set status = 'active' where user_id = '00000000-0000
 select tests.ok('assinante tem acesso', public.has_access('00000000-0000-0000-0000-00000000000b'));
 update public.subscriptions set status = 'payment_failed', grace_until = now() - interval '1 day' where user_id = '00000000-0000-0000-0000-00000000000b';
 select tests.ok('pagamento falhou e o prazo venceu: sem acesso', not public.has_access('00000000-0000-0000-0000-00000000000b'));
+-- Beto volta ao teste para os próximos testes (sem plano, ele só lê).
+update public.subscriptions set status = 'trial', trial_start = now(), grace_until = null where user_id = '00000000-0000-0000-0000-00000000000b';
 
 select tests.ok('limite: a 20ª pergunta ainda passa', (select min(r) from (select public.consume_usage('00000000-0000-0000-0000-00000000000a', 'chat_day', '2026-10-04', 20) r from generate_series(1, 20)) q) = 0);
 select tests.ok('limite: a 21ª pergunta é recusada', public.consume_usage('00000000-0000-0000-0000-00000000000a', 'chat_day', '2026-10-04', 20) = -1);

@@ -2,9 +2,10 @@
 // O app sobe o áudio em sermon-audio/<id da pessoa>/... e chama esta função.
 // Confere login, assinatura e o limite de 5 cultos por mês. Responde na hora e processa em segundo plano.
 import { askJsonFor, SUMMARY_MODEL } from '../_shared/claude.ts'
-import { audioExpiry, MAX_AUDIO_BYTES, MAX_PART_BYTES, MONTHLY_LIMIT, processSermon, transcribeParts } from '../_shared/sermon.ts'
+import { audioExpiry, MAX_AUDIO_BYTES, MAX_PART_BYTES, processSermon, transcribeParts } from '../_shared/sermon.ts'
+import { useLimit } from '../_shared/usage.ts'
 import { splitAudio, type AudioPart } from '../_shared/audio-split.ts'
-import { admin, asUser, brMonth, cors, json, userId } from '../_shared/http.ts'
+import { admin, asUser, cors, json, userId } from '../_shared/http.ts'
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void }
 
@@ -37,13 +38,20 @@ Deno.serve(async (req) => {
   const { data: sermon } = await asUser(req).from('sermons').select('id, audio_path').eq('id', sermonId).single()
   if (!sermon?.audio_path) return json({ error: 'Culto não encontrado' }, 404)
   if (!sermon.audio_path.startsWith(`${uid}/`)) return json({ error: 'Sem permissão' }, 403)
+  const db = admin()
+  // Plano e limite conferidos antes de começar, para o app mostrar o aviso na hora (tela 7.8, com a renovação).
+  // Depois de começar, nada interrompe a transcrição.
+  const { usage, refund } = await useLimit(db, uid, 'sermon')
+  if (!usage.ok) return json(usage.reason === 'limit' ? { status: 'limit', limit: usage.limit, resets_at: usage.resetsAt } : { status: 'no_access' })
   // Um processamento por vez: outra chamada no meio (ex.: "Tentar de novo" depois de um tempo esgotado) não gasta outro culto.
   const { data: claimed } = await asUser(req).rpc('claim_sermon', { p_id: sermon.id })
-  if (claimed !== true) return json({ status: 'processing' }, 409)
+  if (claimed !== true) {
+    await refund()
+    return json({ status: 'processing' }, 409)
+  }
 
-  const db = admin()
-  const month = brMonth()
   const work = (async () => {
+    let started = false
     try {
       const { data: file, error } = await db.storage.from('sermon-audio').download(sermon.audio_path)
       if (error || !file) throw new Error('Áudio não encontrado')
@@ -52,10 +60,10 @@ Deno.serve(async (req) => {
       const parts = splitAudio(new Uint8Array(await file.arrayBuffer()))
       if (parts.length === 1 && parts[0].bytes.length > MAX_PART_BYTES) throw new Error('Formato de áudio sem divisão e maior que 25 MB')
 
+      started = true
       const result = await processSermon({
-        hasAccess: async () => (await db.rpc('has_access', { p_user: uid })).data === true,
-        consume: async () => (await db.rpc('consume_usage', { p_user: uid, p_kind: 'sermon_month', p_period: month, p_limit: MONTHLY_LIMIT })).data as number,
-        refund: async () => void (await db.rpc('refund_usage', { p_user: uid, p_kind: 'sermon_month', p_period: month })),
+        use: async () => usage,
+        refund,
         transcribe: () => transcribeParts(parts, transcribe),
         versesByKeys: async (keys) => (keys.length ? ((await db.rpc('verses_by_keys', { p_keys: keys })).data ?? []) : []).map((v: { verse_key: string; text: string }) => ({ key: v.verse_key, text: v.text })),
         askJson: askJsonFor(SUMMARY_MODEL),
@@ -80,6 +88,8 @@ Deno.serve(async (req) => {
         .eq('id', sermon.id)
     } catch (e) {
       console.error('sermon', e)
+      // Falhou antes de transcrever (áudio não encontrado, grande demais): a pessoa não perde o culto do mês.
+      if (!started) await refund()
       // Guarda só a etapa que falhou (sem texto do culto), para o app e o suporte saberem o motivo.
       const reason = e instanceof Error ? e.message.slice(0, 120) : 'erro'
       await db.from('sermons').update({ status: 'failed', summary: { reason } }).eq('id', sermon.id)

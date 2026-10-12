@@ -2,7 +2,8 @@
 // Regras (CLAUDE.md): só fala de Bíblia e fé cristã, cita só o texto bíblico do app e mostra a fonte.
 // Se a pessoa falar em se machucar, mostra o CVV, telefone 188.
 
-import { DAILY_LIMIT, isCrisis, isDivided, isOffTopic, plain } from './rules.ts'
+import { isCrisis, isDivided, isOffTopic, plain } from './rules.ts'
+import type { Usage } from './usage.ts'
 import type { AskJson } from './claude-types.ts'
 
 export interface Verse {
@@ -11,9 +12,8 @@ export interface Verse {
 }
 
 export interface ChatDeps {
-  hasAccess(): Promise<boolean>
-  /** Conta uma pergunta. Devolve quantas restam, ou -1 quando o limite do dia acabou. */
-  consume(): Promise<number>
+  /** Confere o plano e conta uma pergunta, no banco. */
+  use(): Promise<Usage>
   refund(): Promise<void>
   searchVerses(query: string): Promise<Verse[]>
   versesByKeys(keys: string[]): Promise<Verse[]>
@@ -32,7 +32,7 @@ export interface ChatInput {
 export type ChatResult =
   | { kind: 'crisis'; phone: '188' }
   | { kind: 'no_access' }
-  | { kind: 'limit'; limit: number }
+  | { kind: 'limit'; limit: number; resetsAt: string | null }
   | { kind: 'off_topic' }
   | { kind: 'answer'; text: string; verses: Verse[]; divided: boolean; remaining: number }
 
@@ -105,11 +105,12 @@ export async function answerChat(deps: ChatDeps, input: ChatInput): Promise<Chat
   const question = input.question.trim().slice(0, MAX_QUESTION)
   // A segurança da pessoa vem antes de tudo, inclusive antes do limite e da assinatura.
   if (isCrisis(question)) return { kind: 'crisis', phone: '188' }
-  if (!(await deps.hasAccess())) return { kind: 'no_access' }
   if (isOffTopic(question)) return { kind: 'off_topic' }
 
-  const remaining = await deps.consume()
-  if (remaining < 0) return { kind: 'limit', limit: DAILY_LIMIT }
+  const usage = await deps.use()
+  if (!usage.ok && usage.reason === 'no_access') return { kind: 'no_access' }
+  if (!usage.ok) return { kind: 'limit', limit: usage.limit, resetsAt: usage.resetsAt }
+  const remaining = usage.remaining
 
   try {
     const plan = (await deps.askJson({ system: PLAN_SYSTEM, prompt: `${input.context ? `Contexto: ${input.context}\n` : ''}Pergunta: ${question}`, schema: PLAN_SCHEMA, effort: 'low' })) as {

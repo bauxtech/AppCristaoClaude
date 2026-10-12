@@ -11,6 +11,7 @@
 --   daily-content 06:07 UTC = 03:07 em São Paulo: escreve o conteúdo do dia seguinte.
 --   purge         07:13 UTC = 04:13 em São Paulo: apaga contas marcadas há 30 dias e áudios de culto vencidos.
 --   push          a cada minuto: envia para o celular os avisos novos (célula, "Orei por você").
+--   trial         13:03 UTC = 10:03 em São Paulo: avisos do teste grátis (dia 5 e dia 7). Roda direto no banco.
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
@@ -31,7 +32,8 @@ begin
 end $$;
 revoke all on function public.call_routine from public, anon, authenticated;
 
-select cron.unschedule(jobname) from cron.job where jobname in ('conteudo-do-dia', 'limpeza-diaria', 'enviar-avisos');
+select cron.unschedule(jobname) from cron.job where jobname in ('conteudo-do-dia', 'limpeza-diaria', 'enviar-avisos', 'avisos-do-teste');
 select cron.schedule('conteudo-do-dia', '7 6 * * *', $$select public.call_routine('daily-content')$$);
 select cron.schedule('limpeza-diaria', '13 7 * * *', $$select public.call_routine('purge')$$);
 select cron.schedule('enviar-avisos', '* * * * *', $$select public.call_routine('push')$$);
+select cron.schedule('avisos-do-teste', '3 13 * * *', $$select public.trial_reminders()$$);
