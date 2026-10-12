@@ -59,7 +59,10 @@ export async function startRemote(s: Sermon, uid: string): Promise<'ok' | FailRe
   const row = await supabase.from('sermons').upsert({ id: s.id, user_id: uid, church: s.church || null, date: s.date, duration_sec: Math.round(s.trim.end - s.trim.start), audio_path: path, notes: s.notes })
   if (row.error) return 'error'
   try {
-    await callFunction('sermon-process', { sermonId: s.id, keepAudio: s.keepAudio })
+    // O servidor confere plano e limite antes de começar e responde na hora.
+    const r = await callFunction<{ status?: string }>('sermon-process', { sermonId: s.id, keepAudio: s.keepAudio })
+    if (r?.status === 'limit') return 'limit'
+    if (r?.status === 'no_access') return 'no_access'
   } catch (e) {
     // 409: o servidor já está processando este culto (pedido repetido). Basta esperar o resultado.
     if ((e as { context?: { status?: number } })?.context?.status === 409) return 'ok'

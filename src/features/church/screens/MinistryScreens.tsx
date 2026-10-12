@@ -6,6 +6,7 @@ import { formatMeetingDay, formatTime, isValidTime, maskTime } from '../../cell/
 import { brToISO, maskDate } from '../../prayer/dates'
 import { useChurch } from '../ChurchContext'
 import { MINISTRY_AREAS, MINISTRY_PEOPLE, type Ministry } from '../data'
+import { PlanButton } from '../../subscription/PlanLock'
 
 export function MinistriesScreen() {
   const toast = useToast()
@@ -56,7 +57,7 @@ export function MinistriesScreen() {
           )}
         </Card>
       ))}
-      <Button label="Adicionar ministério" icon="plus" variant="outline" onPress={() => router.push('/igreja/ministerio-novo')} />
+      <PlanButton feature="church" label="Adicionar ministério" icon="plus" variant="outline" onPress={() => router.push('/igreja/ministerio-novo')} />
       <Sheet visible={!!swap} onClose={() => setSwap(null)} title={swap ? `Pedir troca, ${swap.area}` : ''}>
         <AppText variant="body" tone="secondary">
           Escolha com quem trocar:

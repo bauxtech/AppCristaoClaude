@@ -7,6 +7,7 @@ import { useTheme } from '../../../theme/ThemeProvider'
 import { formatMeetingDay, formatTime, isValidTime, maskTime } from '../../cell/meetings'
 import { brToISO, maskDate } from '../../prayer/dates'
 import { useChurch } from '../ChurchContext'
+import { PlanButton } from '../../subscription/PlanLock'
 
 export function MyChurchesScreen() {
   const toast = useToast()
@@ -47,7 +48,7 @@ export function MyChurchesScreen() {
           </Card>
         ))}
       </View>
-      <Button label="Adicionar igreja" icon="plus" variant="outline" onPress={() => router.push('/igreja/buscar')} />
+      <PlanButton feature="church" label="Adicionar igreja" icon="plus" variant="outline" onPress={() => router.push('/igreja/buscar')} />
     </Page>
   )
 }
@@ -58,7 +59,7 @@ export function EventsScreen() {
   const events = [...(main?.events ?? [])].sort((a, b) => (a.date > b.date ? 1 : -1))
   return (
     <Page title="Eventos">
-      <Button label="Adicionar evento" icon="plus" variant="outline" onPress={() => router.push('/igreja/evento-novo')} />
+      <PlanButton feature="church" label="Adicionar evento" icon="plus" variant="outline" onPress={() => router.push('/igreja/evento-novo')} />
       {events.length === 0 ? <EmptyState text="Nenhum evento da igreja por enquanto. Adicione um evento que você quer lembrar." /> : null}
       {events.map((e) => (
         <TapCard

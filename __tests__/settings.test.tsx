@@ -263,31 +263,25 @@ describe('correções da revisão de segurança', () => {
     expect(screen.getByRole('switch', { name: 'Bloquear notas com biometria' }).props.accessibilityState.checked).toBe(true)
   })
 
-  test('bloqueado: chat aberto por link mostra a tela de bloqueio', async () => {
-    useSegments.mockReturnValue(['chat'])
+  test('sem plano: chat aberto por link mostra o cadeado', async () => {
     await renderApp(
-      <AccessGuard>
+      <AccessGuard feature="chat">
         <Text>Conteúdo do chat</Text>
       </AccessGuard>,
-      { onboarded: true, subscription: previewState('blocked') },
+      { onboarded: true, subscription: previewState('free') },
     )
     expect(screen.queryByText('Conteúdo do chat')).toBeNull()
-    expect(screen.getByText('Seu teste terminou')).toBeTruthy()
+    expect(screen.getByText(/No plano Essencial/)).toBeTruthy()
   })
 
-  test('bloqueado: excluir conta e passar liderança continuam abertos', async () => {
-    for (const seg of ['excluir', 'lideranca', 'dados', 'sair', 'ajuda']) {
-      useSegments.mockReturnValue(['configuracoes', seg])
-      const r = await renderApp(
-        <AccessGuard>
-          <Text>{`Tela ${seg}`}</Text>
-        </AccessGuard>,
-        { onboarded: true, subscription: previewState('blocked') },
-      )
-      expect(screen.getByText(`Tela ${seg}`)).toBeTruthy()
-      await r.unmount()
-    }
-    useSegments.mockReturnValue([])
+  test('sem plano: configurações (excluir conta, baixar dados, sair, ajuda) continuam abertas', async () => {
+    await renderApp(
+      <AccessGuard>
+        <Text>Tela de configurações</Text>
+      </AccessGuard>,
+      { onboarded: true, subscription: previewState('free') },
+    )
+    expect(screen.getByText('Tela de configurações')).toBeTruthy()
   })
 
   test('sem login, telas fora das abas não abrem', async () => {

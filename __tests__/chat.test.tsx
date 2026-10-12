@@ -77,19 +77,29 @@ describe('tela do chat', () => {
     const today = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')
     const date = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
-    await renderApp(<ChatScreen />, { onboarded: true, chat: { usage: { date, count: 17 } } })
+    await renderApp(<ChatScreen />, { onboarded: true, chat: { usage: { date, count: 7 } } })
+    // No teste grátis, 10 por dia.
     expect(screen.getByText('3 perguntas restantes hoje')).toBeTruthy()
   })
 
   test('limite atingido', async () => {
     const d = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')
-    await renderApp(<ChatScreen />, { onboarded: true, chat: { usage: { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, count: 20 } } })
-    expect(screen.getByText('Você usou as 20 perguntas de hoje')).toBeTruthy()
+    await renderApp(<ChatScreen />, { onboarded: true, chat: { usage: { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, count: 10 } } })
+    expect(screen.getByText('Você usou as 10 perguntas de hoje')).toBeTruthy()
     expect(screen.getByText(/CVV, telefone 188/)).toBeTruthy()
     await fireEvent.changeText(screen.getByLabelText('Sua pergunta sobre a Bíblia'), 'o que é graça')
     await fireEvent.press(screen.getByRole('button', { name: 'Enviar pergunta' }))
     expect(screen.queryByText('o que é graça')).toBeNull()
+  })
+
+  test('Essencial: 5 por dia, e o aviso mostra o plano com mais perguntas', async () => {
+    const { previewState } = require('../src/features/subscription/plan')
+    const d = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    await renderApp(<ChatScreen />, { onboarded: true, subscription: previewState('essencial'), chat: { usage: { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, count: 5 } } })
+    expect(screen.getByText('Você usou as 5 perguntas de hoje')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Mais perguntas no plano Completo' })).toBeTruthy()
   })
 })
 

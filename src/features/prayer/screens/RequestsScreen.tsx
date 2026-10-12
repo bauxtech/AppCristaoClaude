@@ -11,6 +11,7 @@ import type { PrayerRequest } from '../data'
 import { formatAgo, formatDayMonth } from '../dates'
 import { usePrayer } from '../PrayerContext'
 import { EmptyState, PrayerPage } from './parts'
+import { PlanButton } from '../../subscription/PlanLock'
 
 export function RequestsScreen() {
   const { colors } = useTheme()
@@ -34,7 +35,7 @@ export function RequestsScreen() {
           { id: 'respondidos', label: `Respondidos (${answered.length})` },
         ]}
       />
-      <Button label="Novo pedido" icon="plus" variant="outline" onPress={() => router.push('/oracao/pedidos/novo')} />
+      <PlanButton feature="prayer" label="Novo pedido" icon="plus" variant="outline" onPress={() => router.push('/oracao/pedidos/novo')} />
       {filter === 'respondidos' && answered.length > 0 ? <Button label="Ver linha do tempo dos respondidos" variant="soft" onPress={() => router.push('/oracao/respondidos')} /> : null}
 
       {list.length === 0 ? (

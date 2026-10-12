@@ -4,7 +4,7 @@ import { useBlockedIds, useSettings } from '../settings/SettingsContext'
 import { visibleNotices } from '../settings/notices'
 import { useRemoteState } from '../../state/connection'
 import { ErrorState, SkeletonCard } from '../../components'
-import { LastDayCard, PaymentFailedCard, TrialBanner } from '../subscription/screens/SubscriptionScreens'
+import { LastDayCard, PaymentFailedCard, TrialBanner, TrialPhoneCard } from '../subscription/screens/SubscriptionScreens'
 import { useState } from 'react'
 import { Linking, Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -119,6 +119,7 @@ export function HomeScreen() {
 
       <View style={{ paddingHorizontal: 16, gap: 12 }}>
         <TrialBanner />
+        <TrialPhoneCard />
         <LastDayCard />
         <PaymentFailedCard />
         {daily.loading ? (

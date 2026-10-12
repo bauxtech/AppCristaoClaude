@@ -14,6 +14,7 @@ import { isSafeUrl } from '../../../lib/links'
 import type { Cell, Poll } from '../data'
 import { can } from '../permissions'
 import { CellGuard } from './Guard'
+import { PlanButton } from '../../subscription/PlanLock'
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 
@@ -504,7 +505,7 @@ export function MyCellsScreen() {
         </Card>
       ))}
       <Button label="Entrar em outra célula" icon="plus" variant="outline" onPress={() => router.push('/celula/entrar')} />
-      <Button label="Criar outra célula" icon="plus" variant="outline" onPress={() => router.push('/celula/criar')} />
+      <PlanButton feature="cell_lead" label="Criar outra célula" icon="plus" variant="outline" onPress={() => router.push('/celula/criar')} />
     </Page>
   )
 }

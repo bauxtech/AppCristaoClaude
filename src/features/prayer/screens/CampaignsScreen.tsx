@@ -1,4 +1,5 @@
 import { router } from 'expo-router'
+import { PlanButton } from '../../subscription/PlanLock'
 import { View } from 'react-native'
 import { Button, Cover, CoverGrid, coverStyle, SectionLabel, useGridItemWidth } from '../../../components'
 import { campaignInfo } from '../campaign'
@@ -16,7 +17,7 @@ export function CampaignsScreen() {
 
   return (
     <PrayerPage title="Campanhas">
-      <Button label="Nova campanha" icon="plus" variant="outline" onPress={() => router.push('/oracao/campanhas/nova')} />
+      <PlanButton feature="prayer" label="Nova campanha" icon="plus" variant="outline" onPress={() => router.push('/oracao/campanhas/nova')} />
       <View style={{ gap: 12 }}>
         <SectionLabel>Em andamento</SectionLabel>
         {current.length === 0 ? (

@@ -7,7 +7,6 @@ import { useFaithConsent } from '../settings/SettingsContext'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import type { Answer, ChatContextRef } from './answer'
-import { DAILY_LIMIT } from './rules'
 import { deleteAllOps, deleteConversationOps, mergeChat, pullChat, pushConversation } from './sync'
 import { fetchFaithConsentRemote } from '../../lib/account'
 
@@ -36,7 +35,8 @@ interface ChatState {
 
 interface ChatValue {
   conversations: Conversation[]
-  remaining: number
+  /** Perguntas feitas hoje neste aparelho. O limite vem do plano (servidor). */
+  usedToday: number
   newConversation: (context: ChatContextRef | null) => Conversation
   addMessage: (convId: string, m: Message) => void
   replaceMessage: (convId: string, msgId: string, m: Partial<Message>) => void
@@ -122,7 +122,7 @@ export function ChatProvider({ children, initial }: { children: ReactNode; initi
   const value = useMemo<ChatValue>(
     () => ({
       conversations: state.conversations,
-      remaining: Math.max(0, DAILY_LIMIT - used),
+      usedToday: used,
       newConversation: (context) => {
         const c: Conversation = { id: uuid(), title: context?.label ?? 'Nova conversa', createdAt: today(), context, messages: [] }
         setState((s) => ({ ...s, conversations: [c, ...s.conversations] }))
@@ -138,7 +138,8 @@ export function ChatProvider({ children, initial }: { children: ReactNode; initi
       replaceMessage: (convId, msgId, m) =>
         setState((s) => ({ ...s, conversations: s.conversations.map((c) => (c.id === convId ? { ...c, messages: c.messages.map((x) => (x.id === msgId ? { ...x, ...m } : x)) } : c)) })),
       markSynced: (convId) => setState((s) => ({ ...s, conversations: s.conversations.map((c) => (c.id === convId ? { ...c, synced: true } : c)) })),
-      fillTodayLimit: () => setState((s) => ({ ...s, usage: { date: today(), count: DAILY_LIMIT } })),
+      // O servidor disse que acabou: marca o dia como cheio, seja qual for o limite do plano.
+      fillTodayLimit: () => setState((s) => ({ ...s, usage: { date: today(), count: 9999 } })),
       countQuestion: () => setState((s) => ({ ...s, usage: { date: today(), count: (s.usage.date === today() ? s.usage.count : 0) + 1 } })),
       removeConversation: (id) => {
         if (remote) enqueue(...deleteConversationOps(id))

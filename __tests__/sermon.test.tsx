@@ -1,7 +1,8 @@
 import { act, fireEvent, screen } from '@testing-library/react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { sampleCell } from '../src/features/cell/data'
-import { MONTHLY_LIMIT, sampleSermons, searchSermons, usedThisMonth, type Sermon } from '../src/features/sermon/data'
+import { sampleSermons, searchSermons, usedThisMonth, type Sermon } from '../src/features/sermon/data'
+import { previewState } from '../src/features/subscription/plan'
 import { BeforeScreen } from '../src/features/sermon/screens/BeforeScreen'
 import { SermonListScreen } from '../src/features/sermon/screens/ListScreen'
 import { ResultScreen } from '../src/features/sermon/screens/ResultScreen'
@@ -19,9 +20,9 @@ beforeEach(() => {
   jest.mocked(router.replace).mockClear()
 })
 
-function monthFull(): Sermon[] {
+function monthFull(n = 5): Sermon[] {
   const today = new Date().toISOString().slice(0, 10)
-  return Array.from({ length: MONTHLY_LIMIT }, (_, i) => ({ ...samples[0], id: `x${i}`, createdAt: today }))
+  return Array.from({ length: n }, (_, i) => ({ ...samples[0], id: `x${i}`, createdAt: today }))
 }
 
 describe('regras do culto', () => {
@@ -38,17 +39,26 @@ describe('regras do culto', () => {
 })
 
 describe('lista de cultos', () => {
-  test('conta nova mostra o estado vazio e o limite do mês', async () => {
+  test('conta nova mostra o estado vazio e o limite do teste (2 cultos)', async () => {
     await renderApp(<SermonListScreen />, { onboarded: true, sampleData: false })
     expect(screen.getByText('Nenhum culto gravado ainda. Grave o próximo culto para ver o texto e o resumo aqui.')).toBeTruthy()
-    expect(screen.getAllByText('0 de 5 cultos usados neste mês').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('0 de 2 cultos usados neste período').length).toBeGreaterThan(0)
   })
 
-  test('com 5 cultos no mês, gravar e importar ficam bloqueados', async () => {
-    await renderApp(<SermonListScreen />, { onboarded: true, sermons: monthFull() })
+  test('Completo: com 4 cultos no período, gravar e importar ficam bloqueados e o aviso traz o plano Líder', async () => {
+    await renderApp(<SermonListScreen />, { onboarded: true, sermons: monthFull(4), subscription: previewState('completo') })
     expect(screen.getByRole('button', { name: 'Gravar culto' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Importar áudio' })).toBeDisabled()
     expect(screen.getByText('Limite atingido')).toBeTruthy()
+    expect(screen.getByText(/Seu plano permite 4 cultos por período/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Mais cultos no plano Líder' })).toBeTruthy()
+  })
+
+  test('Essencial: sem gravação de culto, com cadeado; os cultos antigos continuam na lista', async () => {
+    await renderApp(<SermonListScreen />, { onboarded: true, sermons: monthFull(1), subscription: previewState('essencial') })
+    expect(screen.queryByRole('button', { name: 'Gravar culto' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Gravar e transcrever culto. Bloqueado. No plano Completo' })).toBeTruthy()
+    expect(screen.getAllByText(/Culto|Vivendo/).length).toBeGreaterThan(0)
   })
 })
 

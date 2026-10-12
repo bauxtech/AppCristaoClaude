@@ -14,6 +14,7 @@ import { brToISO, formatBR, maskDate } from '../../prayer/dates'
 import { toISODate } from '../../prayer/data'
 import { useChurch } from '../ChurchContext'
 import { COURSE_TYPES, PHOTO_SAMPLE, type Course, type Lesson, type Material } from '../data'
+import { PlanButton } from '../../subscription/PlanLock'
 
 function courseStats(c: Course, today = toISODate(new Date())) {
   const past = c.lessons.filter((l) => l.date <= today)
@@ -80,8 +81,8 @@ export function CoursesScreen() {
           ))}
         </CoverGrid>
       ) : null}
-      <Button label="Curso pela foto do cronograma" icon="camera" variant="outline" onPress={() => router.push('/igreja/curso-foto')} />
-      <Button label="Adicionar curso à mão" icon="plus" variant="outline" onPress={() => router.push('/igreja/curso-novo')} />
+      <PlanButton feature="church" label="Curso pela foto do cronograma" icon="camera" variant="outline" onPress={() => router.push('/igreja/curso-foto')} />
+      <PlanButton feature="church" label="Adicionar curso à mão" icon="plus" variant="outline" onPress={() => router.push('/igreja/curso-novo')} />
     </Page>
   )
 }

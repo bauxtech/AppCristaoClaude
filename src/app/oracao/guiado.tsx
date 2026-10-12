@@ -1,3 +1,11 @@
 import { GuidedScreen } from '../../features/prayer/screens/GuidedScreen'
+import { FeatureGuard } from '../../features/subscription/PlanLock'
 
-export default GuidedScreen
+// Função do plano: sem ela, mostra o cadeado e a tela de planos.
+export default function Route() {
+  return (
+    <FeatureGuard feature="prayer">
+      <GuidedScreen />
+    </FeatureGuard>
+  )
+}

@@ -61,6 +61,9 @@ alter table public.subscriptions add column if not exists trial_reminded smallin
 alter table public.subscriptions alter column trial_start drop not null;
 alter table public.subscriptions alter column trial_start drop default;
 update public.subscriptions set trial_used = true where trial_start is not null;
+-- Antes do lançamento, todas as contas são da equipe e de testes: ganham o plano Líder de cortesia até 31/12/2026,
+-- para os testes no celular não travarem. Para testar o teste grátis e o bloqueio, crie uma conta nova.
+update public.subscriptions set courtesy_plan = 'lider', courtesy_until = '2026-12-31 23:59:59-03' where plan is null;
 
 -- Números que já usaram o teste, em código embaralhado (sha256). Ficam mesmo depois de a conta ser excluída,
 -- para garantir um teste por número. Ninguém lê pelo app.
@@ -218,7 +221,7 @@ alter table public.usage_counters add constraint usage_counters_kind_check check
 create or replace function public.limit_info(p_user uuid, p_kind text)
 returns table (feature text, counter text, period text, lim int, resets_at timestamptz)
 language plpgsql stable security definer set search_path = public as $$
-declare v_plan text := public.plan_of(p_user); c public.plan_config; s public.subscriptions; v_day date; v_start timestamptz;
+declare v_plan text := public.plan_of(p_user); c public.plan_config; s public.subscriptions; v_day date; v_start timestamptz; v_anchor timestamptz; v_months int;
 begin
   select * into c from public.plan_config where plan = v_plan;
   select * into s from public.subscriptions where user_id = p_user;
@@ -230,10 +233,13 @@ begin
       v_start := s.trial_start;
       return query select 'sermon'::text, 'sermon_period'::text, 't' || to_char(v_start at time zone 'UTC', 'YYYYMMDDHH24MISS'), coalesce(c.sermons_per_period, 0), public.trial_end(s.trial_start);
     else
-      -- Sem início informado pela loja: conta por mês.
-      v_start := coalesce(s.period_start, date_trunc('month', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo');
+      -- Ciclos de um mês contados do dia da compra, também no anual (4 por mês, não 4 por ano).
+      -- Sem início informado pela loja: mês do calendário.
+      v_anchor := coalesce(s.period_start, date_trunc('month', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo');
+      v_months := greatest(0, (extract(year from age(now(), v_anchor)) * 12 + extract(month from age(now(), v_anchor)))::int);
+      v_start := v_anchor + make_interval(months => v_months);
       return query select 'sermon'::text, 'sermon_period'::text, 'p' || to_char(v_start at time zone 'UTC', 'YYYYMMDDHH24MISS'), coalesce(c.sermons_per_period, 0),
-        coalesce(s.renews_at, ((date_trunc('month', now() at time zone 'America/Sao_Paulo') + interval '1 month') at time zone 'America/Sao_Paulo'));
+        v_anchor + make_interval(months => v_months + 1);
     end if;
   else
     raise exception 'Limite desconhecido';

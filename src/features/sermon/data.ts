@@ -38,7 +38,6 @@ export interface Sermon {
   remote?: boolean
 }
 
-export const MONTHLY_LIMIT = 5
 export const AUDIO_DAYS = 30
 
 export function verseLabel(v: VerseRef) {

@@ -55,13 +55,22 @@ No Supabase, em **Edge Functions > Secrets**, crie `CRON_SECRET` com uma senha l
 ## 6. Lojas e assinatura (Apple, Google e RevenueCat)
 
 1. **Apple Developer** (US$ 99 por ano) e **Google Play Console** (US$ 25, uma vez).
-2. Nas duas lojas, crie uma assinatura com dois períodos:
-   - mensal, com o identificador `plano_mensal`;
-   - anual, com o identificador `plano_anual`.
+2. Crie os 6 produtos de assinatura. O nome do produto precisa ter o plano e o período, porque o app e o servidor leem o plano pelo nome:
 
-   O preço ainda está em aberto.
+   | Plano | Mensal | Anual |
+   | --- | --- | --- |
+   | Essencial | `amora_essencial_mensal` (R$ 14,90) | `amora_essencial_anual` (R$ 109,90) |
+   | Completo | `amora_completo_mensal` (R$ 24,90) | `amora_completo_anual` (R$ 179,90) |
+   | Líder | `amora_lider_mensal` (R$ 39,90) | `amora_lider_anual` (R$ 299,90) |
+
+   - **App Store Connect**: um único grupo de assinaturas com os 6 produtos, nesta ordem de nível: Líder no topo, depois Completo, depois Essencial. Assim a Apple cuida da troca de plano (subir vale na hora, descer vale na renovação). Ao escolher o preço, confira se o valor em real existe na tabela da Apple. Se não existir, me avise o valor mais próximo.
+   - **Google Play Console**: 3 assinaturas (essencial, completo, lider), cada uma com dois planos-base, mensal e anual, usando os identificadores da tabela.
+   - Não crie teste grátis na loja por enquanto: o teste é do nosso servidor. Se a Apple recusar, criamos a oferta de teste nos produtos e trocamos `trial_mode` para `store` (tabela `app_settings`).
 3. Crie a conta no RevenueCat e ligue as duas lojas.
-4. Crie o entitlement **`acesso`** e uma offering padrão com os pacotes mensal e anual.
+4. No RevenueCat:
+   - crie 3 entitlements com estes nomes exatos: **`essencial`**, **`completo`** e **`lider`**;
+   - ligue cada produto ao entitlement do plano dele (os dois períodos do mesmo plano vão no mesmo entitlement);
+   - crie uma offering padrão (current) com os 6 produtos como pacotes.
 5. Copie as chaves públicas do SDK para o EAS (passo 7):
    - `EXPO_PUBLIC_REVENUECAT_IOS_KEY`;
    - `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY`.
@@ -69,6 +78,22 @@ No Supabase, em **Edge Functions > Secrets**, crie `CRON_SECRET` com uma senha l
    - **URL**: `https://<Reference ID>.supabase.co/functions/v1/revenuecat-webhook`
    - **Authorization**: `Bearer ` seguido de uma senha longa.
    - No Supabase, guarde a mesma senha (sem o "Bearer ") como `REVENUECAT_WEBHOOK_SECRET`.
+7. Copie a chave secreta da API do RevenueCat (Project settings > API keys > Secret API key, começa com `sk_`) e guarde no Supabase como `REVENUECAT_SECRET_KEY`. É ela que deixa o servidor conferir a compra logo depois que a pessoa paga. Nunca coloque essa chave no app.
+
+### Limites e funções de cada plano
+
+Ficam na tabela `plan_config` (Supabase > Table Editor). Mudar um número vale na hora, sem versão nova do app:
+
+- `chat_per_day`: perguntas por dia no chat;
+- `sermons_per_period`: cultos por mês (no anual, também por mês, a partir do dia da compra);
+- `cell_free_members`: membros da célula que entram sem plano (plano Líder);
+- `features`: funções liberadas (reading_plans, prayer, church, music, cell, chat, sermon, cell_lead).
+
+A linha `trial` vale para os 7 dias de teste. A tabela `app_settings` guarda `trial_days` e `trial_mode`.
+
+### Contas da equipe
+
+Para liberar um plano para alguém da equipe, sem loja: na tabela `subscriptions`, preencha `courtesy_plan` (essencial, completo ou lider) e `courtesy_until` (data final, ou vazio para sem prazo).
 
 ## 7. EAS (expo.dev)
 

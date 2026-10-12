@@ -1,27 +1,19 @@
-import { Redirect, useSegments } from 'expo-router'
+import { Redirect } from 'expo-router'
 import type { ReactNode } from 'react'
 import { IS_PREVIEW } from '../../lib/preview'
 import { useSession } from '../../state/session'
-import { BlockedScreen } from './screens/SubscriptionScreens'
-import { useSubscription } from './SubscriptionContext'
-
-/** Telas que continuam abertas para quem está bloqueado (regra da tela de bloqueio). */
-export const OPEN_WHEN_BLOCKED = ['dados', 'dados-guardados', 'consentimento', 'conta', 'sair', 'excluir', 'exclusao', 'lideranca', 'ajuda', 'suporte']
+import { FeatureGuard } from './PlanLock'
+import type { Feature } from './plan'
 
 /**
- * Vale para toda pilha fora das abas (chat, oração, culto, avisos, configurações).
- * Sem login: volta para o início. Teste vencido sem assinatura: mostra o bloqueio,
- * mesmo quando a tela é aberta por um link.
+ * Vale para toda pilha fora das abas. Sem login: volta para o início.
+ * Com feature: sem a função no plano, mostra a tela de bloqueio, mesmo quando aberta por um link.
+ * Sem plano, só a Bíblia continua; o que a pessoa criou continua visível nas telas que não são de criação.
  */
-export function AccessGuard({ children, openWhenBlocked = OPEN_WHEN_BLOCKED }: { children: ReactNode; openWhenBlocked?: string[] | 'all' }) {
+export function AccessGuard({ children, feature }: { children: ReactNode; feature?: Feature }) {
   const { onboarded } = useSession()
-  const sub = useSubscription()
-  const segments = useSegments() as string[]
   if (!onboarded) return <Redirect href="/bem-vindo" />
-  if (sub.status === 'blocked') {
-    const last = segments[segments.length - 1] ?? ''
-    if (openWhenBlocked !== 'all' && !openWhenBlocked.includes(last)) return <BlockedScreen />
-  }
+  if (feature) return <FeatureGuard feature={feature}>{children}</FeatureGuard>
   return <>{children}</>
 }
 

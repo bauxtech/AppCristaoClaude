@@ -53,6 +53,19 @@ export async function verifyLoginCode(phoneE164: string, code: string) {
   return data.user?.id ?? null
 }
 
+/** Quem entrou pelo Google confirma um celular: o servidor manda o código por SMS para o número novo. */
+export async function sendPhoneChangeCode(phoneE164: string) {
+  if (!supabase) throw new Error('Servidor não configurado')
+  const { error } = await supabase.auth.updateUser({ phone: phoneE164 })
+  if (error) throw error
+}
+
+export async function verifyPhoneChange(phoneE164: string, code: string) {
+  if (!supabase) throw new Error('Servidor não configurado')
+  const { error } = await supabase.auth.verifyOtp({ phone: phoneE164, token: code, type: 'phone_change' })
+  if (error) throw error
+}
+
 /** A conta já tinha nome cadastrado (quem volta vê "Bem-vindo de volta"). */
 export async function hasProfileName(userId: string) {
   if (!supabase) return false

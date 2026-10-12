@@ -4,7 +4,6 @@
 // - 20 perguntas por dia.
 // No servidor, as mesmas regras se repetem. Aqui elas protegem a pessoa mesmo sem internet.
 
-export const DAILY_LIMIT = 20
 
 const CRISIS = [
   'me machucar', 'me ferir', 'me cortar', 'suicid', 'me matar', 'tirar minha vida', 'tirar a minha vida', 'acabar com tudo', 'nao quero mais viver', 'quero morrer', 'sumir de vez', 'nao aguento mais viver',

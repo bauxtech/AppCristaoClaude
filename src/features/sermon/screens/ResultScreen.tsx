@@ -19,8 +19,8 @@ import { SuggestedSong } from '../../music/screens/MusicScreens'
 const FAIL_TEXT: Record<NonNullable<Sermon['failReason']>, string> = {
   too_big: 'O áudio passou de 50 MB, o limite de envio.',
   no_audio: 'O áudio não foi encontrado no aparelho.',
-  limit: 'Você já usou os 5 cultos deste mês.',
-  no_access: 'A transcrição faz parte da assinatura.',
+  limit: 'Você já usou os cultos deste período do seu plano. A contagem volta na renovação.',
+  no_access: 'Gravar e transcrever culto está nos planos Completo e Líder.',
   empty: 'Não deu para entender a fala do áudio. Confira se o som foi gravado.',
   no_login: 'Entre na sua conta de novo para transcrever.',
   error: 'Não foi possível processar agora. Tente de novo.',

@@ -1,4 +1,5 @@
 import { router } from 'expo-router'
+import { PlanButton } from '../../subscription/PlanLock'
 import { View } from 'react-native'
 import { AppText, Button, CoverGrid, Page, SectionLabel, Tag, useGridItemWidth } from '../../../components'
 import { PlanCover } from '../../home/HomeSections'
@@ -25,7 +26,7 @@ export function PlansScreen() {
   const catalog = plans.filter((p) => !p.custom && !progress[p.id])
   return (
     <Page title="Planos de leitura">
-      <Button label="Criar meu plano" icon="plus" onPress={() => router.push('/biblia/plano-novo')} />
+      <PlanButton feature="reading_plans" label="Criar meu plano" icon="plus" onPress={() => router.push('/biblia/plano-novo')} />
       <SectionLabel>Meus planos</SectionLabel>
       {mine.length === 0 ? (
         <AppText variant="body" tone="secondary">

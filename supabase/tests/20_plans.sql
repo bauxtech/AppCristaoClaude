@@ -81,11 +81,16 @@ select tests.ok('o aviso de limite traz quando o chat zera (meia-noite em Brasí
 select tests.ok('Essencial: sem gravação de culto', (public.use_limit('00000000-0000-0000-0000-000000000024', 'sermon') ->> 'reason') = 'no_access');
 select tests.ok('Completo: 10 perguntas por dia',
   (select count(*) from generate_series(1, 11) g where (public.use_limit('00000000-0000-0000-0000-000000000025', 'chat') ->> 'ok')::boolean) = 10);
-select tests.ok('Completo: 4 cultos no período, e o aviso traz a renovação da assinatura',
+select tests.ok('Completo: 4 cultos no mês, e o aviso traz quando renova (um mês depois da compra)',
   (select count(*) from generate_series(1, 5) g where (public.use_limit('00000000-0000-0000-0000-000000000025', 'sermon') ->> 'ok')::boolean) = 4
-  and (public.use_limit('00000000-0000-0000-0000-000000000025', 'sermon') ->> 'resets_at')::timestamptz = (select renews_at from public.subscriptions where user_id = '00000000-0000-0000-0000-000000000025'));
+  and (public.use_limit('00000000-0000-0000-0000-000000000025', 'sermon') ->> 'resets_at')::timestamptz = (select period_start + interval '1 month' from public.subscriptions where user_id = '00000000-0000-0000-0000-000000000025'));
 update public.subscriptions set period_start = now(), renews_at = now() + interval '30 days' where user_id = '00000000-0000-0000-0000-000000000025';
 select tests.ok('novo período da assinatura: o contador de cultos zera', (public.use_limit('00000000-0000-0000-0000-000000000025', 'sermon') ->> 'ok')::boolean);
+-- Anual: comprado há 40 dias, o contador está no segundo mês (4 por mês, não 4 por ano).
+update public.subscriptions set billing = 'annual', period_start = now() - interval '40 days', renews_at = now() + interval '325 days' where user_id = '00000000-0000-0000-0000-000000000025';
+select tests.ok('anual: os cultos contam por mês, a partir do dia da compra',
+  (select period from public.limit_info('00000000-0000-0000-0000-000000000025', 'sermon')) = (select 'p' || to_char((period_start + interval '1 month') at time zone 'UTC', 'YYYYMMDDHH24MISS') from public.subscriptions where user_id = '00000000-0000-0000-0000-000000000025')
+  and (select resets_at from public.limit_info('00000000-0000-0000-0000-000000000025', 'sermon')) = (select period_start + interval '2 months' from public.subscriptions where user_id = '00000000-0000-0000-0000-000000000025'));
 select tests.ok('Líder: 8 cultos no período',
   (select count(*) from generate_series(1, 9) g where (public.use_limit('00000000-0000-0000-0000-000000000026', 'sermon') ->> 'ok')::boolean) = 8);
 select tests.ok('teste: 10 perguntas e 2 cultos',

@@ -10,6 +10,7 @@ import { type Cell, type PlanSection } from '../data'
 import { useSermons } from '../../sermon/SermonContext'
 import { formatMeetingDay } from '../meetings'
 import { CellGuard } from './Guard'
+import { PlanButton } from '../../subscription/PlanLock'
 
 function SectionCard({ s }: { s: PlanSection }) {
   return (
@@ -201,7 +202,7 @@ export function ChooseRecordingScreen() {
               <AppText variant="body" tone="secondary">
                 Você ainda não gravou nenhum culto. Grave a próxima pregação e depois monte o roteiro a partir dela.
               </AppText>
-              <Button label="Gravar culto" icon="mic" onPress={() => router.push('/culto/gravar')} />
+              <PlanButton feature="sermon" label="Gravar culto" icon="mic" onPress={() => router.push('/culto/gravar')} />
             </>
           ) : (
             <AppText variant="body" tone="secondary">

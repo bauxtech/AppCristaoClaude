@@ -6,7 +6,8 @@ import { AppText, Button, Card, Page, Switch, TextField } from '../../../compone
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { useChurch } from '../../church/ChurchContext'
-import { AUDIO_DAYS, MONTHLY_LIMIT, usedThisMonth } from '../data'
+import { AUDIO_DAYS } from '../data'
+import { useSermonQuota } from '../quota'
 import { useSermons } from '../SermonContext'
 import { UsageCard } from './ListScreen'
 import { useSettings } from '../../settings/SettingsContext'
@@ -20,7 +21,7 @@ export function BeforeScreen() {
   const { recordingDefault } = useSettings()
   const [keepAudio, setKeepAudio] = useState(recordingDefault === 'audio')
   const [perm, setPerm] = useState<'ask' | 'explain' | 'denied'>('ask')
-  const full = usedThisMonth(sermons) >= MONTHLY_LIMIT
+  const full = useSermonQuota(sermons).full
 
   async function start() {
     const current = await getRecordingPermissionsAsync()

@@ -1,55 +1,128 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { AppState } from 'react-native'
 import { getItem, setItem } from '../../lib/storage'
-import { restorePurchase } from '../../lib/store'
+import { restorePurchase, syncSubscription } from '../../lib/store'
+import { IS_REMOTE, supabase } from '../../lib/supabase'
+import { useUserId } from '../../lib/sync'
 import { useSession } from '../../state/session'
-import { nextCharge, previewState, subStatus, trialDaysLeft, trialEnd, type Billing, type PreviewSub, type SubState, type SubStatus } from './plan'
+import { accessFromServer, localAccess, nextCharge, previewState, trialDaysLeft, type Access, type AccessPlan, type Billing, type Feature, type LocalSub, type PlanId, type PreviewSub } from './plan'
 
-interface SubValue extends SubState {
+export type SubStatus = 'trial' | 'active' | 'canceledActive' | 'paymentFailed' | 'free'
+
+interface SubValue {
+  access: Access
+  plan: AccessPlan
+  /** Situação para as telas: teste, assinatura (e o estado dela) ou grátis. */
   status: SubStatus
   daysLeft: number
-  /** Data em que o teste termina. */
   trialEndsAt: string | null
+  introSeen: boolean
+  /** Pode usar a função agora. */
+  can: (f: Feature) => boolean
+  /** Plano mais barato que libera a função, para o cadeado ("No plano Completo"). */
+  minPlan: (f: Feature) => PlanId
+  /** Usa as funções da célula (plano próprio ou vaga do líder). Sem resposta do servidor ainda: segue o plano. */
+  canUseCell: (cellId: string) => boolean
+  /** A célula funciona (tem líder no plano Líder). */
+  cellActive: (cellId: string) => boolean
+  /** Entrou pelo Google e ainda não confirmou o celular: o teste começa depois disso. */
+  needsPhoneForTrial: boolean
+  /** Dia 8: a tela de planos aparece uma vez ao abrir o app. */
+  showEndOfTrial: boolean
+  markPaywallSeen: () => void
   seeIntro: () => void
-  subscribe: (billing: Billing) => void
-  /** Troca entre mensal e anual. Vale a partir da próxima cobrança. */
-  changeBilling: (billing: Billing) => void
+  /** Busca de novo no servidor (depois de comprar, restaurar ou confirmar o celular). */
+  refresh: () => Promise<void>
+  /** Só na prévia: compra de exemplo. Com a loja ligada, quem libera é o servidor. */
+  subscribe: (plan: PlanId, billing: Billing) => void
   restore: () => Promise<boolean>
   setPreview: (k: PreviewSub) => void
 }
 
 const Ctx = createContext<SubValue | null>(null)
-const empty: SubState = { trialStart: null, introSeen: false, plan: null }
+const emptyLocal: LocalSub = { trialStart: null, introSeen: false, paywallSeen: false, plan: null }
 
-export function SubscriptionProvider({ children, initial, now }: { children: ReactNode; initial?: Partial<SubState>; now?: Date }) {
-  const { onboarded } = useSession()
-  const [state, setState] = useState<SubState>(() => (initial ? { ...empty, ...initial } : getItem<SubState>('subscription', empty)))
+export function SubscriptionProvider({ children, initial, now }: { children: ReactNode; initial?: Partial<LocalSub>; now?: Date }) {
+  const { onboarded, sampleData } = useSession()
+  const uid = useUserId()
+  const remote = IS_REMOTE && !initial && !sampleData
+  const [local, setLocal] = useState<LocalSub>(() => (initial ? { ...emptyLocal, ...initial } : getItem<LocalSub>('subscription', emptyLocal)))
+  const [server, setServer] = useState<Access | null>(() => (remote ? getItem<Access | null>('access', null) : null))
+
   useEffect(() => {
-    if (!initial) setItem('subscription', state)
-  }, [state, initial])
-  // O teste começa no primeiro login.
+    if (!initial) setItem('subscription', local)
+  }, [local, initial])
+  // Prévia: o teste começa no primeiro login, contado no aparelho. Com o servidor, quem marca é o banco.
   useEffect(() => {
-    if (onboarded && !state.trialStart) setState((s) => ({ ...s, trialStart: new Date().toISOString() }))
-  }, [onboarded, state.trialStart])
-  // Sair e entrar de novo não recomeça o teste. No servidor, o início do teste fica preso à conta.
+    if (!remote && onboarded && !local.trialStart) setLocal((s) => ({ ...s, trialStart: new Date().toISOString() }))
+  }, [remote, onboarded, local.trialStart])
+
+  const refresh = useCallback(async () => {
+    if (!remote || !uid || !supabase) return
+    const { data, error } = await supabase.rpc('my_access')
+    if (error || !data) return
+    const a = accessFromServer(data)
+    setServer(a)
+    setItem('access', a)
+  }, [remote, uid])
+
+  useEffect(() => {
+    if (!remote || !uid) return
+    void refresh()
+    // Ao voltar para o app: o dia pode ter virado, o teste terminado ou a assinatura renovado.
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') void refresh()
+    })
+    return () => sub.remove()
+  }, [remote, uid, refresh])
+  // Saiu da conta: esquece o acesso da conta anterior.
+  useEffect(() => {
+    if (remote && !uid && server) {
+      setServer(null)
+      setItem('access', null)
+    }
+  }, [remote, uid, server])
 
   const value = useMemo<SubValue>(() => {
     const at = now ?? new Date()
+    const a = remote ? (server ?? accessFromServer({ plan: 'free' })) : localAccess(local, at)
+    const storeLive = a.plan !== 'free' && a.plan !== 'trial'
+    const status: SubStatus = a.plan === 'trial' ? 'trial' : storeLive ? (a.storeStatus === 'canceledActive' || a.storeStatus === 'paymentFailed' ? a.storeStatus : 'active') : 'free'
+    const can = (f: Feature) => a.features.includes(f)
     return {
-      ...state,
-      status: subStatus(state, at),
-      daysLeft: trialDaysLeft(state.trialStart, at),
-      trialEndsAt: state.trialStart ? trialEnd(state.trialStart).toISOString() : null,
-      seeIntro: () => setState((s) => ({ ...s, introSeen: true })),
-      subscribe: (billing) => setState((s) => ({ ...s, introSeen: true, plan: { billing, status: 'active', renewsAt: nextCharge(billing) } })),
-      changeBilling: (billing) => setState((s) => (s.plan ? { ...s, plan: { ...s.plan, billing } } : s)),
+      access: a,
+      plan: a.plan,
+      status,
+      daysLeft: a.plan === 'trial' ? trialDaysLeft(a.trialEndsAt, at) : 0,
+      trialEndsAt: a.trialEndsAt,
+      introSeen: local.introSeen,
+      can,
+      minPlan: (f) => a.minPlan[f],
+      canUseCell: (id) => a.cells[id]?.canUse ?? can('cell'),
+      cellActive: (id) => a.cells[id]?.active ?? true,
+      needsPhoneForTrial: remote && !!server && a.plan === 'free' && !a.trialUsed && !a.trialStart,
+      showEndOfTrial: a.plan === 'free' && !!a.trialStart && !a.paywallSeen && (remote ? !!server : true),
+      markPaywallSeen: () => {
+        if (remote && supabase) {
+          setServer((s) => (s ? { ...s, paywallSeen: true } : s))
+          void supabase.rpc('mark_paywall_seen').then(() => refresh())
+        } else setLocal((s) => ({ ...s, paywallSeen: true }))
+      },
+      seeIntro: () => setLocal((s) => ({ ...s, introSeen: true })),
+      refresh,
+      subscribe: (plan, billing) => setLocal((s) => ({ ...s, introSeen: true, plan: { id: plan, billing, status: 'active', renewsAt: nextCharge(billing) } })),
       restore: async () => {
         const found = await restorePurchase()
-        if (found) setState((s) => ({ ...s, plan: { billing: found, status: 'active', renewsAt: nextCharge(found) } }))
-        return !!found
+        if (!found) return false
+        if (remote) {
+          await syncSubscription()
+          await refresh()
+        } else setLocal((s) => ({ ...s, plan: { id: found.plan, billing: found.billing, status: 'active', renewsAt: nextCharge(found.billing) } }))
+        return true
       },
-      setPreview: (k) => setState(previewState(k)),
+      setPreview: (k) => setLocal(previewState(k)),
     }
-  }, [state, now])
+  }, [remote, server, local, now, refresh])
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 

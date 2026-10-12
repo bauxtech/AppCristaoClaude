@@ -2,6 +2,8 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { AppText, Button, Card, Switch, TextField, useToast } from '../../../components'
+import { PlanLockRow } from '../../subscription/PlanLock'
+import { useSubscription } from '../../subscription/SubscriptionContext'
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -18,6 +20,7 @@ export function DiaryScreen() {
   const [text, setText] = useState('')
   const locked = prayer.diaryLock && !prayer.diaryUnlocked
 
+  const sub = useSubscription()
   return (
     <PrayerPage title="Diário de oração">
       {locked ? (
@@ -33,18 +36,22 @@ export function DiaryScreen() {
             </AppText>
           </View>
 
-          <Card style={{ gap: 12 }}>
-            <TextField label="Nova entrada" value={text} onChangeText={setText} placeholder="O que você trouxe para Deus hoje?" multiline autoFocus={novo === '1'} maxLength={4000} />
-            <Button
-              label="Salvar"
-              disabled={!text.trim()}
-              onPress={() => {
-                prayer.addDiaryEntry(text)
-                setText('')
-                toast('Entrada salva')
-              }}
-            />
-          </Card>
+          {!sub.can('prayer') ? (
+            <PlanLockRow feature="prayer" label="Escrever no diário" />
+          ) : (
+            <Card style={{ gap: 12 }}>
+              <TextField label="Nova entrada" value={text} onChangeText={setText} placeholder="O que você trouxe para Deus hoje?" multiline autoFocus={novo === '1'} maxLength={4000} />
+              <Button
+                label="Salvar"
+                disabled={!text.trim()}
+                onPress={() => {
+                  prayer.addDiaryEntry(text)
+                  setText('')
+                  toast('Entrada salva')
+                }}
+              />
+            </Card>
+          )}
 
           {prayer.diary.length === 0 ? (
             <EmptyState text="Seu diário está vazio. Comece escrevendo depois de um momento de oração." />

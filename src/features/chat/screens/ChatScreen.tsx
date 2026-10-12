@@ -20,7 +20,8 @@ import { currentUserId } from '../../../lib/sync'
 import { useFaithConsent } from '../../settings/SettingsContext'
 import { saveConversation } from '../sync'
 import { useChat, type Conversation, type Message } from '../ChatContext'
-import { DAILY_LIMIT, isCrisis } from '../rules'
+import { isCrisis } from '../rules'
+import { useSubscription } from '../../subscription/SubscriptionContext'
 import { getTranslation } from '../../bible/translations'
 
 const SUGGESTIONS = ['O que significa "O Senhor é meu pastor"?', 'Quais versículos falam sobre ansiedade?', 'O que a Bíblia diz sobre perdão?', 'Quem é o bom pastor em João 10?']
@@ -63,7 +64,11 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
   const [voice, setVoice] = useState(false)
   const [divided, setDivided] = useState(false)
   const scroll = useRef<ScrollView>(null)
-  const limit = chat.remaining <= 0
+  const sub = useSubscription()
+  // O limite do dia vem do plano. O servidor também conta: vale o maior entre o que ele e o aparelho sabem.
+  const dailyLimit = sub.access.chat.limit
+  const remaining = Math.max(0, dailyLimit - Math.max(chat.usedToday, sub.access.chat.used))
+  const limit = remaining <= 0
   const { online } = useRemoteState()
   const sermon = conv?.context?.kind === 'sermon' ? sermons.find((s) => s.id === (conv.context as { id: string }).id) ?? null : null
 
@@ -169,9 +174,9 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
         </AppText>
         {profile.tradition ? <AppText variant="small" tone="secondary">{`Respostas de acordo com a tradição ${profile.tradition}.`}</AppText> : null}
       </View>
-      {!limit && chat.remaining <= 5 ? (
+      {!limit && remaining <= 5 ? (
         <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primarySoft }} accessibilityLiveRegion="polite">
-          <AppText variant="small" style={{ color: colors.accent, fontFamily: fonts.semibold }}>{`${chat.remaining} ${chat.remaining === 1 ? 'pergunta restante' : 'perguntas restantes'} hoje`}</AppText>
+          <AppText variant="small" style={{ color: colors.accent, fontFamily: fonts.semibold }}>{`${remaining} ${remaining === 1 ? 'pergunta restante' : 'perguntas restantes'} hoje`}</AppText>
         </View>
       ) : null}
 
@@ -207,10 +212,11 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
           </View>
         ) : limit ? (
           <View style={{ gap: 4, alignItems: 'center', paddingBottom: 10 }}>
-            <AppText variant="bodyStrong">{`Você usou as ${DAILY_LIMIT} perguntas de hoje`}</AppText>
+            <AppText variant="bodyStrong">{`Você usou as ${dailyLimit} perguntas de hoje`}</AppText>
             <AppText variant="small" tone="secondary">
-              Amanhã você pode perguntar de novo. O histórico continua aberto.
+              O contador zera à meia-noite, no horário de Brasília. O histórico continua aberto.
             </AppText>
+            {sub.plan !== 'lider' && sub.plan !== 'completo' && sub.plan !== 'trial' ? <Button label="Mais perguntas no plano Completo" variant="text" size="sm" onPress={() => router.push('/assinatura?plano=completo' as '/assinatura')} /> : null}
           </View>
         ) : null}
         {!online || limit ? (

@@ -5,7 +5,7 @@ import { AccessGuard } from '../../features/subscription/AccessGuard'
 export default function Layout() {
   const { colors } = useTheme()
   return (
-    <AccessGuard openWhenBlocked={'all'}>
+    <AccessGuard>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
     </AccessGuard>
   )

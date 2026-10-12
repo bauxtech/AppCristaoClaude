@@ -7,7 +7,7 @@ import { useAudio } from '../../features/audio/AudioContext'
 import { MiniPlayer } from '../../features/audio/MiniPlayer'
 import { useSession } from '../../state/session'
 import { useSubscription } from '../../features/subscription/SubscriptionContext'
-import { BlockedScreen, TrialIntroSheet } from '../../features/subscription/screens/SubscriptionScreens'
+import { TrialIntroSheet } from '../../features/subscription/screens/SubscriptionScreens'
 import { useTheme } from '../../theme/ThemeProvider'
 import { fonts } from '../../theme/typography'
 
@@ -30,8 +30,8 @@ export default function TabsLayout() {
   const playerHeight = track ? 60 : 0
 
   if (!onboarded) return <Redirect href="/bem-vindo" />
-  // Teste terminou sem assinatura: nenhuma aba abre.
-  if (sub.status === 'blocked') return <BlockedScreen />
+  // Dia 8 sem plano: a tela de planos aparece uma vez, com o botão para seguir só com a Bíblia.
+  if (sub.showEndOfTrial) return <Redirect href={'/assinatura?fim=1' as '/assinatura'} />
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>

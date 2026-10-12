@@ -15,6 +15,8 @@ import { WEEKDAYS_PLURAL, type Cell } from '../data'
 import { formatMeeting, formatTime, missedTwoWeeks, nextMeeting } from '../meetings'
 import { can, ROLE_LABEL } from '../permissions'
 import { TileGrid } from './parts'
+import { PlanButton } from '../../subscription/PlanLock'
+import { useSubscription } from '../../subscription/SubscriptionContext'
 
 export function CellHubScreen() {
   const { colors } = useTheme()
@@ -30,9 +32,46 @@ export function CellHubScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}>
+      {cell && !cell.archived ? <CellPlanNotice cellId={cell.id} leader={cell.myRole === 'lider'} /> : null}
       {cellStatus === 'pending' && !cell ? <Awaiting /> : !cell ? <Empty /> : cell.archived ? <Archived cell={cell} /> : cell.myRole === 'lider' ? <LeaderView cell={cell} /> : <MemberView cell={cell} />}
     </ScrollView>
   )
+}
+
+/**
+ * Célula sem líder no plano Líder: para na hora e fica só para leitura (nada é apagado).
+ * Membro sem plano e sem vaga (mais de 20 sem plano): vê a célula, mas precisa de plano próprio para participar.
+ */
+function CellPlanNotice({ cellId, leader }: { cellId: string; leader: boolean }) {
+  const { colors } = useTheme()
+  const sub = useSubscription()
+  if (!sub.cellActive(cellId)) {
+    return (
+      <Card style={{ gap: 6, borderColor: colors.danger, backgroundColor: colors.dangerSoft }} accessibilityLiveRegion="polite">
+        <AppText variant="bodyStrong" style={{ color: colors.danger }}>
+          Célula parada
+        </AppText>
+        <AppText variant="small" style={{ color: colors.text }}>
+          {leader
+            ? 'Sem o plano Líder, a célula fica só para leitura: nada de reunião, escala, presença, avisos ou página web. Nada foi apagado. Assine de novo ou passe a liderança para alguém com o plano Líder.'
+            : 'O líder está sem o plano Líder. A célula fica só para leitura até ele voltar a assinar. Nada foi apagado.'}
+        </AppText>
+        {leader ? <Button label="Ver plano Líder" size="sm" onPress={() => router.push('/assinatura?plano=lider' as '/assinatura')} style={{ alignSelf: 'flex-start' }} /> : null}
+      </Card>
+    )
+  }
+  if (!sub.canUseCell(cellId)) {
+    return (
+      <Card style={{ gap: 6, borderColor: colors.primary }}>
+        <AppText variant="bodyStrong">Você está na lista, sem participar</AppText>
+        <AppText variant="small" tone="secondary">
+          As vagas sem plano desta célula acabaram. Com o plano Essencial, você confirma presença, entra na escala e vê os pedidos da célula.
+        </AppText>
+        <Button label="Ver planos" size="sm" onPress={() => router.push('/assinatura?plano=essencial' as '/assinatura')} style={{ alignSelf: 'flex-start' }} />
+      </Card>
+    )
+  }
+  return null
 }
 
 function Header({ title, sub, right }: { title: string; sub?: string; right?: React.ReactNode }) {
@@ -70,7 +109,7 @@ function Empty() {
         </AppText>
       </View>
       <Button label="Entrar com convite" onPress={() => router.push('/celula/entrar')} />
-      <Button label="Criar uma célula" variant="outline" onPress={() => router.push('/celula/criar')} />
+      <PlanButton feature="cell_lead" label="Criar uma célula" variant="outline" onPress={() => router.push('/celula/criar')} />
       <Button label="Fazer isso depois" variant="text" onPress={() => router.navigate('/')} />
     </>
   )

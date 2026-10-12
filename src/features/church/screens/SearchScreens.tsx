@@ -15,6 +15,7 @@ import { fonts } from '../../../theme/typography'
 import { useChurch } from '../ChurchContext'
 import { DENOMINATIONS, DIRECTORY, searchDirectory } from '../data'
 import { ACCESS_ITEMS, accessState } from './format'
+import { PlanButton } from '../../subscription/PlanLock'
 
 /** Igrejas da última busca, para a tela de confirmar abrir sem buscar de novo. */
 const found = new Map<string, Church>()
@@ -80,7 +81,7 @@ export function SearchChurchScreen() {
         ) : (
           <ErrorState message={remote.online ? 'Não foi possível buscar.' : 'A busca precisa de internet.'} onRetry={remote.retry} />
         )}
-        <Button label="Cadastrar à mão" variant="outline" onPress={() => router.push('/igreja/cadastrar')} />
+        <PlanButton feature="church" label="Cadastrar à mão" variant="outline" onPress={() => router.push('/igreja/cadastrar')} />
       </Page>
     )
   }
@@ -128,7 +129,7 @@ export function SearchChurchScreen() {
           <AppText variant="small" tone="secondary" style={{ fontFamily: fonts.medium }}>{c.cnpj ? `CNPJ ${c.cnpj}` : 'Cadastrada à mão'}</AppText>
         </Pressable>
       ))}
-      <Button label="Cadastrar à mão" variant="outline" onPress={() => router.push('/igreja/cadastrar')} />
+      <PlanButton feature="church" label="Cadastrar à mão" variant="outline" onPress={() => router.push('/igreja/cadastrar')} />
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
         {IS_REMOTE ? 'Digite o nome, a cidade ou o CNPJ completo. Pelo CNPJ, nome e endereço vêm dos dados públicos da Receita.' : 'Nome e endereço vêm dos dados públicos do CNPJ.'}
       </AppText>

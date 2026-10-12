@@ -1,30 +1,26 @@
-import { router } from 'expo-router'
-import { useState } from 'react'
+import { router, useLocalSearchParams } from 'expo-router'
+import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AppText, Button, Card, Icon, Page, SectionLabel, Segmented, Sheet, useToast } from '../../../components'
+import { AppText, Button, Card, Icon, Page, SectionLabel, Segmented, Sheet, TextField, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
-import { openStoreSubscriptions, purchase, simulateStorePurchase, STORE_ENABLED, STORE_NAME } from '../../../lib/store'
+import { openStoreSubscriptions, purchase, simulateStorePurchase, STORE_ENABLED, STORE_NAME, syncSubscription } from '../../../lib/store'
+import { sendPhoneChangeCode, supabase, verifyPhoneChange } from '../../../lib/supabase'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { longDate } from '../../settings/screens/AccountScreens'
-import { FEATURES, nextCharge, PRICES, TRIAL_DAYS, type Billing, type PreviewSub } from '../plan'
+import { PLAN_NAME, PLANS, planInfo, TRIAL_DAYS, type Billing, type PlanId, type PreviewSub } from '../plan'
 import { useSubscription } from '../SubscriptionContext'
 
-function FeatureList() {
+function Check({ text }: { text: string }) {
   const { colors } = useTheme()
   return (
-    <View style={{ gap: 10 }}>
-      {FEATURES.map((f) => (
-        <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="check" size={13} color={colors.primary} strokeWidth={3} />
-          </View>
-          <AppText variant="body" style={{ flex: 1 }}>
-            {f}
-          </AppText>
-        </View>
-      ))}
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+      <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+        <Icon name="check" size={13} color={colors.primary} strokeWidth={3} />
+      </View>
+      <AppText variant="body" style={{ flex: 1 }}>
+        {text}
+      </AppText>
     </View>
   )
 }
@@ -36,51 +32,80 @@ function BillingPicker({ value, onChange }: { value: Billing; onChange: (b: Bill
       value={value}
       onChange={onChange}
       options={[
-        { id: 'annual', label: 'Anual' },
+        { id: 'annual', label: 'Anual, mais barato' },
         { id: 'monthly', label: 'Mensal' },
       ]}
     />
   )
 }
 
-function PriceCard({ billing }: { billing: Billing }) {
+/** Um plano na lista. O escolhido fica com borda forte e o estado é anunciado pelo leitor de tela. */
+function PlanCard({ id, billing, selected, current, onSelect }: { id: PlanId; billing: Billing; selected: boolean; current: boolean; onSelect: () => void }) {
   const { colors } = useTheme()
-  const p = PRICES[billing]
+  const p = planInfo(id)
+  const price = p.prices[billing]
+  const saving = billing === 'annual' ? `Economize ${p.annualSaving} no anual` : null
   return (
-    <View style={{ borderWidth: 2, borderColor: colors.primary, borderRadius: 20, padding: 20, gap: 4 }} accessible accessibilityLabel={`Plano ${p.label}, ${p.amount} ${p.per}`}>
-      <AppText variant="small" tone="secondary" style={{ fontFamily: fonts.semibold }}>
-        {`Plano ${p.label}`}
-      </AppText>
+    <Pressable
+      onPress={onSelect}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={`Plano ${p.name}, ${price.amount} ${price.per}${saving ? `. ${saving}` : ''}${current ? '. Seu plano atual' : ''}`}
+      style={{ borderWidth: selected ? 2 : 1, borderColor: selected ? colors.primary : colors.lineStrong, borderRadius: 20, padding: 18, gap: 10, backgroundColor: colors.card }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+          <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: selected ? colors.primary : colors.lineStrong, alignItems: 'center', justifyContent: 'center' }}>
+            {selected ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} /> : null}
+          </View>
+          <AppText variant="title">{p.name}</AppText>
+        </View>
+        {current ? (
+          <View style={{ borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3, backgroundColor: colors.primarySoft }}>
+            <AppText variant="label" style={{ color: colors.primary, fontFamily: fonts.bold }}>
+              Seu plano
+            </AppText>
+          </View>
+        ) : null}
+      </View>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
-        <AppText style={{ fontFamily: fonts.bold, fontSize: 32, color: colors.text }}>{p.amount}</AppText>
-        <AppText variant="body" tone="secondary" style={{ paddingBottom: 4 }}>
-          {p.per}
+        <AppText style={{ fontFamily: fonts.bold, fontSize: 26, color: colors.text }}>{price.amount}</AppText>
+        <AppText variant="body" tone="secondary" style={{ paddingBottom: 3 }}>
+          {price.per}
         </AppText>
       </View>
-    </View>
+      {saving ? (
+        <AppText variant="small" style={{ color: colors.primary, fontFamily: fonts.semibold }}>
+          {saving}
+        </AppText>
+      ) : null}
+      <View style={{ gap: 6 }}>
+        {p.items.map((t) => (
+          <Check key={t} text={t} />
+        ))}
+      </View>
+    </Pressable>
   )
 }
 
 /** Folha de exemplo. Na loja de verdade, quem desenha esta folha é a Apple ou o Google. */
-export function StoreSheet({ billing, visible, onCancel, onConfirm }: { billing: Billing; visible: boolean; onCancel: () => void; onConfirm: () => void }) {
+export function StoreSheet({ plan, billing, visible, onCancel, onConfirm }: { plan: PlanId; billing: Billing; visible: boolean; onCancel: () => void; onConfirm: () => void }) {
   const { colors } = useTheme()
   const [busy, setBusy] = useState(false)
-  const p = PRICES[billing]
+  const p = planInfo(plan)
+  const price = p.prices[billing]
   return (
     <Sheet visible={visible} onClose={onCancel} title="Confirmar assinatura">
       <Card style={{ gap: 8 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <AppText variant="body">{`Plano ${p.label}`}</AppText>
-          <AppText variant="bodyStrong">{p.amount}</AppText>
+          <AppText variant="body">{`${p.name}, ${billing === 'annual' ? 'anual' : 'mensal'}`}</AppText>
+          <AppText variant="bodyStrong">{price.amount}</AppText>
         </View>
         <View style={{ height: 1, backgroundColor: colors.line }} />
         <AppText variant="small" tone="secondary">
-          {`Cobrado ${p.per} automaticamente. Cancele a qualquer momento nas configurações da sua conta na loja.`}
+          {`Cobrado ${price.per} automaticamente. Cancele a qualquer momento nas configurações da sua conta na loja.`}
         </AppText>
       </Card>
-      <AppText variant="small" tone="secondary">
-        {`Pagamento pela ${STORE_NAME}. Seus dados de pagamento já estão na loja.`}
-      </AppText>
       <AppText variant="label" tone="secondary">
         Exemplo da folha da loja. A compra de verdade entra com a integração da loja.
       </AppText>
@@ -107,17 +132,21 @@ export function StoreSheet({ billing, visible, onCancel, onConfirm }: { billing:
 }
 
 /**
- * Assinar: com a loja ligada, abre a folha de compra da própria Apple ou Google.
- * Sem a loja, abre a folha de exemplo (onSample). Cancelar volta para a tela, sem mensagem de erro.
+ * Assinar: com a loja ligada, abre a folha de compra da própria Apple ou Google e pede ao servidor para conferir.
+ * Sem a loja, abre a folha de exemplo. Cancelar volta para a tela, sem mensagem de erro.
  */
-function useBuy(onSample: () => void, onDone: (b: Billing) => void) {
+function useBuy(onSample: () => void) {
   const toast = useToast()
-  return async (billing: Billing) => {
+  const sub = useSubscription()
+  return async (plan: PlanId, billing: Billing) => {
     if (!STORE_ENABLED) return onSample()
     try {
-      const r = await purchase(billing)
-      if (r === 'ok') onDone(billing)
-      else if (r === 'unavailable') toast('A loja não está disponível agora. Tente de novo.')
+      const r = await purchase(plan, billing)
+      if (r === 'ok') {
+        await syncSubscription()
+        await sub.refresh()
+        router.replace('/assinatura/confirmada')
+      } else if (r === 'unavailable') toast('A loja não está disponível agora. Tente de novo.')
     } catch {
       toast('A compra não foi concluída. Tente de novo.')
     }
@@ -145,45 +174,67 @@ function LegalLinks() {
   )
 }
 
-/** Tela de planos: o que inclui, mensal ou anual e um botão só. */
+const isPlanId = (p: unknown): p is PlanId => p === 'essencial' || p === 'completo' || p === 'lider'
+
+/**
+ * Tela de planos: os três planos, mensal ou anual (o anual vem marcado).
+ * Aberta por um cadeado, já vem no plano que libera a função. No dia 8, aparece uma vez com o botão para seguir só com a Bíblia.
+ */
 export function PlansScreen() {
-  const { colors } = useTheme()
   const sub = useSubscription()
+  const params = useLocalSearchParams<{ plano?: string; fim?: string }>()
+  const endOfTrial = params.fim === '1'
+  const current = sub.status !== 'free' && sub.status !== 'trial' ? (sub.plan as PlanId) : null
+  const [plan, setPlan] = useState<PlanId>(isPlanId(params.plano) ? params.plano : (current ?? 'completo'))
   const [billing, setBilling] = useState<Billing>('annual')
   const [sheet, setSheet] = useState(false)
-  const buy = useBuy(
-    () => setSheet(true),
-    (b) => (sub.subscribe(b), router.replace('/assinatura/confirmada')),
-  )
+  const buy = useBuy(() => setSheet(true))
+  // A tela do fim do teste conta como vista assim que aparece.
+  useEffect(() => {
+    if (endOfTrial && sub.showEndOfTrial) sub.markPaywallSeen()
+  }, [endOfTrial]) // eslint-disable-line react-hooks/exhaustive-deps
+  const close = () => router.replace('/')
+  const p = planInfo(plan)
   return (
-    <Page title="Assinar">
-      <View style={{ backgroundColor: colors.primarySoft, borderRadius: 20, padding: 20, alignItems: 'center', gap: 4 }}>
-        <AppText style={{ fontFamily: fonts.bold, fontSize: 20, color: colors.primary }}>App Cristão</AppText>
-        <AppText variant="body" style={{ textAlign: 'center' }}>
-          Um plano, acesso completo a tudo
-        </AppText>
-      </View>
-      {sub.status === 'trial' ? (
+    <Page title="Planos" onBack={endOfTrial ? close : undefined}>
+      {endOfTrial ? (
+        <View style={{ gap: 6 }}>
+          <AppText variant="title" accessibilityRole="header">
+            Seu teste terminou
+          </AppText>
+          <AppText variant="body" tone="secondary">
+            A Bíblia continua grátis: ler, ouvir, buscar, grifar e anotar. Para o resto, escolha um plano. Nada do que você criou foi apagado.
+          </AppText>
+        </View>
+      ) : sub.status === 'trial' ? (
         <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-          {sub.daysLeft === 1 ? 'Hoje é o último dia do seu teste.' : `Faltam ${sub.daysLeft} dias do seu teste.`}
+          {sub.daysLeft <= 1 ? 'Seu teste termina amanhã.' : `Faltam ${sub.daysLeft} dias do seu teste.`}
         </AppText>
       ) : null}
       <BillingPicker value={billing} onChange={setBilling} />
-      <PriceCard billing={billing} />
-      <SectionLabel>O que está incluído</SectionLabel>
-      <FeatureList />
-      <Button label="Assinar" onPress={() => buy(billing)} />
+      <View style={{ gap: 12 }} accessibilityRole="radiogroup" accessibilityLabel="Planos">
+        {PLANS.map((x) => (
+          <PlanCard key={x.id} id={x.id} billing={billing} selected={plan === x.id} current={current === x.id} onSelect={() => setPlan(x.id)} />
+        ))}
+      </View>
+      <Button label={current === plan ? 'Este é o seu plano' : `Assinar ${p.name} ${billing === 'annual' ? 'anual' : 'mensal'}`} disabled={current === plan} onPress={() => buy(plan, billing)} />
+      {endOfTrial ? <Button label="Agora não, seguir só com a Bíblia" variant="outline" onPress={close} /> : null}
+      <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
+        {`Pagamento pela ${STORE_NAME}. Renova sozinho e você cancela quando quiser nas configurações da loja.`}
+      </AppText>
       <LegalLinks />
       <StoreSheet
+        plan={plan}
         billing={billing}
         visible={sheet}
         onCancel={() => setSheet(false)}
         onConfirm={() => {
           setSheet(false)
-          sub.subscribe(billing)
+          sub.subscribe(plan, billing)
           router.replace('/assinatura/confirmada')
         }}
       />
+      {IS_PREVIEW ? <PreviewSubTools /> : null}
     </Page>
   )
 }
@@ -191,14 +242,16 @@ export function PlansScreen() {
 export function ConfirmedScreen() {
   const { colors } = useTheme()
   const sub = useSubscription()
-  const billing = sub.plan?.billing ?? 'monthly'
-  const p = PRICES[billing]
-  const rows: [string, string][] = [
-    ['Plano', p.label],
-    ['Valor', `${p.amount} ${p.per}`],
-    ['Próxima cobrança', longDate(sub.plan?.renewsAt ?? nextCharge(billing))],
-    ['Gerenciar', 'Configurações da loja'],
-  ]
+  const plan = isPlanId(sub.plan) ? planInfo(sub.plan) : null
+  const billing = sub.access.billing ?? 'monthly'
+  const rows: [string, string][] = plan
+    ? [
+        ['Plano', `${plan.name}, ${billing === 'annual' ? 'anual' : 'mensal'}`],
+        ['Valor', `${plan.prices[billing].amount} ${plan.prices[billing].per}`],
+        ...(sub.access.renewsAt ? ([['Próxima cobrança', longDate(sub.access.renewsAt)]] as [string, string][]) : []),
+        ['Gerenciar', 'Configurações da loja'],
+      ]
+    : [['Situação', 'A loja está confirmando a compra. Pode levar alguns minutos.']]
   return (
     <Page title="Assinatura confirmada" onBack={() => router.replace('/')}>
       <View style={{ alignItems: 'center', gap: 10, paddingTop: 8 }}>
@@ -207,9 +260,6 @@ export function ConfirmedScreen() {
         </View>
         <AppText variant="screenTitle" accessibilityRole="header">
           Assinatura confirmada
-        </AppText>
-        <AppText variant="body" tone="secondary" style={{ textAlign: 'center' }}>
-          Você tem acesso completo a todos os recursos.
         </AppText>
       </View>
       <Card style={{ paddingVertical: 4 }}>
@@ -229,16 +279,15 @@ export function ConfirmedScreen() {
   )
 }
 
-const STATUS_LABEL = { trial: 'Teste grátis', active: 'Ativa', canceledActive: 'Cancelada, ativa até o fim do período', paymentFailed: 'Pagamento falhou', blocked: 'Encerrada' } as const
+const STATUS_LABEL = { trial: 'Teste grátis', active: 'Ativa', canceledActive: 'Cancelada, ativa até o fim do período', paymentFailed: 'Pagamento falhou', free: 'Grátis, só a Bíblia' } as const
 
 export function MyPlanScreen() {
   const { colors } = useTheme()
-  const toast = useToast()
   const sub = useSubscription()
-  const [billing, setBilling] = useState<Billing>(sub.plan?.billing ?? 'annual')
-  const [sheet, setSheet] = useState(false)
+  const a = sub.access
+  const plan = isPlanId(sub.plan) ? planInfo(sub.plan) : null
 
-  if (!sub.plan) {
+  if (!plan) {
     return (
       <Page title="Meu plano">
         <Card style={{ gap: 6 }}>
@@ -248,19 +297,21 @@ export function MyPlanScreen() {
           <AppText variant="bodyStrong">{STATUS_LABEL[sub.status]}</AppText>
           <AppText variant="body" tone="secondary">
             {sub.status === 'trial'
-              ? sub.daysLeft === 1
-                ? 'Hoje é o último dia do seu teste.'
+              ? sub.daysLeft <= 1
+                ? 'Seu teste termina amanhã.'
                 : `Faltam ${sub.daysLeft} dias. O teste termina em ${longDate(sub.trialEndsAt!)}.`
-              : 'Seu teste terminou. Assine para continuar.'}
+              : 'A Bíblia continua grátis. O que você criou continua guardado, só para leitura.'}
           </AppText>
         </Card>
-        <Button label="Ver plano" onPress={() => router.push('/assinatura')} />
+        {sub.needsPhoneForTrial ? <ConfirmPhoneCard /> : null}
+        <Button label="Ver planos" onPress={() => router.push('/assinatura')} />
         <LegalLinks />
       </Page>
     )
   }
 
-  const p = PRICES[sub.plan.billing]
+  const billing = a.billing ?? 'monthly'
+  const price = plan.prices[billing]
   return (
     <Page title="Meu plano">
       <Card style={{ gap: 4 }}>
@@ -269,7 +320,7 @@ export function MyPlanScreen() {
             <AppText variant="label" tone="secondary">
               Plano atual
             </AppText>
-            <AppText variant="title">{p.label}</AppText>
+            <AppText variant="title">{`${plan.name}, ${billing === 'annual' ? 'anual' : 'mensal'}`}</AppText>
           </View>
           <View style={{ borderRadius: 99, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: sub.status === 'paymentFailed' ? colors.dangerSoft : colors.primarySoft, flexShrink: 1 }}>
             <AppText variant="label" style={{ color: sub.status === 'paymentFailed' ? colors.danger : colors.primary, fontFamily: fonts.bold }}>
@@ -277,26 +328,32 @@ export function MyPlanScreen() {
             </AppText>
           </View>
         </View>
-        {[
-          ['Valor', `${p.amount} ${p.per}`],
-          [sub.status === 'canceledActive' ? 'Acesso até' : 'Próxima cobrança', longDate(sub.plan.renewsAt)],
-        ].map(([k, v]) => (
-          <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line }} accessible accessibilityLabel={`${k}: ${v}`}>
+        {(
+          [
+            ['Valor', `${price.amount} ${price.per}`],
+            ...(a.renewsAt ? [[sub.status === 'canceledActive' ? 'Acesso até' : 'Próxima cobrança', longDate(a.renewsAt)]] : []),
+            ['Chat bíblico', `${a.chat.limit} perguntas por dia`],
+            ...(a.sermon.limit > 0 ? [['Cultos', `${a.sermon.used} de ${a.sermon.limit} neste período`]] : []),
+          ] as [string, string][]
+        ).map(([k, v]) => (
+          <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line }} accessible accessibilityLabel={`${k}: ${v}`}>
             <AppText variant="body" tone="secondary">
               {k}
             </AppText>
-            <AppText variant="bodyStrong">{v}</AppText>
+            <AppText variant="bodyStrong" style={{ flexShrink: 1, textAlign: 'right' }}>
+              {v}
+            </AppText>
           </View>
         ))}
       </Card>
 
-      {sub.status === 'paymentFailed' ? (
+      {sub.status === 'paymentFailed' && a.graceUntil ? (
         <Card style={{ gap: 4, borderColor: colors.danger, backgroundColor: colors.dangerSoft }}>
           <AppText variant="bodyStrong" style={{ color: colors.danger }}>
             Pagamento falhou
           </AppText>
           <AppText variant="small" style={{ color: colors.text }}>
-            {`Regularize na loja até ${longDate(sub.plan.graceUntil!)} para não perder o acesso.`}
+            {`Regularize na loja até ${longDate(a.graceUntil)} para não perder o acesso.`}
           </AppText>
         </Card>
       ) : null}
@@ -306,24 +363,11 @@ export function MyPlanScreen() {
         </Card>
       ) : null}
 
-      <SectionLabel>Trocar período</SectionLabel>
-      <BillingPicker value={billing} onChange={setBilling} />
-      {billing !== sub.plan.billing ? <Button label={`Trocar para ${PRICES[billing].label.toLowerCase()}`} variant="soft" onPress={() => (STORE_ENABLED ? openStoreSubscriptions() : setSheet(true))} /> : null}
-
+      <Button label="Trocar de plano" variant="soft" onPress={() => router.push('/assinatura')} />
       <Button label="Gerenciar assinatura" onPress={openStoreSubscriptions} accessibilityHint={`Abre as assinaturas na ${STORE_NAME}`} />
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
         O cancelamento e a troca de forma de pagamento são feitos nas configurações da sua conta na loja.
       </AppText>
-      <StoreSheet
-        billing={billing}
-        visible={sheet}
-        onCancel={() => setSheet(false)}
-        onConfirm={() => {
-          setSheet(false)
-          sub.changeBilling(billing)
-          toast('Período trocado. Vale a partir da próxima cobrança.')
-        }}
-      />
     </Page>
   )
 }
@@ -334,13 +378,12 @@ export function TrialBanner() {
   const sub = useSubscription()
   if (sub.status !== 'trial') return null
   const last = sub.daysLeft <= 1
-  // Último dia: o bloqueio vem amanhã (texto do documento).
   const text = last ? 'Seu teste termina amanhã' : `Faltam ${sub.daysLeft} dias do seu teste`
   return (
     <Pressable
       onPress={() => router.push('/assinatura')}
       accessibilityRole="button"
-      accessibilityLabel={`${text}. Ver plano`}
+      accessibilityLabel={`${text}. Ver planos`}
       style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 14, borderRadius: 12, backgroundColor: last ? colors.dangerSoft : colors.primarySoft }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
@@ -350,7 +393,7 @@ export function TrialBanner() {
         </AppText>
       </View>
       <AppText variant="small" style={{ fontFamily: fonts.bold, color: last ? colors.danger : colors.primary }}>
-        Ver plano
+        Ver planos
       </AppText>
     </Pressable>
   )
@@ -365,9 +408,9 @@ export function LastDayCard() {
     <Card style={{ gap: 8, borderColor: colors.accent }}>
       <AppText variant="bodyStrong">Seu teste termina amanhã</AppText>
       <AppText variant="small" tone="secondary">
-        Assine para continuar sem interrupções. Seu progresso fica salvo.
+        Escolha um plano para continuar usando tudo. A Bíblia continua grátis e nada do que você criou é apagado.
       </AppText>
-      <Button label="Ver plano" size="sm" onPress={() => router.push('/assinatura')} style={{ alignSelf: 'flex-start' }} />
+      <Button label="Ver planos" size="sm" onPress={() => router.push('/assinatura')} style={{ alignSelf: 'flex-start' }} />
     </Card>
   )
 }
@@ -376,15 +419,100 @@ export function LastDayCard() {
 export function PaymentFailedCard() {
   const { colors } = useTheme()
   const sub = useSubscription()
-  if (sub.status !== 'paymentFailed' || !sub.plan?.graceUntil) return null
+  if (sub.status !== 'paymentFailed' || !sub.access.graceUntil) return null
   return (
     <Card style={{ gap: 8, borderColor: colors.danger }}>
       <AppText variant="bodyStrong">Pagamento falhou na renovação</AppText>
       <AppText variant="small" tone="secondary">
-        {`Regularize na loja até ${longDate(sub.plan.graceUntil)} para não perder o acesso.`}
+        {`Regularize na loja até ${longDate(sub.access.graceUntil)} para não perder o acesso.`}
       </AppText>
       <Button label="Abrir a loja" size="sm" variant="soft" onPress={openStoreSubscriptions} style={{ alignSelf: 'flex-start' }} />
     </Card>
+  )
+}
+
+/** No Hoje: só aparece para quem entrou pelo Google e ainda não confirmou o celular. */
+export function TrialPhoneCard() {
+  const sub = useSubscription()
+  return sub.needsPhoneForTrial ? <ConfirmPhoneCard /> : null
+}
+
+/** Quem entrou pelo Google ainda não tem celular confirmado: o teste começa depois disso. */
+export function ConfirmPhoneCard() {
+  const { colors } = useTheme()
+  return (
+    <Card style={{ gap: 8, borderColor: colors.primary }}>
+      <AppText variant="bodyStrong">{`Ganhe ${TRIAL_DAYS} dias grátis`}</AppText>
+      <AppText variant="small" tone="secondary">
+        Confirme seu número de celular para começar o teste. É um teste por número.
+      </AppText>
+      <Button label="Confirmar celular" size="sm" onPress={() => router.push('/assinatura/celular')} style={{ alignSelf: 'flex-start' }} />
+    </Card>
+  )
+}
+
+/** Confirma o celular de quem entrou pelo Google e começa o teste. */
+export function ConfirmPhoneScreen() {
+  const toast = useToast()
+  const sub = useSubscription()
+  const [phone, setPhone] = useState('')
+  const [code, setCode] = useState('')
+  const [sent, setSent] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const digits = phone.replace(/\D/g, '')
+  const e164 = `+55${digits}`
+  return (
+    <Page title="Confirmar celular">
+      <AppText variant="body" tone="secondary">
+        {`Mandamos um código por SMS. Depois de confirmar, seu teste de ${TRIAL_DAYS} dias começa. Cada número tem um teste só.`}
+      </AppText>
+      <TextField label="Celular com DDD" value={phone} onChangeText={(v) => setPhone(v.replace(/\D/g, '').slice(0, 11))} keyboardType="phone-pad" placeholder="11 99999-9999" editable={!sent} />
+      {sent ? <TextField label="Código recebido por SMS" value={code} onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" textContentType="oneTimeCode" /> : null}
+      {error ? (
+        <AppText variant="small" tone="danger" accessibilityLiveRegion="polite">
+          {error}
+        </AppText>
+      ) : null}
+      {!sent ? (
+        <Button
+          label={busy ? 'Enviando' : 'Enviar código'}
+          busy={busy}
+          disabled={digits.length < 10}
+          onPress={async () => {
+            setBusy(true)
+            setError(null)
+            try {
+              await sendPhoneChangeCode(e164)
+              setSent(true)
+            } catch {
+              setError('Não foi possível enviar o código. Confira o número. Se ele já tem conta no app, entre pelo celular.')
+            }
+            setBusy(false)
+          }}
+        />
+      ) : (
+        <Button
+          label={busy ? 'Confirmando' : 'Confirmar'}
+          busy={busy}
+          disabled={code.length < 6}
+          onPress={async () => {
+            setBusy(true)
+            setError(null)
+            try {
+              await verifyPhoneChange(e164, code)
+              const { data } = supabase ? await supabase.rpc('start_my_trial') : { data: false }
+              await sub.refresh()
+              toast(data ? `Seu teste de ${TRIAL_DAYS} dias começou` : 'Celular confirmado. Este número já usou o teste.')
+              router.replace('/')
+            } catch {
+              setError('Código errado ou vencido. Tente de novo.')
+            }
+            setBusy(false)
+          }}
+        />
+      )}
+    </Page>
   )
 }
 
@@ -394,105 +522,40 @@ export function TrialIntroSheet() {
   const visible = sub.status === 'trial' && !sub.introSeen && !!sub.trialEndsAt
   return (
     <Sheet visible={visible} onClose={sub.seeIntro} title={`${TRIAL_DAYS} dias grátis`}>
-      <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={{ gap: 16 }}>
+      <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={{ gap: 12 }}>
         <AppText variant="body" tone="secondary" style={{ textAlign: 'center' }}>
-          {sub.trialEndsAt ? `Explore tudo sem restrições. Seu teste termina em ${longDate(sub.trialEndsAt)}. Sem cartão ou pagamento agora.` : ''}
+          {sub.trialEndsAt ? `Use tudo do app até ${longDate(new Date(new Date(sub.trialEndsAt).getTime() - 1).toISOString())}. Sem cartão ou pagamento agora.` : ''}
         </AppText>
-        <FeatureList />
+        <Check text="Chat bíblico, oração, culto, igreja e célula" />
+        <Check text="Depois do teste, a Bíblia continua grátis para sempre" />
+        <Check text="Nada do que você criar é apagado" />
       </ScrollView>
-      <Button label="Começar teste grátis" onPress={sub.seeIntro} />
+      <Button label="Começar" onPress={sub.seeIntro} />
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-        {`Depois do teste, ${PRICES.monthly.amount} por mês`}
+        {`Depois, planos a partir de ${PLANS[0].prices.monthly.amount} por mês`}
       </AppText>
     </Sheet>
   )
 }
 
-/** Tela única para quem terminou o teste sem assinar ou está com a assinatura vencida. Nenhuma aba abre. */
-export function BlockedScreen() {
-  const { colors } = useTheme()
-  const insets = useSafeAreaInsets()
-  const sub = useSubscription()
-  const restore = useRestore()
-  const [billing, setBilling] = useState<Billing>('annual')
-  const [sheet, setSheet] = useState(false)
-  const buy = useBuy(
-    () => setSheet(true),
-    (b) => (sub.subscribe(b), router.push('/assinatura/confirmada')),
-  )
-  const expired = !!sub.plan
-  return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 32, paddingBottom: insets.bottom + 24, paddingHorizontal: 20, gap: 16 }}>
-      <View style={{ alignItems: 'center', gap: 10 }}>
-        <View style={{ width: 72, height: 72, borderRadius: 22, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="lock" size={32} color={colors.primary} />
-        </View>
-        <AppText variant="screenTitle" accessibilityRole="header" style={{ textAlign: 'center' }}>
-          {expired ? 'Sua assinatura terminou' : 'Seu teste terminou'}
-        </AppText>
-        <AppText variant="body" tone="secondary" style={{ textAlign: 'center' }}>
-          Para continuar usando o App Cristão, assine um plano. Seu progresso está salvo.
-        </AppText>
-      </View>
-      <BillingPicker value={billing} onChange={setBilling} />
-      <PriceCard billing={billing} />
-      <Button label="Assinar" onPress={() => buy(billing)} />
-      <Button label="Restaurar compra" variant="text" onPress={restore} />
-      <View style={{ borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 16, gap: 4 }}>
-        <SectionLabel>Acesso permitido</SectionLabel>
-        <Card style={{ paddingVertical: 4 }}>
-          {[
-            { label: 'Baixar meus dados', go: '/configuracoes/dados' },
-            { label: 'Sair da conta', go: '/configuracoes/sair' },
-            { label: 'Excluir conta', go: '/configuracoes/excluir' },
-            { label: 'Ajuda', go: '/configuracoes/ajuda' },
-          ].map((r, i, all) => (
-            <Pressable
-              key={r.label}
-              onPress={() => router.push(r.go as '/configuracoes/dados')}
-              accessibilityRole="button"
-              accessibilityLabel={r.label}
-              style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', borderBottomWidth: i < all.length - 1 ? 1 : 0, borderBottomColor: colors.line }}
-            >
-              <AppText variant="body" style={{ flex: 1, fontFamily: fonts.medium, color: r.label === 'Excluir conta' ? colors.danger : colors.text }}>
-                {r.label}
-              </AppText>
-              <Icon name="chevronRight" size={18} color={colors.lineStrong} />
-            </Pressable>
-          ))}
-        </Card>
-      </View>
-      {IS_PREVIEW ? <PreviewSubTools /> : null}
-      <StoreSheet
-        billing={billing}
-        visible={sheet}
-        onCancel={() => setSheet(false)}
-        onConfirm={() => {
-          setSheet(false)
-          sub.subscribe(billing)
-          router.push('/assinatura/confirmada')
-        }}
-      />
-    </ScrollView>
-  )
-}
-
-/** Só na prévia: estados da assinatura pedidos no documento. */
+/** Só na prévia: estados da assinatura. */
 export function PreviewSubTools() {
   const toast = useToast()
   const sub = useSubscription()
   const items: { k: PreviewSub; label: string }[] = [
     { k: 'trialDay2', label: 'Teste no dia 2' },
     { k: 'lastDay', label: 'Teste no último dia' },
-    { k: 'blocked', label: 'Bloqueado' },
-    { k: 'active', label: 'Assinante' },
+    { k: 'free', label: 'Dia 8, sem plano' },
+    { k: 'essencial', label: 'Essencial' },
+    { k: 'completo', label: 'Completo' },
+    { k: 'lider', label: 'Líder' },
     { k: 'paymentFailed', label: 'Pagamento falhou' },
     { k: 'canceledActive', label: 'Cancelada e ainda ativa' },
   ]
   return (
     <Card style={{ gap: 8 }}>
       <AppText variant="bodyStrong">Assinatura na prévia</AppText>
-      <AppText variant="small" tone="secondary">{`Agora: ${STATUS_LABEL[sub.status]}${sub.status === 'trial' ? `, faltam ${sub.daysLeft} dias` : ''}.`}</AppText>
+      <AppText variant="small" tone="secondary">{`Agora: ${PLAN_NAME[sub.plan]}${sub.status === 'trial' ? `, faltam ${sub.daysLeft} dias` : ''}.`}</AppText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {items.map((it) => (
           <Button key={it.k} label={it.label} variant="outline" size="sm" onPress={() => (sub.setPreview(it.k), toast(it.label))} />
@@ -503,11 +566,10 @@ export function PreviewSubTools() {
         variant="text"
         size="sm"
         onPress={() => {
-          simulateStorePurchase('monthly')
+          simulateStorePurchase({ plan: 'completo', billing: 'monthly' })
           toast('Agora Restaurar compra encontra uma assinatura')
         }}
       />
     </Card>
   )
 }
-

@@ -8,6 +8,7 @@ import { TileGrid } from '../../cell/screens/parts'
 import { useSermons } from '../../sermon/SermonContext'
 import { useChurch } from '../ChurchContext'
 import { ACCESS_ITEMS, servicesByDay } from './format'
+import { PlanButton } from '../../subscription/PlanLock'
 
 function RecordCard() {
   const { colors } = useTheme()
@@ -57,8 +58,8 @@ export function ChurchHubScreen() {
             Vincule sua igreja para ver horários de culto, acessibilidade, ministérios e cursos.
           </AppText>
         </View>
-        <Button label="Buscar minha igreja" onPress={() => router.push('/igreja/buscar')} />
-        <Button label="Cadastrar à mão" variant="outline" onPress={() => router.push('/igreja/cadastrar')} />
+        <PlanButton feature="church" label="Buscar minha igreja" onPress={() => router.push('/igreja/buscar')} />
+        <PlanButton feature="church" label="Cadastrar à mão" variant="outline" onPress={() => router.push('/igreja/cadastrar')} />
         <RecordCard />
       </ScrollView>
     )

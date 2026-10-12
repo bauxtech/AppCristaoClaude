@@ -5,25 +5,34 @@ import { AppText, Button, Card, EmptyState, IconButton, Page, ProgressBar, Tag, 
 import { formatDuration } from '../../../lib/date'
 import { formatMeetingDay } from '../../cell/meetings'
 import { useChurch } from '../../church/ChurchContext'
-import { MONTHLY_LIMIT, usedThisMonth } from '../data'
+import { useSermonQuota } from '../quota'
+import { PlanLockRow } from '../../subscription/PlanLock'
+import { longDate } from '../../settings/screens/AccountScreens'
 import { useSermons } from '../SermonContext'
 import { useSettings } from '../../settings/SettingsContext'
 
+/** Cultos usados no período do plano. No limite: aviso com a data de renovação e o plano com mais cultos. */
 export function UsageCard() {
   const { sermons } = useSermons()
-  const used = usedThisMonth(sermons)
-  const full = used >= MONTHLY_LIMIT
+  const q = useSermonQuota(sermons)
+  if (!q.canRecord) return null
+  const text = `${q.used} de ${q.limit} cultos usados neste período`
   return (
     <Card style={{ gap: 8 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <AppText variant="bodyStrong">{`${used} de ${MONTHLY_LIMIT} cultos usados neste mês`}</AppText>
-        {full ? <Tag label="Limite atingido" tone="danger" /> : null}
-      </View>
-      <ProgressBar value={used} max={MONTHLY_LIMIT} label={`${used} de ${MONTHLY_LIMIT} cultos usados neste mês`} />
-      {full ? (
-        <AppText variant="small" tone="secondary">
-          O plano inclui 5 cultos por mês. A contagem volta no dia 1.
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <AppText variant="bodyStrong" style={{ flexShrink: 1 }}>
+          {text}
         </AppText>
+        {q.full ? <Tag label="Limite atingido" tone="danger" /> : null}
+      </View>
+      <ProgressBar value={q.used} max={q.limit} label={text} />
+      {q.full ? (
+        <>
+          <AppText variant="small" tone="secondary">
+            {`Seu plano permite ${q.limit} cultos por período. ${q.resetsAt ? `Renova em ${longDate(q.resetsAt)}.` : 'Renova no começo do próximo período.'}`}
+          </AppText>
+          {q.limit < 8 ? <Button label="Mais cultos no plano Líder" variant="text" size="sm" onPress={() => router.push('/assinatura?plano=lider' as '/assinatura')} /> : null}
+        </>
       ) : null}
     </Card>
   )
@@ -34,10 +43,11 @@ export function SermonListScreen() {
   const { sermons, setDraft } = useSermons()
   const { recordingDefault } = useSettings()
   const { main } = useChurch()
-  const full = usedThisMonth(sermons) >= MONTHLY_LIMIT
+  const q = useSermonQuota(sermons)
+  const full = q.full
 
   async function importAudio() {
-    if (full) return toast('Limite de 5 cultos neste mês atingido')
+    if (full) return toast(`Limite de ${q.limit} cultos neste período atingido`)
     const res = await DocumentPicker.getDocumentAsync({ type: 'audio/*', copyToCacheDirectory: true })
     if (res.canceled || !res.assets[0]) return
     setDraft({ uri: res.assets[0].uri, durationSec: 0, notes: [], moments: [], keepAudio: recordingDefault === 'audio', source: 'importado', church: main?.name ?? '' })
@@ -47,8 +57,14 @@ export function SermonListScreen() {
   return (
     <Page title="Cultos gravados" right={<IconButton icon="search" label="Buscar nos cultos" onPress={() => router.push('/culto/busca')} />}>
       <UsageCard />
-      <Button label="Gravar culto" icon="mic" disabled={full} onPress={() => router.push('/culto/gravar')} />
-      <Button label="Importar áudio" icon="upload" variant="outline" disabled={full} onPress={importAudio} />
+      {q.canRecord ? (
+        <>
+          <Button label="Gravar culto" icon="mic" disabled={full} onPress={() => router.push('/culto/gravar')} />
+          <Button label="Importar áudio" icon="upload" variant="outline" disabled={full} onPress={importAudio} />
+        </>
+      ) : (
+        <PlanLockRow feature="sermon" label="Gravar e transcrever culto" />
+      )}
       {sermons.length === 0 ? <EmptyState text="Nenhum culto gravado ainda. Grave o próximo culto para ver o texto e o resumo aqui." /> : null}
       {sermons.map((s) => (
         <TapCard
