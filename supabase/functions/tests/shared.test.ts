@@ -251,7 +251,8 @@ describe('assinatura pela loja', () => {
     expect(patchFromEvent({ type: 'RENEWAL', app_user_id: user, product_id: 'amora_completo_mensal', entitlement_ids: ['completo'], purchased_at_ms: Date.UTC(2026, 9, 12), expiration_at_ms: Date.UTC(2026, 10, 12) })).toMatchObject({
       status: 'active', plan: 'completo', billing: 'monthly', period_start: '2026-10-12T00:00:00.000Z', renews_at: '2026-11-12T00:00:00.000Z',
     })
-    expect(patchFromEvent({ type: 'PRODUCT_CHANGE', app_user_id: user, product_id: 'amora_essencial_mensal', new_product_id: 'amora_lider_anual' })).toMatchObject({ plan: 'lider', billing: 'annual' })
+    // Troca agendada não muda o plano na hora: com a chave secreta, o webhook consulta o RevenueCat.
+    expect(patchFromEvent({ type: 'PRODUCT_CHANGE', app_user_id: user, product_id: 'amora_lider_mensal', new_product_id: 'amora_completo_mensal' })).toBeNull()
   })
   test('consulta direta: plano ativo, cancelado ou com pagamento falhando', async () => {
     const { patchFromSubscriber } = await import('../_shared/revenuecat.ts')
@@ -265,5 +266,21 @@ describe('assinatura pela loja', () => {
     expect(patchFromSubscriber(user, { entitlements: { lider: { expires_date: '2026-10-01T00:00:00Z', product_identifier: 'x', purchase_date: '2026-09-01T00:00:00Z' } } }, now)).toEqual({ user_id: user, status: 'expired' })
     expect(patchFromSubscriber(user, {}, now)).toBeNull()
     expect(patchFromSubscriber('$RCAnonymousID:x', sub, now)).toBeNull()
+  })
+  test('compra de teste (sandbox) não libera em produção, só com a liberação dos testes', async () => {
+    const { patchFromSubscriber } = await import('../_shared/revenuecat.ts')
+    const now = new Date('2026-10-12T12:00:00Z')
+    const sub = {
+      entitlements: { completo: { expires_date: '2026-11-12T00:00:00Z', product_identifier: 'amora_completo_mensal', purchase_date: '2026-10-12T00:00:00Z' } },
+      subscriptions: { amora_completo_mensal: { expires_date: '2026-11-12T00:00:00Z', purchase_date: '2026-10-12T00:00:00Z', is_sandbox: true } },
+    }
+    expect(patchFromSubscriber(user, sub, now)?.status).toBe('expired')
+    expect(patchFromSubscriber(user, sub, now, true)?.plan).toBe('completo')
+  })
+  test('transferência ("Restaurar compra" em outra conta) afeta as duas contas', async () => {
+    const { affectedUsers } = await import('../_shared/revenuecat.ts')
+    const other = '99999999-2222-3333-4444-555555555555'
+    expect(affectedUsers({ type: 'TRANSFER', app_user_id: user, transferred_from: [user], transferred_to: [other, '$RCAnonymousID:x'] })).toEqual([user, other])
+    expect(affectedUsers({ type: 'RENEWAL', app_user_id: user })).toEqual([user])
   })
 })

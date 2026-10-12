@@ -22,6 +22,7 @@ import { saveConversation } from '../sync'
 import { useChat, type Conversation, type Message } from '../ChatContext'
 import { isCrisis } from '../rules'
 import { useSubscription } from '../../subscription/SubscriptionContext'
+import { PlanLockRow } from '../../subscription/PlanLock'
 import { getTranslation } from '../../bible/translations'
 
 const SUGGESTIONS = ['O que significa "O Senhor é meu pastor"?', 'Quais versículos falam sobre ansiedade?', 'O que a Bíblia diz sobre perdão?', 'Quem é o bom pastor em João 10?']
@@ -80,6 +81,8 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
       setInput('')
       return
     }
+    // Sem o chat no plano: abre a tela de planos (o servidor também recusaria).
+    if (!sub.can('chat')) return router.push(`/assinatura?plano=${sub.minPlan('chat')}` as '/assinatura')
     // A verificação de crise vem antes: o campo fica aberto mesmo sem internet ou no limite do dia.
     if ((limit || !online) && !existing) return
     let c = existing?.conv ?? conv
@@ -203,7 +206,14 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
       </ScrollView>
 
       <View style={{ padding: 12, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.card }}>
-        {!online ? (
+        {!sub.can('chat') ? (
+          <View style={{ gap: 8 }}>
+            <PlanLockRow feature="chat" label="Fazer uma pergunta" />
+            <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
+              Suas conversas continuam aqui. Precisa conversar com alguém agora? CVV, telefone 188, 24 horas.
+            </AppText>
+          </View>
+        ) : !online ? (
           <View style={{ gap: 4, alignItems: 'center', paddingBottom: 10 }} accessibilityLiveRegion="polite">
             <AppText variant="bodyStrong">O chat precisa de internet</AppText>
             <AppText variant="small" tone="secondary">
@@ -219,12 +229,12 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
             {sub.plan !== 'lider' && sub.plan !== 'completo' && sub.plan !== 'trial' ? <Button label="Mais perguntas no plano Completo" variant="text" size="sm" onPress={() => router.push('/assinatura?plano=completo' as '/assinatura')} /> : null}
           </View>
         ) : null}
-        {!online || limit ? (
+        {sub.can('chat') && (!online || limit) ? (
           <AppText variant="small" tone="secondary" style={{ textAlign: 'center', paddingBottom: 8 }}>
             Precisa conversar com alguém agora? CVV, telefone 188, 24 horas.
           </AppText>
         ) : null}
-        {(
+        {sub.can('chat') && (
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
             <TextInput
               value={input}

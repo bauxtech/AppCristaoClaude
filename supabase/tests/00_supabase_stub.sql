@@ -12,6 +12,7 @@ create schema if not exists auth;
 create table if not exists auth.users (
   id uuid primary key default gen_random_uuid(),
   phone text,
+  phone_confirmed_at timestamptz,
   email text,
   raw_user_meta_data jsonb default '{}'::jsonb,
   created_at timestamptz default now()

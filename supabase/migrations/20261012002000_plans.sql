@@ -74,10 +74,18 @@ create table public.trial_claims (
 alter table public.trial_claims enable row level security;
 revoke all on public.trial_claims from authenticated, anon;
 
+-- Código embaralhado do número com um segredo guardado fora do banco de dados comum (Vault, nome trial_pepper).
+-- Sem o segredo, não dá para descobrir o número testando todos os celulares possíveis.
 create or replace function public.phone_hash(p_phone text) returns text
-language sql immutable set search_path = public as $$
-  select encode(sha256(convert_to(regexp_replace(coalesce(p_phone, ''), '\D', '', 'g'), 'UTF8')), 'hex')
-$$;
+language plpgsql stable security definer set search_path = public as $$
+declare v_pepper text := '';
+begin
+  if to_regclass('vault.decrypted_secrets') is not null then
+    execute 'select decrypted_secret from vault.decrypted_secrets where name = $1' into v_pepper using 'trial_pepper';
+  end if;
+  return encode(sha256(convert_to(coalesce(v_pepper, '') || ':' || regexp_replace(coalesce(p_phone, ''), '\D', '', 'g'), 'UTF8')), 'hex');
+end $$;
+revoke all on function public.phone_hash(text) from public, anon, authenticated;
 
 -- Contas que já existiam guardam o número como teste usado.
 insert into public.trial_claims (phone_hash)
@@ -89,23 +97,28 @@ create or replace function public.setting_int(p_key text, p_default int) returns
 language sql stable security definer set search_path = public as $$
   select coalesce((select (value #>> '{}')::int from public.app_settings where key = p_key), p_default)
 $$;
+revoke all on function public.setting_int(text, int) from public, anon, authenticated;
 
 -- Fim do teste: meia-noite (Brasília) depois do último dia. 7 dias corridos contando o dia do primeiro login.
 create or replace function public.trial_end(p_start timestamptz) returns timestamptz
 language sql stable security definer set search_path = public as $$
   select (((p_start at time zone 'America/Sao_Paulo')::date + public.setting_int('trial_days', 7))::timestamp) at time zone 'America/Sao_Paulo'
 $$;
+revoke all on function public.trial_end(timestamptz) from public, anon;
 
--- Começa o teste se a conta tem número confirmado e o número nunca usou o teste.
+-- Começa o teste quando o número é confirmado (código digitado), uma vez por número.
+-- Pedir o código sem confirmar não gasta o teste. Com o teste da loja (trial_mode = store), o servidor não dá teste.
 create or replace function public.claim_trial_for(p_user uuid) returns boolean
 language plpgsql security definer set search_path = public as $$
-declare s public.subscriptions; v_phone text;
+declare s public.subscriptions; v_phone text; v_confirmed timestamptz;
 begin
   select * into s from public.subscriptions where user_id = p_user for update;
   if s.user_id is null then return false; end if;
   if s.trial_start is not null then return true; end if;
   if s.trial_used then return false; end if;
-  select phone into v_phone from auth.users where id = p_user;
+  if coalesce((select value #>> '{}' from public.app_settings where key = 'trial_mode'), 'server') <> 'server' then return false; end if;
+  select phone, phone_confirmed_at into v_phone, v_confirmed from auth.users where id = p_user;
+  if v_confirmed is null then return false; end if;
   if char_length(regexp_replace(coalesce(v_phone, ''), '\D', '', 'g')) < 10 then return false; end if;
   insert into public.trial_claims (phone_hash) values (public.phone_hash(v_phone)) on conflict do nothing;
   if not found then
@@ -134,24 +147,42 @@ begin
   return new;
 end $$;
 
+-- Login pelo celular: o número fica confirmado quando a pessoa digita o código. Google: quando confirma o celular depois.
+create or replace function public.handle_phone_confirmed() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.phone_confirmed_at is not null and (old.phone_confirmed_at is null or new.phone is distinct from old.phone) then
+    perform public.claim_trial_for(new.id);
+  end if;
+  return new;
+end $$;
+drop trigger if exists on_auth_phone_confirmed on auth.users;
+create trigger on_auth_phone_confirmed after update of phone_confirmed_at, phone on auth.users
+for each row execute function public.handle_phone_confirmed();
+
 -- ─── Plano de cada pessoa ────────────────────────────────────────────────────
 
 -- free, trial, essencial, completo ou lider. Pagamento falhou: vale até o fim do prazo para regularizar.
+-- A assinatura da loja vale até renews_at (com 1 dia de folga para o aviso da renovação chegar), mesmo se o aviso
+-- de fim se perder. Com cortesia e assinatura ao mesmo tempo, vale o maior plano.
 create or replace function public.plan_of(p_user uuid) returns text
-language sql stable security definer set search_path = public as $$
-  select coalesce((
-    select case
-      when s.status = 'active'
-        or (s.status = 'canceled_active' and (s.renews_at is null or s.renews_at > now()))
-        or (s.status = 'payment_failed' and (s.grace_until is null or s.grace_until > now()))
-        then coalesce(s.plan, 'essencial')
-      when s.courtesy_plan is not null and (s.courtesy_until is null or s.courtesy_until > now()) then s.courtesy_plan
-      when s.trial_start is not null and now() < public.trial_end(s.trial_start) then 'trial'
-      else 'free'
-    end
-    from public.subscriptions s where s.user_id = p_user
-  ), 'free')
-$$;
+language plpgsql stable security definer set search_path = public as $$
+declare s public.subscriptions; v_store text; v_courtesy text; v_best text;
+begin
+  select * into s from public.subscriptions where user_id = p_user;
+  if s.user_id is null then return 'free'; end if;
+  if (s.status in ('active', 'canceled_active') and s.renews_at is not null and s.renews_at > now() - interval '1 day')
+     or (s.status = 'payment_failed' and coalesce(s.grace_until, s.renews_at) > now()) then
+    v_store := coalesce(s.plan, 'essencial');
+  end if;
+  if s.courtesy_plan is not null and (s.courtesy_until is null or s.courtesy_until > now()) then
+    v_courtesy := s.courtesy_plan;
+  end if;
+  select c.plan into v_best from public.plan_config c where c.plan in (v_store, v_courtesy) order by c.rank desc limit 1;
+  if v_best is not null then return v_best; end if;
+  if s.trial_start is not null and now() < public.trial_end(s.trial_start) then return 'trial'; end if;
+  return 'free';
+end $$;
 
 create or replace function public.can(p_user uuid, p_feature text) returns boolean
 language sql stable security definer set search_path = public as $$
@@ -198,8 +229,9 @@ begin
   return v_pos is not null and v_pos <= public.cell_free_seats(p_cell);
 end $$;
 
-revoke all on function public.plan_of(uuid), public.can(uuid, text), public.cell_active(uuid), public.cell_free_seats(uuid), public.can_use_cell(uuid, uuid) from public, anon;
-grant execute on function public.plan_of(uuid), public.can(uuid, text), public.cell_active(uuid), public.cell_free_seats(uuid), public.can_use_cell(uuid, uuid) to authenticated, service_role;
+-- Só o servidor e as funções do banco consultam o plano de outra pessoa. O app usa my_access, i_can e i_use_cell.
+revoke all on function public.plan_of(uuid), public.can(uuid, text), public.cell_active(uuid), public.cell_free_seats(uuid), public.can_use_cell(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.plan_of(uuid), public.can(uuid, text), public.cell_active(uuid), public.cell_free_seats(uuid), public.can_use_cell(uuid, uuid) to service_role;
 
 -- Atalhos para as regras de acesso: sempre sobre quem está logado.
 create or replace function public.i_can(p_feature text) returns boolean
@@ -210,6 +242,7 @@ create or replace function public.i_use_cell(p_cell uuid) returns boolean
 language sql stable security definer set search_path = public as $$
   select public.can_use_cell(p_cell, auth.uid())
 $$;
+revoke all on function public.i_can(text), public.i_use_cell(uuid) from public, anon;
 grant execute on function public.i_can(text), public.i_use_cell(uuid) to authenticated;
 
 -- ─── Limites ─────────────────────────────────────────────────────────────────
@@ -370,6 +403,10 @@ create policy plan_attendance_update on public.cell_attendance as restrictive fo
 create policy plan_update on public.cells as restrictive for update to authenticated
   using (public.i_can('cell_lead')) with check (public.i_can('cell_lead'));
 
+-- Áudio do culto: só sobe quem tem a função culto no plano.
+create policy plan_sermon_audio on storage.objects as restrictive for insert to authenticated
+  with check (bucket_id <> 'sermon-audio' or public.i_can('sermon'));
+
 -- Funções do banco que escrevem como dono (passam por cima das regras acima): conferem pelo gatilho.
 create or replace function public.guard_cell_plan() returns trigger
 language plpgsql security definer set search_path = public as $$
@@ -394,11 +431,24 @@ create trigger guard_cell_plan before insert on public.cell_attendance for each 
 create or replace function public.guard_join_plan() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if auth.uid() is null or new.user_id <> auth.uid() or new.role = 'lider' then return new; end if;
-  if tg_op = 'INSERT' and not public.cell_active(new.cell_id) then raise exception 'Esta célula não está recebendo pessoas agora' using errcode = '42501'; end if;
+  if auth.uid() is null then return new; end if; -- servidor
+  if tg_op = 'INSERT' then
+    if new.user_id = auth.uid() and new.role <> 'lider' and not public.cell_active(new.cell_id) then
+      raise exception 'Esta célula não está recebendo pessoas agora' using errcode = '42501';
+    end if;
+  else
+    -- A ordem de entrada decide as vagas sem plano: ninguém muda a própria data de entrada.
+    if (new.joined_at is distinct from old.joined_at or new.requested_at is distinct from old.requested_at) and not public.is_cell_leader(old.cell_id) then
+      raise exception 'Só o líder muda a data de entrada' using errcode = '42501';
+    end if;
+    -- Célula parada não aprova ninguém.
+    if new.status = 'approved' and old.status <> 'approved' and not public.cell_active(new.cell_id) then
+      raise exception 'Célula sem o plano Líder' using errcode = '42501';
+    end if;
+  end if;
   return new;
 end $$;
-create trigger guard_join_plan before insert on public.cell_members for each row execute function public.guard_join_plan();
+create trigger guard_join_plan before insert or update on public.cell_members for each row execute function public.guard_join_plan();
 
 -- ─── Página web da célula ────────────────────────────────────────────────────
 -- Célula sem o plano Líder: a página mostra que não está se reunindo e não recebe contato nem pedido.
@@ -456,35 +506,30 @@ revoke all on function public.cell_member_cards from public, anon;
 grant execute on function public.cell_member_cards to authenticated;
 
 -- ─── Avisos do teste ─────────────────────────────────────────────────────────
--- Rotina diária: no dia 5, quanto falta e o que a pessoa já usou; no dia 7, que o teste termina amanhã.
--- Quem já assinou não recebe. Pedidos e diário só entram na conta para quem deu o consentimento de fé.
+-- Rotina diária: no dia 5, quanto falta e o que a pessoa já usou; no dia 7, que o teste termina hoje à meia-noite.
+-- Quem já assinou não recebe.
 
 create or replace function public.trial_reminders() returns integer
 language plpgsql security definer set search_path = public as $$
-declare r record; v_day int; v_n int := 0; v_body text; v_ch int; v_se int; v_pr int;
+declare r record; v_day int; v_n int := 0; v_body text; v_ch int; v_se int;
 begin
   for r in
-    select s.user_id, s.trial_start, s.trial_reminded, p.faith_consent
-    from public.subscriptions s join public.profiles p on p.id = s.user_id
-    where s.trial_start is not null and s.plan is null and s.status not in ('active', 'canceled_active', 'payment_failed')
-      and now() < public.trial_end(s.trial_start) and s.trial_reminded < 7
+    select s.user_id, s.trial_start, s.trial_reminded
+    from public.subscriptions s
+    where s.trial_start is not null and s.trial_reminded < 7 and public.plan_of(s.user_id) = 'trial'
   loop
     v_day := (now() at time zone 'America/Sao_Paulo')::date - (r.trial_start at time zone 'America/Sao_Paulo')::date + 1;
     if v_day >= 7 and r.trial_reminded < 7 then
-      perform public.notify(r.user_id, null, 'system', 'Seu teste termina amanhã', 'Escolha um plano para continuar usando tudo. A Bíblia continua grátis.', '/assinatura', null);
+      perform public.notify(r.user_id, null, 'system', 'Seu teste termina hoje à meia-noite', 'Escolha um plano para continuar usando tudo. A Bíblia continua grátis.', '/assinatura', null);
       update public.subscriptions set trial_reminded = 7 where user_id = r.user_id;
       v_n := v_n + 1;
     elsif v_day >= 5 and r.trial_reminded < 5 then
       select count(*) into v_ch from public.bible_reads where user_id = r.user_id;
       select count(*) into v_se from public.sermons where user_id = r.user_id and status = 'ready';
-      v_pr := 0;
-      if r.faith_consent then
-        select (select count(*) from public.prayer_diary where user_id = r.user_id) + (select count(*) from public.prayer_requests where user_id = r.user_id) into v_pr;
-      end if;
-      v_body := format('Até agora: %s %s, %s %s transcrito%s e %s %s.',
+      -- Orações e pedidos ficam fora do aviso: a notificação aparece na tela bloqueada e passa pelo serviço de avisos.
+      v_body := format('Até agora: %s %s e %s %s transcrito%s.',
         v_ch, case when v_ch = 1 then 'capítulo lido' else 'capítulos lidos' end,
-        v_se, case when v_se = 1 then 'culto' else 'cultos' end, case when v_se = 1 then '' else 's' end,
-        v_pr, case when v_pr = 1 then 'oração' else 'orações' end);
+        v_se, case when v_se = 1 then 'culto' else 'cultos' end, case when v_se = 1 then '' else 's' end);
       perform public.notify(r.user_id, null, 'system', 'Faltam 2 dias do seu teste', v_body, '/assinatura', null);
       update public.subscriptions set trial_reminded = 5 where user_id = r.user_id;
       v_n := v_n + 1;

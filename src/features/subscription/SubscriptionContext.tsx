@@ -57,14 +57,25 @@ export function SubscriptionProvider({ children, initial, now }: { children: Rea
     if (!remote && onboarded && !local.trialStart) setLocal((s) => ({ ...s, trialStart: new Date().toISOString() }))
   }, [remote, onboarded, local.trialStart])
 
+  const [failures, setFailures] = useState(0)
   const refresh = useCallback(async () => {
     if (!remote || !uid || !supabase) return
     const { data, error } = await supabase.rpc('my_access')
-    if (error || !data) return
+    if (error || !data) {
+      setFailures((n) => n + 1)
+      return
+    }
+    setFailures(0)
     const a = accessFromServer(data)
     setServer(a)
     setItem('access', a)
   }, [remote, uid])
+  // Sem resposta (sem internet, erro): tenta de novo, cada vez mais devagar, até 5 vezes.
+  useEffect(() => {
+    if (!remote || !uid || failures === 0 || failures > 5) return
+    const t = setTimeout(() => void refresh(), Math.min(60_000, 5_000 * failures))
+    return () => clearTimeout(t)
+  }, [remote, uid, failures, refresh])
 
   useEffect(() => {
     if (!remote || !uid) return
@@ -85,10 +96,12 @@ export function SubscriptionProvider({ children, initial, now }: { children: Rea
 
   const value = useMemo<SubValue>(() => {
     const at = now ?? new Date()
+    // Antes da primeira resposta do servidor, nada aparece trancado: quem confere de verdade é o servidor.
+    const loading = remote && !server
     const a = remote ? (server ?? accessFromServer({ plan: 'free' })) : localAccess(local, at)
     const storeLive = a.plan !== 'free' && a.plan !== 'trial'
     const status: SubStatus = a.plan === 'trial' ? 'trial' : storeLive ? (a.storeStatus === 'canceledActive' || a.storeStatus === 'paymentFailed' ? a.storeStatus : 'active') : 'free'
-    const can = (f: Feature) => a.features.includes(f)
+    const can = (f: Feature) => loading || a.features.includes(f)
     return {
       access: a,
       plan: a.plan,
@@ -98,9 +111,10 @@ export function SubscriptionProvider({ children, initial, now }: { children: Rea
       introSeen: local.introSeen,
       can,
       minPlan: (f) => a.minPlan[f],
-      canUseCell: (id) => a.cells[id]?.canUse ?? can('cell'),
+      // Célula que ainda não veio na resposta (acabou de entrar): o servidor decide; a tela não tranca antes.
+      canUseCell: (id) => a.cells[id]?.canUse ?? true,
       cellActive: (id) => a.cells[id]?.active ?? true,
-      needsPhoneForTrial: remote && !!server && a.plan === 'free' && !a.trialUsed && !a.trialStart,
+      needsPhoneForTrial: remote && !!server && a.trialMode === 'server' && a.plan === 'free' && !a.trialUsed && !a.trialStart,
       showEndOfTrial: a.plan === 'free' && !!a.trialStart && !a.paywallSeen && (remote ? !!server : true),
       markPaywallSeen: () => {
         if (remote && supabase) {

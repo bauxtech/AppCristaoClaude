@@ -23,11 +23,13 @@ export function CellHubScreen() {
   const insets = useSafeAreaInsets()
   const { cellStatus } = useSession()
   const { cell, refresh } = useCell()
-  // Com servidor, a célula vem do banco de novo cada vez que a aba abre.
+  const sub = useSubscription()
+  // Com servidor, a célula e o acesso (aprovação, célula parada, vagas) vêm de novo cada vez que a aba abre.
   useFocusEffect(
     useCallback(() => {
       void refresh()
-    }, [refresh]),
+      void sub.refresh()
+    }, [refresh]), // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   return (
@@ -65,7 +67,7 @@ function CellPlanNotice({ cellId, leader }: { cellId: string; leader: boolean })
       <Card style={{ gap: 6, borderColor: colors.primary }}>
         <AppText variant="bodyStrong">Você está na lista, sem participar</AppText>
         <AppText variant="small" tone="secondary">
-          As vagas sem plano desta célula acabaram. Com o plano Essencial, você confirma presença, entra na escala e vê os pedidos da célula.
+          As vagas sem plano desta célula acabaram. Com o plano Essencial, você confirma presença, entra na escala e participa da célula.
         </AppText>
         <Button label="Ver planos" size="sm" onPress={() => router.push('/assinatura?plano=essencial' as '/assinatura')} style={{ alignSelf: 'flex-start' }} />
       </Card>

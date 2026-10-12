@@ -42,7 +42,12 @@ Deno.serve(async (req) => {
   // Plano e limite conferidos antes de começar, para o app mostrar o aviso na hora (tela 7.8, com a renovação).
   // Depois de começar, nada interrompe a transcrição.
   const { usage, refund } = await useLimit(db, uid, 'sermon')
-  if (!usage.ok) return json(usage.reason === 'limit' ? { status: 'limit', limit: usage.limit, resets_at: usage.resetsAt } : { status: 'no_access' })
+  if (!usage.ok) {
+    // Não vai processar: o áudio não fica no servidor (o padrão é guardar só o texto).
+    await db.storage.from('sermon-audio').remove([sermon.audio_path])
+    await db.from('sermons').update({ status: 'failed', audio_path: null, summary: { reason: usage.reason } }).eq('id', sermon.id)
+    return json(usage.reason === 'limit' ? { status: 'limit', limit: usage.limit, resets_at: usage.resetsAt } : { status: 'no_access' })
+  }
   // Um processamento por vez: outra chamada no meio (ex.: "Tentar de novo" depois de um tempo esgotado) não gasta outro culto.
   const { data: claimed } = await asUser(req).rpc('claim_sermon', { p_id: sermon.id })
   if (claimed !== true) {
@@ -70,7 +75,8 @@ Deno.serve(async (req) => {
       })
 
       if (result.kind !== 'ready') {
-        await db.from('sermons').update({ status: 'failed', summary: { reason: result.kind } }).eq('id', sermon.id)
+        if (!keepAudio) await db.storage.from('sermon-audio').remove([sermon.audio_path])
+        await db.from('sermons').update({ status: 'failed', summary: { reason: result.kind }, ...(keepAudio ? { audio_expires_at: audioExpiry() } : { audio_path: null }) }).eq('id', sermon.id)
         return
       }
       // Padrão: fica só o texto. O áudio só fica quando a pessoa escolheu, por 30 dias.
@@ -92,7 +98,9 @@ Deno.serve(async (req) => {
       if (!started) await refund()
       // Guarda só a etapa que falhou (sem texto do culto), para o app e o suporte saberem o motivo.
       const reason = e instanceof Error ? e.message.slice(0, 120) : 'erro'
-      await db.from('sermons').update({ status: 'failed', summary: { reason } }).eq('id', sermon.id)
+      // O áudio fica até 30 dias só se a pessoa escolheu guardar (permite tentar de novo); senão sai do servidor.
+      if (!keepAudio) await db.storage.from('sermon-audio').remove([sermon.audio_path])
+      await db.from('sermons').update({ status: 'failed', summary: { reason }, ...(keepAudio ? { audio_expires_at: audioExpiry() } : { audio_path: null }) }).eq('id', sermon.id)
     }
   })()
 

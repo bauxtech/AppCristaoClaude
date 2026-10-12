@@ -2,14 +2,14 @@
 -- Pessoas novas: Ivo (teste), Jô (entra pelo Google, sem celular), Kátia (mesmo celular do Ivo),
 -- Lia (Essencial), Mauro (Completo), Nina (Líder), Otto e Pia (sem plano, na célula da Nina).
 
-insert into auth.users (id, phone) values
-  ('00000000-0000-0000-0000-000000000021', '5511980000001'),
-  ('00000000-0000-0000-0000-000000000022', null),
-  ('00000000-0000-0000-0000-000000000024', '5511980000004'),
-  ('00000000-0000-0000-0000-000000000025', '5511980000005'),
-  ('00000000-0000-0000-0000-000000000026', '5511980000006'),
-  ('00000000-0000-0000-0000-000000000027', '5511980000007'),
-  ('00000000-0000-0000-0000-000000000028', '5511980000008');
+insert into auth.users (id, phone, phone_confirmed_at) values
+  ('00000000-0000-0000-0000-000000000021', '5511980000001', now()),
+  ('00000000-0000-0000-0000-000000000022', null, null),
+  ('00000000-0000-0000-0000-000000000024', '5511980000004', now()),
+  ('00000000-0000-0000-0000-000000000025', '5511980000005', now()),
+  ('00000000-0000-0000-0000-000000000026', '5511980000006', now()),
+  ('00000000-0000-0000-0000-000000000027', '5511980000007', now()),
+  ('00000000-0000-0000-0000-000000000028', '5511980000008', now());
 update public.profiles set faith_consent = true, faith_consent_at = now() where id::text like '00000000-0000-0000-0000-00000000002%';
 
 -- ─── Teste grátis ────────────────────────────────────────────────────────────
@@ -23,22 +23,37 @@ select tests.ok('conta pelo Google sem celular não começa o teste', public.pla
 select tests.as_user('00000000-0000-0000-0000-000000000022');
 select tests.ok('sem celular confirmado, pedir o teste não adianta', not public.start_my_trial());
 reset role;
-update auth.users set phone = '5511980000002' where id = '00000000-0000-0000-0000-000000000022';
+update auth.users set phone = '5511980000002', phone_confirmed_at = now() where id = '00000000-0000-0000-0000-000000000022';
 select tests.as_user('00000000-0000-0000-0000-000000000022');
-select tests.ok('depois de confirmar o celular, o teste começa', public.start_my_trial());
+select tests.ok('depois de confirmar o celular, o teste começa (sozinho, pelo servidor)', public.start_my_trial());
 select tests.ok('a pessoa vê o próprio plano', (public.my_access() ->> 'plan') = 'trial');
 reset role;
 
+-- Pedir o código não gasta o teste: só confirmar.
+insert into auth.users (id, phone, phone_confirmed_at) values ('00000000-0000-0000-0000-000000000029', '5511980000009', null);
+select tests.ok('pedir o código SMS sem confirmar não começa o teste nem gasta o número', public.plan_of('00000000-0000-0000-0000-000000000029') = 'free'
+  and not exists (select 1 from public.trial_claims where phone_hash = public.phone_hash('5511980000009')));
+update auth.users set phone_confirmed_at = now() where id = '00000000-0000-0000-0000-000000000029';
+select tests.ok('ao digitar o código, o teste começa', public.plan_of('00000000-0000-0000-0000-000000000029') = 'trial');
+-- Teste da loja: o servidor não dá teste.
+update public.app_settings set value = '"store"' where key = 'trial_mode';
+insert into auth.users (id, phone, phone_confirmed_at) values ('00000000-0000-0000-0000-00000000002a', '5511980000010', now());
+select tests.ok('com o teste da loja ligado, o servidor não dá teste', public.plan_of('00000000-0000-0000-0000-00000000002a') = 'free');
+update public.app_settings set value = '"server"' where key = 'trial_mode';
+select tests.ok('o número fica guardado em código com segredo, não em texto', not exists (select 1 from public.trial_claims where phone_hash like '%5511%'));
+
 -- Outra conta com o mesmo número do Ivo.
-insert into auth.users (id, phone) values ('00000000-0000-0000-0000-000000000023', '+55 (11) 98000-0001');
+insert into auth.users (id, phone, phone_confirmed_at) values ('00000000-0000-0000-0000-000000000023', '+55 (11) 98000-0001', now());
 select tests.ok('um teste por número: outra conta com o mesmo celular não ganha teste', public.plan_of('00000000-0000-0000-0000-000000000023') = 'free');
 delete from auth.users where id = '00000000-0000-0000-0000-000000000023';
-insert into auth.users (id, phone) values ('00000000-0000-0000-0000-000000000023', '5511980000001');
+insert into auth.users (id, phone, phone_confirmed_at) values ('00000000-0000-0000-0000-000000000023', '5511980000001', now());
 select tests.ok('excluir a conta e criar de novo com o mesmo número não dá outro teste', public.plan_of('00000000-0000-0000-0000-000000000023') = 'free');
 
 select tests.as_user('00000000-0000-0000-0000-000000000021');
 select tests.ok('ninguém lê a lista de números que já usaram o teste', tests.denied($$select * from public.trial_claims$$));
 select tests.ok('ninguém muda os limites dos planos pelo app', tests.denied($$update public.plan_config set chat_per_day = 999$$));
+select tests.ok('ninguém consulta o plano de outra pessoa', tests.denied($$select public.plan_of('00000000-0000-0000-0000-000000000024')$$) and tests.denied($$select public.can('00000000-0000-0000-0000-000000000024', 'prayer')$$));
+select tests.ok('ninguém calcula o código de um número pelo app', tests.denied($$select public.phone_hash('5511999999999')$$));
 select tests.ok('ninguém muda a configuração do teste pelo app', tests.denied($$update public.app_settings set value = '30' where key = 'trial_days'$$));
 select tests.ok('no teste, tudo liberado', tests.allowed($$insert into public.prayer_diary (user_id, text) values (auth.uid(), 'Diário do teste')$$));
 select public.mark_paywall_seen();
@@ -133,6 +148,12 @@ select tests.ok('mas não ganha as funções pessoais (diário)', tests.denied($
 select tests.ok('a célula aparece como funcionando para ele', (public.my_access() -> 'cells' -> '10000000-0000-0000-0000-000000000009' ->> 'can_use')::boolean);
 reset role;
 
+select tests.as_user('00000000-0000-0000-0000-000000000028');
+select tests.ok('membro não muda a própria data de entrada para furar a fila das vagas',
+  tests.denied($$update public.cell_members set joined_at = '2000-01-01' where user_id = auth.uid()$$)
+  and tests.denied($$update public.cell_members set requested_at = '2000-01-01' where user_id = auth.uid()$$));
+reset role;
+
 -- Vagas sem plano acabaram: o segundo membro sem plano (por ordem de entrada) fica de fora.
 update public.plan_config set cell_free_members = 1 where plan in ('lider', 'trial');
 select tests.as_user('00000000-0000-0000-0000-000000000028');
@@ -142,6 +163,8 @@ select tests.ok('na lista, quem está sem vaga aparece como inativo',
   not (select active from public.cell_member_cards('10000000-0000-0000-0000-000000000009') where user_id = '00000000-0000-0000-0000-000000000028' limit 1) is not false);
 update public.plan_config set cell_free_members = 20 where plan in ('lider', 'trial');
 
+select set_config('request.jwt.claims', '{}', false);
+insert into public.cell_members (cell_id, user_id, role, status) values ('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000024', 'membro', 'pending');
 -- O líder cancela o plano Líder e não há outro líder com o plano: a célula para na hora, nada é apagado.
 update public.subscriptions set status = 'expired' where user_id = '00000000-0000-0000-0000-000000000026';
 select tests.ok('sem o plano Líder, a célula para de funcionar', not public.cell_active('10000000-0000-0000-0000-000000000009'));
@@ -152,6 +175,7 @@ reset role;
 select tests.as_user('00000000-0000-0000-0000-000000000026');
 select tests.ok('célula parada: líder não marca presença', tests.denied($$select public.mark_attendance('10000000-0000-0000-0000-000000000009', current_date, '{}'::jsonb)$$));
 select tests.ok('célula parada: líder não edita a célula', tests.denied($$update public.cells set name = 'Outro' where id = '10000000-0000-0000-0000-000000000009'$$));
+select tests.ok('célula parada: líder não aprova pedido pendente', tests.denied($$update public.cell_members set status = 'approved' where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000024'$$));
 reset role;
 select tests.as_user('00000000-0000-0000-0000-000000000021');
 select tests.ok('célula parada: ninguém entra pelo convite', tests.denied($$select * from public.request_join('NINA01')$$));
@@ -164,10 +188,12 @@ reset role;
 -- Outro líder com o plano Líder mantém a célula funcionando.
 select set_config('request.jwt.claims', '{}', false);
 update public.cell_members set role = 'lider' where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000027';
-update public.subscriptions set status = 'active', plan = 'lider' where user_id = '00000000-0000-0000-0000-000000000027';
+update public.subscriptions set status = 'active', plan = 'lider', renews_at = now() + interval '30 days' where user_id = '00000000-0000-0000-0000-000000000027';
 select tests.ok('com outro líder no plano Líder, a célula continua', public.cell_active('10000000-0000-0000-0000-000000000009'));
 update public.subscriptions set status = 'expired' where user_id = '00000000-0000-0000-0000-000000000027';
 update public.cell_members set role = 'membro' where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000027';
+-- Célula parada não aprova pedido pendente.
+-- (testado com a célula parada mais abaixo)
 -- O líder volta a assinar: tudo volta.
 update public.subscriptions set status = 'active' where user_id = '00000000-0000-0000-0000-000000000026';
 select tests.ok('o líder volta a assinar e a célula volta a funcionar', public.cell_active('10000000-0000-0000-0000-000000000009'));
@@ -176,12 +202,12 @@ select tests.ok('o líder volta a assinar e a célula volta a funcionar', public
 
 update public.subscriptions set trial_start = now() - interval '4 days', trial_reminded = 0 where user_id = '00000000-0000-0000-0000-000000000022';
 select public.trial_reminders();
-select tests.ok('dia 5: aviso de que faltam 2 dias, com o que a pessoa usou',
+select tests.ok('dia 5: aviso de que faltam 2 dias, com o que a pessoa usou (sem falar de orações)',
   exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-000000000022' and title = 'Faltam 2 dias do seu teste' and body like 'Até agora:%'));
 select tests.ok('o aviso do dia 5 não se repete', public.trial_reminders() = 0);
 update public.subscriptions set trial_start = now() - interval '6 days' where user_id = '00000000-0000-0000-0000-000000000022';
 select public.trial_reminders();
-select tests.ok('dia 7: aviso de que o teste termina amanhã', exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-000000000022' and title = 'Seu teste termina amanhã'));
+select tests.ok('dia 7: aviso de que o teste termina hoje à meia-noite', exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-000000000022' and title = 'Seu teste termina hoje à meia-noite'));
 select tests.ok('quem assina não recebe aviso do teste', not exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-000000000024' and title like '%teste%'));
 
 -- Cortesia para a equipe: plano liberado sem loja, até a data.
@@ -192,3 +218,12 @@ select tests.ok('cortesia vencida volta ao grátis', public.plan_of('00000000-00
 select tests.as_user('00000000-0000-0000-0000-000000000021');
 select tests.ok('ninguém se dá cortesia pelo app', tests.denied($$update public.subscriptions set courtesy_plan = 'lider', courtesy_until = null$$));
 reset role;
+
+-- Assinatura sem aviso de fim: vence sozinha depois da data.
+update public.subscriptions set status = 'active', plan = 'lider', renews_at = now() - interval '3 days', courtesy_plan = null where user_id = '00000000-0000-0000-0000-000000000021';
+select tests.ok('assinatura vencida sem o aviso da loja não libera mais', public.plan_of('00000000-0000-0000-0000-000000000021') = 'free');
+update public.subscriptions set status = 'canceled_active', renews_at = null where user_id = '00000000-0000-0000-0000-000000000021';
+select tests.ok('cancelada sem data de fim não libera', public.plan_of('00000000-0000-0000-0000-000000000021') = 'free');
+-- Cortesia Líder e assinatura Essencial: vale o maior.
+update public.subscriptions set status = 'active', plan = 'essencial', renews_at = now() + interval '20 days', courtesy_plan = 'lider', courtesy_until = null where user_id = '00000000-0000-0000-0000-000000000021';
+select tests.ok('cortesia Líder com assinatura Essencial continua Líder', public.plan_of('00000000-0000-0000-0000-000000000021') = 'lider');

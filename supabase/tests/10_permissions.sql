@@ -54,15 +54,15 @@ end $$;
 -- Célula 1: Ana líder, Beto membro, Caio auxiliar, Dani visitante, Hugo anfitrião, Fabi pendente.
 -- Célula 2: Edu líder. Gil não tem célula.
 
-insert into auth.users (id, phone) values
-  ('00000000-0000-0000-0000-00000000000a', '5511990000001'),
-  ('00000000-0000-0000-0000-00000000000b', '5511990000002'),
-  ('00000000-0000-0000-0000-00000000000c', '5511990000003'),
-  ('00000000-0000-0000-0000-00000000000d', '5511990000004'),
-  ('00000000-0000-0000-0000-00000000000e', '5511990000005'),
-  ('00000000-0000-0000-0000-00000000000f', '5511990000006'),
-  ('00000000-0000-0000-0000-000000000011', '5511990000007'),
-  ('00000000-0000-0000-0000-000000000012', '5511990000008');
+insert into auth.users (id, phone, phone_confirmed_at) values
+  ('00000000-0000-0000-0000-00000000000a', '5511990000001', now()),
+  ('00000000-0000-0000-0000-00000000000b', '5511990000002', now()),
+  ('00000000-0000-0000-0000-00000000000c', '5511990000003', now()),
+  ('00000000-0000-0000-0000-00000000000d', '5511990000004', now()),
+  ('00000000-0000-0000-0000-00000000000e', '5511990000005', now()),
+  ('00000000-0000-0000-0000-00000000000f', '5511990000006', now()),
+  ('00000000-0000-0000-0000-000000000011', '5511990000007', now()),
+  ('00000000-0000-0000-0000-000000000012', '5511990000008', now());
 
 update public.profiles set name = 'Ana Lima' where id = '00000000-0000-0000-0000-00000000000a';
 update public.profiles set name = 'Beto Souza', show_photo = false where id = '00000000-0000-0000-0000-00000000000b';
@@ -503,12 +503,12 @@ reset role;
 
 update public.subscriptions set trial_start = now() - interval '8 days' where user_id = '00000000-0000-0000-0000-00000000000b';
 select tests.ok('depois de 7 dias sem assinar, sem acesso', not public.has_access('00000000-0000-0000-0000-00000000000b'));
-update public.subscriptions set status = 'active' where user_id = '00000000-0000-0000-0000-00000000000b';
+update public.subscriptions set status = 'active', plan = 'completo', renews_at = now() + interval '20 days' where user_id = '00000000-0000-0000-0000-00000000000b';
 select tests.ok('assinante tem acesso', public.has_access('00000000-0000-0000-0000-00000000000b'));
 update public.subscriptions set status = 'payment_failed', grace_until = now() - interval '1 day' where user_id = '00000000-0000-0000-0000-00000000000b';
 select tests.ok('pagamento falhou e o prazo venceu: sem acesso', not public.has_access('00000000-0000-0000-0000-00000000000b'));
 -- Beto volta ao teste para os próximos testes (sem plano, ele só lê).
-update public.subscriptions set status = 'trial', trial_start = now(), grace_until = null where user_id = '00000000-0000-0000-0000-00000000000b';
+update public.subscriptions set status = 'trial', plan = null, renews_at = null, trial_start = now(), grace_until = null where user_id = '00000000-0000-0000-0000-00000000000b';
 
 select tests.ok('limite: a 20ª pergunta ainda passa', (select min(r) from (select public.consume_usage('00000000-0000-0000-0000-00000000000a', 'chat_day', '2026-10-04', 20) r from generate_series(1, 20)) q) = 0);
 select tests.ok('limite: a 21ª pergunta é recusada', public.consume_usage('00000000-0000-0000-0000-00000000000a', 'chat_day', '2026-10-04', 20) = -1);

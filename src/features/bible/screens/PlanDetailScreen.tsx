@@ -1,3 +1,5 @@
+import { PlanLockRow } from '../../subscription/PlanLock'
+import { useSubscription } from '../../subscription/SubscriptionContext'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -21,6 +23,7 @@ export function PlanDetailScreen() {
   const plan = bible.planDef(String(id))
   if (!plan) return <NotFound />
   const started = !!bible.progress[plan.id]
+  const sub = useSubscription()
   const s = planState(plan, bible.progress[plan.id])
   const pct = Math.round((s.done / s.total) * 100)
   const hasCell = cellStatus === 'member' || cellStatus === 'leader'
@@ -63,7 +66,10 @@ export function PlanDetailScreen() {
         </Card>
       )}
 
-      {!started ? (
+      {!sub.can('reading_plans') ? (
+        // Sem plano: o plano e o progresso continuam visíveis, só para leitura.
+        s.status !== 'done' ? <PlanLockRow feature="reading_plans" label={started ? 'Continuar este plano' : 'Começar este plano'} /> : null
+      ) : !started ? (
         <>
           <Segmented label="Como ler" value={mode} onChange={setMode} options={[{ id: 'solo', label: 'Sozinho' }, { id: 'cell', label: 'Com a célula' }]} />
           {mode === 'cell' ? (

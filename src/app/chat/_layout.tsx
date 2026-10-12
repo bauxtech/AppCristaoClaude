@@ -5,7 +5,7 @@ import { AccessGuard } from '../../features/subscription/AccessGuard'
 export default function ChatLayout() {
   const { colors } = useTheme()
   return (
-    <AccessGuard feature="chat">
+    <AccessGuard>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
     </AccessGuard>
   )

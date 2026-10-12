@@ -78,7 +78,8 @@ No Supabase, em **Edge Functions > Secrets**, crie `CRON_SECRET` com uma senha l
    - **URL**: `https://<Reference ID>.supabase.co/functions/v1/revenuecat-webhook`
    - **Authorization**: `Bearer ` seguido de uma senha longa.
    - No Supabase, guarde a mesma senha (sem o "Bearer ") como `REVENUECAT_WEBHOOK_SECRET`.
-7. Copie a chave secreta da API do RevenueCat (Project settings > API keys > Secret API key, começa com `sk_`) e guarde no Supabase como `REVENUECAT_SECRET_KEY`. É ela que deixa o servidor conferir a compra logo depois que a pessoa paga. Nunca coloque essa chave no app.
+7. Copie a chave secreta da API do RevenueCat (Project settings > API keys > Secret API key, começa com `sk_`) e guarde no Supabase como `REVENUECAT_SECRET_KEY`. É ela que deixa o servidor conferir a compra logo depois que a pessoa paga. Nunca coloque essa chave no app. Com ela, o servidor também confere cada aviso do RevenueCat direto na loja (cobre aviso fora de ordem, troca de plano agendada e "Restaurar compra" em outra conta).
+8. Enquanto os testes forem com compra de teste (TestFlight e testadores do Google), guarde no Supabase `REVENUECAT_ALLOW_SANDBOX` com o valor `true`. **Apague esse segredo antes do lançamento**: sem ele, compra de teste não libera plano.
 
 ### Limites e funções de cada plano
 
@@ -90,6 +91,10 @@ Ficam na tabela `plan_config` (Supabase > Table Editor). Mudar um número vale n
 - `features`: funções liberadas (reading_plans, prayer, church, music, cell, chat, sermon, cell_lead).
 
 A linha `trial` vale para os 7 dias de teste. A tabela `app_settings` guarda `trial_days` e `trial_mode`.
+
+### Teste grátis: um por número
+
+O banco guarda o número de quem já usou o teste em código embaralhado com um segredo. O segredo fica no Vault do Supabase com o nome `trial_pepper` (uma senha longa e aleatória, criada uma vez, antes da migração dos planos). Nunca troque esse segredo depois: os números já guardados deixariam de ser reconhecidos.
 
 ### Contas da equipe
 

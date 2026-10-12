@@ -13,6 +13,11 @@ export interface RcEvent {
   store?: string
   purchased_at_ms?: number | null
   expiration_at_ms?: number | null
+  /** PRODUCTION ou SANDBOX (compra de teste). */
+  environment?: string
+  /** Só em TRANSFER: de quem e para quem a compra passou. */
+  transferred_from?: string[]
+  transferred_to?: string[]
   grace_period_expiration_at_ms?: number | null
 }
 
@@ -56,9 +61,10 @@ export function patchFromEvent(e: RcEvent, now = new Date()): SubscriptionPatch 
     ...(product ? { product_id: product } : {}),
   }
   switch (e.type) {
+    // PRODUCT_CHANGE não muda nada sozinho: a troca para um plano menor só vale na renovação.
+    // Com a chave secreta, o webhook consulta o RevenueCat e grava o que vale de fato.
     case 'INITIAL_PURCHASE':
     case 'RENEWAL':
-    case 'PRODUCT_CHANGE':
     case 'UNCANCELLATION':
     case 'SUBSCRIPTION_EXTENDED':
       // Novo período: o contador de cultos zera a partir daqui.
@@ -88,13 +94,15 @@ export function validWebhookAuth(header: string | null, secret: string | undefin
 /** Assinante como a API do RevenueCat devolve (GET /v1/subscribers/{id}). Só os campos usados. */
 export interface RcSubscriber {
   entitlements?: Record<string, { expires_date: string | null; product_identifier: string; purchase_date: string }>
-  subscriptions?: Record<string, { expires_date: string | null; purchase_date: string; store?: string; unsubscribe_detected_at?: string | null; billing_issues_detected_at?: string | null; grace_period_expires_date?: string | null }>
+  subscriptions?: Record<string, { expires_date: string | null; purchase_date: string; store?: string; is_sandbox?: boolean; unsubscribe_detected_at?: string | null; billing_issues_detected_at?: string | null; grace_period_expires_date?: string | null }>
 }
 
 /** Mesma tradução do webhook, a partir da consulta direta (logo depois de comprar ou restaurar). */
-export function patchFromSubscriber(userId: string, sub: RcSubscriber, now = new Date()): SubscriptionPatch | null {
+export function patchFromSubscriber(userId: string, sub: RcSubscriber, now = new Date(), allowSandbox = false): SubscriptionPatch | null {
   if (!UUID.test(userId)) return null
-  const active = Object.entries(sub.entitlements ?? {}).filter(([, e]) => !e.expires_date || new Date(e.expires_date) > now)
+  // Compra de teste (TestFlight, testador do Google) não libera nada em produção.
+  const real = (productId: string) => allowSandbox || !sub.subscriptions?.[productId]?.is_sandbox
+  const active = Object.entries(sub.entitlements ?? {}).filter(([, e]) => (!e.expires_date || new Date(e.expires_date) > now) && real(e.product_identifier))
   const plan = planFrom(active.map(([id]) => id))
   if (!plan) {
     const hadAny = Object.keys(sub.entitlements ?? {}).length > 0
@@ -115,4 +123,18 @@ export function patchFromSubscriber(userId: string, sub: RcSubscriber, now = new
     ...(status === 'payment_failed' ? { grace_until: s?.grace_period_expires_date ?? new Date(now.getTime() + GRACE_DAYS * 86400_000).toISOString() } : { grace_until: null }),
     ...(store ? { store } : {}),
   }
+}
+
+/** Ids de quem o evento afeta. Na transferência, a conta que perdeu e a que ganhou a compra. */
+export function affectedUsers(e: RcEvent): string[] {
+  const ids = e.type === 'TRANSFER' ? [...(e.transferred_from ?? []), ...(e.transferred_to ?? [])] : [e.app_user_id]
+  return [...new Set(ids)].filter((id) => UUID.test(id))
+}
+
+/** Consulta o assinante no RevenueCat. Nulo se a consulta falhar. */
+export async function fetchSubscriber(userId: string, secretKey: string): Promise<RcSubscriber | null> {
+  const res = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, { headers: { Authorization: `Bearer ${secretKey}` } })
+  if (!res.ok) return null
+  const body = (await res.json().catch(() => null)) as { subscriber?: RcSubscriber } | null
+  return body?.subscriber ?? null
 }

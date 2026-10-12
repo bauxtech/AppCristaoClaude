@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
-import { AppText, Button, Card, Icon, Page, SectionLabel, Segmented, Sheet, TextField, useToast } from '../../../components'
+import { AppText, Button, Card, Icon, MIN_TOUCH, Page, Segmented, Sheet, TextField, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { openStoreSubscriptions, purchase, simulateStorePurchase, STORE_ENABLED, STORE_NAME, syncSubscription } from '../../../lib/store'
 import { sendPhoneChangeCode, supabase, verifyPhoneChange } from '../../../lib/supabase'
@@ -185,6 +185,7 @@ export function PlansScreen() {
   const params = useLocalSearchParams<{ plano?: string; fim?: string }>()
   const endOfTrial = params.fim === '1'
   const current = sub.status !== 'free' && sub.status !== 'trial' ? (sub.plan as PlanId) : null
+  const currentBilling = sub.access.billing
   const [plan, setPlan] = useState<PlanId>(isPlanId(params.plano) ? params.plano : (current ?? 'completo'))
   const [billing, setBilling] = useState<Billing>('annual')
   const [sheet, setSheet] = useState(false)
@@ -208,16 +209,20 @@ export function PlansScreen() {
         </View>
       ) : sub.status === 'trial' ? (
         <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-          {sub.daysLeft <= 1 ? 'Seu teste termina amanhã.' : `Faltam ${sub.daysLeft} dias do seu teste.`}
+          {sub.daysLeft <= 1 ? 'Seu teste termina hoje à meia-noite.' : `Faltam ${sub.daysLeft} dias do seu teste.`}
         </AppText>
       ) : null}
       <BillingPicker value={billing} onChange={setBilling} />
       <View style={{ gap: 12 }} accessibilityRole="radiogroup" accessibilityLabel="Planos">
         {PLANS.map((x) => (
-          <PlanCard key={x.id} id={x.id} billing={billing} selected={plan === x.id} current={current === x.id} onSelect={() => setPlan(x.id)} />
+          <PlanCard key={x.id} id={x.id} billing={billing} selected={plan === x.id} current={current === x.id && currentBilling === billing} onSelect={() => setPlan(x.id)} />
         ))}
       </View>
-      <Button label={current === plan ? 'Este é o seu plano' : `Assinar ${p.name} ${billing === 'annual' ? 'anual' : 'mensal'}`} disabled={current === plan} onPress={() => buy(plan, billing)} />
+      {current === plan && currentBilling === billing ? (
+        <Button label="Este é o seu plano" disabled onPress={() => {}} />
+      ) : (
+        <Button label={current === plan ? `Trocar para o ${billing === 'annual' ? 'anual' : 'mensal'}` : `Assinar ${p.name} ${billing === 'annual' ? 'anual' : 'mensal'}`} onPress={() => buy(plan, billing)} />
+      )}
       {endOfTrial ? <Button label="Agora não, seguir só com a Bíblia" variant="outline" onPress={close} /> : null}
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
         {`Pagamento pela ${STORE_NAME}. Renova sozinho e você cancela quando quiser nas configurações da loja.`}
@@ -298,7 +303,7 @@ export function MyPlanScreen() {
           <AppText variant="body" tone="secondary">
             {sub.status === 'trial'
               ? sub.daysLeft <= 1
-                ? 'Seu teste termina amanhã.'
+                ? 'Seu teste termina hoje à meia-noite.'
                 : `Faltam ${sub.daysLeft} dias. O teste termina em ${longDate(sub.trialEndsAt!)}.`
               : 'A Bíblia continua grátis. O que você criou continua guardado, só para leitura.'}
           </AppText>
@@ -378,13 +383,13 @@ export function TrialBanner() {
   const sub = useSubscription()
   if (sub.status !== 'trial') return null
   const last = sub.daysLeft <= 1
-  const text = last ? 'Seu teste termina amanhã' : `Faltam ${sub.daysLeft} dias do seu teste`
+  const text = last ? 'Seu teste termina hoje à meia-noite' : `Faltam ${sub.daysLeft} dias do seu teste`
   return (
     <Pressable
       onPress={() => router.push('/assinatura')}
       accessibilityRole="button"
       accessibilityLabel={`${text}. Ver planos`}
-      style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 14, borderRadius: 12, backgroundColor: last ? colors.dangerSoft : colors.primarySoft }}
+      style={{ minHeight: MIN_TOUCH, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 14, borderRadius: 12, backgroundColor: last ? colors.dangerSoft : colors.primarySoft }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
         {last ? <Icon name="alert" size={14} color={colors.danger} /> : <Icon name="clock" size={14} color={colors.primary} />}
@@ -406,7 +411,7 @@ export function LastDayCard() {
   if (sub.status !== 'trial' || sub.daysLeft > 1) return null
   return (
     <Card style={{ gap: 8, borderColor: colors.accent }}>
-      <AppText variant="bodyStrong">Seu teste termina amanhã</AppText>
+      <AppText variant="bodyStrong">Seu teste termina hoje à meia-noite</AppText>
       <AppText variant="small" tone="secondary">
         Escolha um plano para continuar usando tudo. A Bíblia continua grátis e nada do que você criou é apagado.
       </AppText>

@@ -78,7 +78,7 @@ describe('contador e avisos do teste', () => {
 
   test('último dia: contador e cartão no Hoje', async () => {
     await renderApp(<HomeScreen />, { onboarded: true, subscription: previewState('lastDay') })
-    expect(screen.getByRole('button', { name: 'Seu teste termina amanhã. Ver planos' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Seu teste termina hoje à meia-noite. Ver planos' })).toBeTruthy()
     expect(screen.getByText(/A Bíblia continua grátis e nada do que você criou é apagado/)).toBeTruthy()
   })
 
@@ -206,5 +206,27 @@ describe('meu plano', () => {
     await renderApp(<MyPlanScreen />, { onboarded: true, subscription: previewState('free') })
     expect(screen.getByText('Grátis, só a Bíblia')).toBeTruthy()
     expect(screen.getByText('A Bíblia continua grátis. O que você criou continua guardado, só para leitura.')).toBeTruthy()
+  })
+})
+
+describe('correções da revisão de segurança', () => {
+  test('sem plano: o chat continua mostrando as conversas, só a pergunta fica com cadeado', async () => {
+    const { ChatScreen } = require('../src/features/chat/screens/ChatScreen')
+    await renderApp(<ChatScreen />, { onboarded: true, subscription: previewState('free') })
+    expect(screen.getByRole('button', { name: 'Fazer uma pergunta. Bloqueado. No plano Essencial' })).toBeTruthy()
+    expect(screen.queryByLabelText('Sua pergunta sobre a Bíblia')).toBeNull()
+    expect(screen.getByText(/CVV, telefone 188/)).toBeTruthy()
+  })
+
+  test('assinante do Completo mensal consegue passar para o anual', async () => {
+    await renderApp(<PlansScreen />, { onboarded: true, subscription: previewState('completo') })
+    expect(screen.getByRole('button', { name: 'Trocar para o anual' })).toBeTruthy()
+    await fireEvent.press(screen.getByRole('tab', { name: 'Mensal' }))
+    expect(screen.getByRole('button', { name: 'Este é o seu plano' })).toBeDisabled()
+  })
+
+  test('último dia do teste diz que termina hoje à meia-noite', async () => {
+    await renderApp(<TrialBanner />, { onboarded: true, subscription: previewState('lastDay') })
+    expect(screen.getByRole('button', { name: 'Seu teste termina hoje à meia-noite. Ver planos' })).toBeTruthy()
   })
 })
