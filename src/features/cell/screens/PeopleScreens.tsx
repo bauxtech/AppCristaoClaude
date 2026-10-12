@@ -260,7 +260,7 @@ function MemberDetail({ cell, m }: { cell: Cell; m: Member }) {
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Button
               label="WhatsApp"
-              icon="chat"
+              icon="whatsapp"
               variant="outline"
               size="sm"
               onPress={() => {

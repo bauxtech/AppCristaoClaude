@@ -60,7 +60,7 @@ export function InviteScreen() {
       </Card>
       <Button
         label="Enviar pelo WhatsApp"
-        icon="chat"
+        icon="whatsapp"
         onPress={() => {
           toast('Abrindo o WhatsApp')
           Linking.openURL(`https://wa.me/?text=${encodeURIComponent(message)}`).catch(() => toast('Não foi possível abrir o WhatsApp'))

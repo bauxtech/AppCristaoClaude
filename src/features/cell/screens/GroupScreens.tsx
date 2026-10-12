@@ -171,7 +171,7 @@ function Carpool({ cell }: { cell: Cell }) {
                     <Tag label="Pedido aceito" />
                     <Button
                       label={`Conversar com ${first} no WhatsApp`}
-                      icon="chat"
+                      icon="whatsapp"
                       size="sm"
                       onPress={() => {
                         toast('Abrindo o WhatsApp')
@@ -203,7 +203,7 @@ function Carpool({ cell }: { cell: Cell }) {
                 ) : (
                   <Button
                     label={`Conversar com ${name.split(' ')[0]} no WhatsApp`}
-                    icon="chat"
+                    icon="whatsapp"
                     size="sm"
                     variant="outline"
                     onPress={() => {
