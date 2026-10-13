@@ -1,4 +1,4 @@
-import appConfig from '../app.config'
+import appConfig, { googleIosUrlScheme } from '../app.config'
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { mkdtempSync, writeFileSync } = require('fs') as { mkdtempSync(p: string): string; writeFileSync(p: string, d: string): void }
@@ -30,4 +30,26 @@ test('arquivo do Firebase do identificador antigo fica de fora, para o build nã
   expect(appConfig({ config: base } as never).android).toEqual({ package: 'com.bauxtech.acasa' })
   expect(warn).toHaveBeenCalledWith(expect.stringContaining('com.bauxtech.acasa'))
   warn.mockRestore()
+})
+
+describe('Google no iPhone', () => {
+  afterEach(() => delete process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID)
+
+  test('o endereço de volta é o ID do cliente iOS ao contrário', () => {
+    expect(googleIosUrlScheme('123-abc.apps.googleusercontent.com')).toBe('com.googleusercontent.apps.123-abc')
+    expect(googleIosUrlScheme(' 123-abc.apps.googleusercontent.com ')).toBe('com.googleusercontent.apps.123-abc')
+    expect(googleIosUrlScheme('qualquer coisa')).toBeNull()
+    expect(googleIosUrlScheme(undefined)).toBeNull()
+  })
+
+  test('sem o ID do cliente iOS, o plugin do Google não entra (ele quebraria o build)', () => {
+    const c = appConfig({ config: { ...base, plugins: ['expo-router'] } } as never)
+    expect(c.plugins).toEqual(['expo-router'])
+  })
+
+  test('com o ID do cliente iOS, o plugin entra com o endereço de volta', () => {
+    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = '123-abc.apps.googleusercontent.com'
+    const c = appConfig({ config: { ...base, plugins: ['expo-router'] } } as never)
+    expect(c.plugins).toEqual(['expo-router', ['@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.123-abc' }]])
+  })
 })

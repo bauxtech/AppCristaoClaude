@@ -7,11 +7,19 @@ import { fonts } from '../../../theme/typography'
 import { useOnboarding } from '../OnboardingContext'
 import { useSession } from '../../../state/session'
 import { IS_REMOTE, signOutRemote } from '../../../lib/supabase'
-import { GOOGLE_READY, signInWithGoogle, signOutGoogle } from '../../../lib/google'
+import { GOOGLE_READY, signInWithGoogle, signOutGoogle, type SocialResult } from '../../../lib/google'
+import { APPLE_READY, signInWithApple } from '../../../lib/apple'
 import { configureStore } from '../../../lib/store'
 import { useAccountLoader } from '../useAccountLoader'
 import { useState } from 'react'
 import { OnboardingScaffold } from '../OnboardingScaffold'
+
+type Provider = 'google' | 'apple'
+
+const PROVIDER: Record<Provider, { with: string; noAccount: string; create: string }> = {
+  google: { with: 'o Google', noAccount: 'Não achamos conta com esse Google', create: 'Criar conta com este Google' },
+  apple: { with: 'a Apple', noAccount: 'Não achamos conta com essa Apple ID', create: 'Criar conta com esta Apple ID' },
+}
 
 function LoginOption({ label, icon, onPress, busy }: { label: string; icon: React.ReactNode; onPress: () => void; busy?: boolean }) {
   const { colors } = useTheme()
@@ -50,43 +58,44 @@ export function LoginScreen() {
   const { finishOnboarding } = useSession()
   const accounts = useAccountLoader()
   const toast = useToast()
-  const [busy, setBusy] = useState(false)
-  const [noAccount, setNoAccount] = useState(false)
+  const [busy, setBusy] = useState<Provider | null>(null)
+  const [noAccount, setNoAccount] = useState<Provider | null>(null)
 
-  /** Google de verdade: o Google confirma a pessoa e o banco abre ou cria a conta. */
-  async function google() {
-    setBusy(true)
-    const r = await signInWithGoogle()
-    if (r === 'cancelled') return setBusy(false)
+  /** Google ou Apple de verdade: o serviço confirma a pessoa e o banco abre ou cria a conta. */
+  async function socialLogin(p: Provider) {
+    if (busy) return
+    setBusy(p)
+    const r: SocialResult = p === 'google' ? await signInWithGoogle() : await signInWithApple()
+    if (r === 'cancelled') return setBusy(null)
     if (r === 'failed') {
-      setBusy(false)
-      toast('Não foi possível entrar com o Google. Tente de novo.')
+      setBusy(null)
+      toast(`Não foi possível entrar com ${PROVIDER[p].with}. Tente de novo.`)
       return
     }
     setDraft({ social: true })
     configureStore(r.uid)
     const res = await accounts.load(r.uid, { ...(r.name ? { name: r.name } : {}), ...(r.email ? { email: r.email } : {}) })
-    setBusy(false)
+    setBusy(null)
     if (res === 'no_account') {
       // Criar conta: segue o cadastro. Entrar: avisa antes, porque a pessoa pode ter conta pelo celular.
-      if (login) return setNoAccount(true)
+      if (login) return setNoAccount(p)
       setDraft({ mode: 'create', social: true })
       router.push('/termos')
     }
     if (res === 'failed') toast('Não foi possível carregar sua conta. Confira a internet e tente de novo.')
   }
 
-  function createWithGoogle() {
-    setNoAccount(false)
+  function createWithSocial() {
+    setNoAccount(null)
     setDraft({ mode: 'create', social: true })
     router.push('/termos')
   }
 
-  /** Desiste da conta nova: desfaz o login do Google para não ficar meio entrado. */
-  function cancelGoogle() {
-    setNoAccount(false)
+  /** Desiste da conta nova: desfaz o login do Google ou da Apple para não ficar meio entrado. */
+  function cancelSocial() {
+    if (noAccount === 'google') void signOutGoogle()
+    setNoAccount(null)
     setDraft({ social: false })
-    void signOutGoogle()
     void signOutRemote()
   }
 
@@ -108,13 +117,16 @@ export function LoginScreen() {
           label="Número de celular, por SMS ou WhatsApp"
           icon={<Icon name="phone" size={22} color={colors.primary} />}
           onPress={() => {
-            if (noAccount) cancelGoogle()
+            if (noAccount) cancelSocial()
             setDraft({ social: false })
             router.push('/celular')
           }}
         />
-        {GOOGLE_READY ? <LoginOption label={busy ? 'Entrando com Google' : 'Entrar com Google'} icon={<GoogleIcon />} busy={busy} onPress={() => (busy ? undefined : void google())} /> : null}
-        {/* Na prévia, sem servidor, Google e Apple só mostram o caminho. Apple chega com a versão do iPhone. */}
+        {APPLE_READY ? (
+          <LoginOption label={busy === 'apple' ? 'Entrando com Apple' : 'Entrar com Apple'} icon={<AppleIcon color={colors.text} />} busy={busy === 'apple'} onPress={() => void socialLogin('apple')} />
+        ) : null}
+        {GOOGLE_READY ? <LoginOption label={busy === 'google' ? 'Entrando com Google' : 'Entrar com Google'} icon={<GoogleIcon />} busy={busy === 'google'} onPress={() => void socialLogin('google')} /> : null}
+        {/* Na prévia, sem servidor, Google e Apple só mostram o caminho. */}
         {IS_REMOTE ? null : (
           <>
             <LoginOption label="Entrar com Google" icon={<GoogleIcon />} onPress={social} />
@@ -124,12 +136,12 @@ export function LoginScreen() {
       </View>
       {noAccount ? (
         <Card style={{ gap: 8 }} accessibilityLiveRegion="polite">
-          <AppText variant="bodyStrong">Não achamos conta com esse Google</AppText>
+          <AppText variant="bodyStrong">{PROVIDER[noAccount].noAccount}</AppText>
           <AppText variant="small" tone="secondary">
             Se você se cadastrou pelo celular, entre pelo celular.
           </AppText>
-          <Button label="Criar conta com este Google" size="sm" onPress={createWithGoogle} />
-          <Button label="Não criar conta" variant="text" size="sm" onPress={cancelGoogle} />
+          <Button label={PROVIDER[noAccount].create} size="sm" onPress={createWithSocial} />
+          <Button label="Não criar conta" variant="text" size="sm" onPress={cancelSocial} />
         </Card>
       ) : null}
       <View style={{ gap: 4, alignItems: 'center' }}>

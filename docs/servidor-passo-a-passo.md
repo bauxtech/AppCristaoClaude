@@ -128,6 +128,25 @@ Se ela for publicada em algum serviço (por exemplo Netlify ou Vercel), coloque 
 
 Os valores são os mesmos do passo 1.
 
+## 10. Login com Apple e com Google no iPhone
+
+O código já está no app. Para funcionar, faltam estes passos, todos depois de ter a conta Apple Developer.
+
+**Entrar com Apple**
+1. No developer.apple.com, em Certificates, Identifiers & Profiles > Identifiers, abra com.bauxtech.acasa e marque Sign In with Apple. O EAS também faz isso sozinho no primeiro build do iPhone.
+2. No Supabase, vá em Authentication > Sign In / Providers > Apple e ligue.
+3. Em Client IDs, coloque `com.bauxtech.acasa`. A chave secreta não é necessária, porque o login é feito pelo próprio iPhone.
+
+**Entrar com Google no iPhone**
+1. No Google Cloud, no mesmo projeto do cliente Web e do "acasa Android", vá em APIs e serviços > Credenciais > Criar credenciais > ID do cliente OAuth.
+2. Tipo: iOS. Nome: acasa iOS. ID do pacote: `com.bauxtech.acasa`.
+3. Copie o ID do cliente, que termina em `.apps.googleusercontent.com`.
+4. No expo.dev, em Environment variables, crie `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` com esse valor, nos ambientes preview e production. Ele não é segredo.
+5. No Supabase, em Authentication > Sign In / Providers > Google, acrescente esse ID no campo Client IDs, separado do ID Web por vírgula.
+6. No mesmo lugar, ligue "Skip nonce checks". O Google no iPhone manda um número de uso único que o app não consegue repassar ao Supabase. Sem essa opção, o login com Google no iPhone falha.
+
+Sem o passo 4, o botão do Google não aparece no iPhone e o build não quebra.
+
 ## O que ainda depende de decisão
 
 - **Texto bíblico completo:** Bíblia Livre (CC BY 3.0 BR), decidida pelo Thiago. O texto está em supabase/seed/bible_biblia-livre.sql. O advogado confere a licença e o crédito antes do lançamento.

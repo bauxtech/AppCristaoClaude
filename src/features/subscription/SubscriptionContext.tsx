@@ -25,7 +25,7 @@ interface SubValue {
   canUseCell: (cellId: string) => boolean
   /** A célula funciona (tem líder no plano Líder). */
   cellActive: (cellId: string) => boolean
-  /** Entrou pelo Google e ainda não confirmou o celular: o teste começa depois disso. */
+  /** Entrou pelo Google ou pela Apple e ainda não confirmou o celular: o teste começa depois disso. */
   needsPhoneForTrial: boolean
   /** Dia 8: a tela de planos aparece uma vez ao abrir o app. */
   showEndOfTrial: boolean

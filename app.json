@@ -10,7 +10,8 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bauxtech.acasa"
+      "bundleIdentifier": "com.bauxtech.acasa",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.bauxtech.acasa",
@@ -76,7 +77,8 @@
           "color": "#254C3A"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-apple-authentication"
     ],
     "extra": {
       "eas": {

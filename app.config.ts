@@ -20,13 +20,22 @@ export function firebaseHasPackage(file: string, pkg: string | undefined) {
   }
 }
 
+/** Endereço que o Google usa para voltar ao app no iPhone: o ID do cliente iOS ao contrário. */
+export function googleIosUrlScheme(clientId: string | undefined) {
+  const m = clientId?.trim().match(/^([\w-]+)\.apps\.googleusercontent\.com$/)
+  return m ? `com.googleusercontent.apps.${m[1]}` : null
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => {
   const googleServices = process.env.GOOGLE_SERVICES_JSON
   const usable = !!googleServices && firebaseHasPackage(googleServices, config.android?.package)
   // Aparece no registro do build do EAS: sem isso, o APK sairia sem avisos e ninguém saberia por quê.
   if (googleServices && !usable) console.warn(`google-services.json sem o app ${config.android?.package}: o APK sai sem avisos do servidor.`)
+  // Login com Google no iPhone: só entra com o ID do cliente iOS (variável EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID do EAS).
+  const iosUrlScheme = googleIosUrlScheme(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID)
   return {
     ...(config as ExpoConfig),
     android: { ...config.android, ...(usable ? { googleServicesFile: googleServices } : {}) },
+    ...(iosUrlScheme ? { plugins: [...(config.plugins ?? []), ['@react-native-google-signin/google-signin', { iosUrlScheme }]] } : {}),
   }
 }
