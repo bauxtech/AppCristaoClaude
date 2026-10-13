@@ -69,7 +69,13 @@
         }
       ],
       "expo-sharing",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#254C3A"
+        }
+      ],
       "expo-secure-store"
     ],
     "extra": {

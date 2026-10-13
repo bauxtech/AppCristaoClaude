@@ -26,5 +26,8 @@ test('com o arquivo do Firebase do acasa, ele entra no Android', () => {
 
 test('arquivo do Firebase do identificador antigo fica de fora, para o build não falhar', () => {
   process.env.GOOGLE_SERVICES_JSON = file('com.bauxtech.appcristao')
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   expect(appConfig({ config: base } as never).android).toEqual({ package: 'com.bauxtech.acasa' })
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('com.bauxtech.acasa'))
+  warn.mockRestore()
 })

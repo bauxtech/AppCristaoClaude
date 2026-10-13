@@ -23,6 +23,8 @@ export function firebaseHasPackage(file: string, pkg: string | undefined) {
 export default ({ config }: ConfigContext): ExpoConfig => {
   const googleServices = process.env.GOOGLE_SERVICES_JSON
   const usable = !!googleServices && firebaseHasPackage(googleServices, config.android?.package)
+  // Aparece no registro do build do EAS: sem isso, o APK sairia sem avisos e ninguém saberia por quê.
+  if (googleServices && !usable) console.warn(`google-services.json sem o app ${config.android?.package}: o APK sai sem avisos do servidor.`)
   return {
     ...(config as ExpoConfig),
     android: { ...config.android, ...(usable ? { googleServicesFile: googleServices } : {}) },
