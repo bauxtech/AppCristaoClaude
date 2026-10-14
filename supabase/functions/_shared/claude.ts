@@ -28,7 +28,9 @@ export function askJsonFor(model: string): AskJson {
           role: 'user' as const,
           content: image
             ? [
-                { type: 'image' as const, source: { type: 'base64' as const, media_type: image.mediaType, data: image.data } },
+                image.mediaType === 'application/pdf'
+                  ? { type: 'document' as const, source: { type: 'base64' as const, media_type: 'application/pdf' as const, data: image.data } }
+                  : { type: 'image' as const, source: { type: 'base64' as const, media_type: image.mediaType, data: image.data } },
                 { type: 'text' as const, text: prompt },
               ]
             : prompt,

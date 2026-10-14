@@ -2,7 +2,8 @@ import * as DocumentPicker from 'expo-document-picker'
 import * as ImagePicker from 'expo-image-picker'
 import { useImagePicker } from '../../../lib/useImagePicker'
 import { IS_REMOTE } from '../../../lib/supabase'
-import { readCoursePhotoRemote } from '../coursePhoto'
+import { readCoursePhotoRemote, toBase64, type CoursePhotoFail, type CoursePhotoResult } from '../coursePhoto'
+import { readBytes } from '../../../lib/files'
 import { NotesLockedInline, useNotesLocked } from '../../settings/NotesLock'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
@@ -494,6 +495,8 @@ export function CourseByPhotoScreen() {
   const toast = useToast()
   const { setCourses } = useChurch()
   const [photo, setPhoto] = useState<string | null>(null)
+  /** Nome do PDF escolhido (no lugar da foto). */
+  const [pdfName, setPdfName] = useState<string | null>(null)
   const [reading, setReading] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [name, setName] = useState(IS_REMOTE ? '' : PHOTO_SAMPLE.name)
@@ -515,9 +518,27 @@ export function CourseByPhotoScreen() {
     const img = await pickImageData(source, purpose, { quality: 0.4 })
     if (!img) return
     setPhoto(img.uri)
+    setPdfName(null)
+    await read(() => readCoursePhotoRemote(img.base64, img.mimeType))
+  }
+
+  async function pickPdf() {
+    const res = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true })
+    const doc = !res.canceled ? res.assets[0] : null
+    if (!doc) return
+    if (doc.size && doc.size > 10 * 1024 * 1024) return toast(PHOTO_ERROR.too_big())
+    setPhoto(null)
+    setPdfName(doc.name)
+    await read(async () => {
+      const bytes = await readBytes(doc.uri)
+      return bytes ? readCoursePhotoRemote(toBase64(bytes), 'application/pdf') : { ok: false, reason: 'failed' }
+    })
+  }
+
+  async function read(run: () => Promise<CoursePhotoResult>) {
     setReading(true)
     setNote(null)
-    const r = await readCoursePhotoRemote(img.base64, img.mimeType)
+    const r = await run()
     setReading(false)
     if (r.ok) {
       setName(r.course.name)
@@ -531,7 +552,7 @@ export function CourseByPhotoScreen() {
     }
   }
 
-  if (!photo) {
+  if (!photo && !pdfName) {
     return (
       <Page title="Curso pela foto">
         {permissionSheet}
@@ -543,8 +564,11 @@ export function CourseByPhotoScreen() {
         </View>
         <Button label="Tirar foto do cronograma" icon="camera" onPress={() => void take('camera')} />
         <Button label="Escolher da galeria" icon="image" variant="outline" onPress={() => void take('library')} />
+        {IS_REMOTE ? <Button label="Escolher PDF" icon="file" variant="outline" onPress={() => void pickPdf()} /> : null}
         <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-          O app lê o nome do curso, as datas e os horários. Você confere antes de salvar. A foto não fica guardada.
+          {IS_REMOTE
+            ? 'O app lê o nome do curso, as datas e os horários. Você confere antes de salvar. A foto e o PDF não ficam guardados. PDF de até 20 páginas.'
+            : 'O app lê o nome do curso, as datas e os horários. Você confere antes de salvar.'}
         </AppText>
       </Page>
     )
@@ -552,8 +576,8 @@ export function CourseByPhotoScreen() {
 
   if (reading) {
     return (
-      <Page title="Lendo a foto">
-        <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16 }} accessibilityLabel="Foto do cronograma" />
+      <Page title={pdfName ? 'Lendo o PDF' : 'Lendo a foto'}>
+        <Preview photo={photo} pdfName={pdfName} />
         <AppText variant="body" tone="secondary" accessibilityLiveRegion="polite">
           Lendo o cronograma. Leva alguns segundos.
         </AppText>
@@ -563,7 +587,7 @@ export function CourseByPhotoScreen() {
 
   return (
     <Page title="Conferir o curso">
-      <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16 }} accessibilityLabel="Foto do cronograma" />
+      <Preview photo={photo} pdfName={pdfName} />
       <AppText variant="small" tone="secondary" accessibilityLiveRegion="polite">
         {IS_REMOTE ? (note ?? '') : 'Na prévia, os dados lidos são de exemplo. Confira e corrija o que precisar.'}
       </AppText>
@@ -580,7 +604,7 @@ export function CourseByPhotoScreen() {
         As aulas ficam uma por semana, a partir da primeira data.
       </AppText>
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Button label="Tirar outra foto" variant="outline" onPress={() => setPhoto(null)} style={{ flex: 1 }} />
+        <Button label={pdfName ? 'Escolher outro' : 'Tirar outra foto'} variant="outline" onPress={() => (setPhoto(null), setPdfName(null))} style={{ flex: 1 }} />
         <Button
           label="Salvar curso"
           disabled={!name.trim() || !Number(count)}
@@ -599,11 +623,30 @@ export function CourseByPhotoScreen() {
   )
 }
 
-const PHOTO_ERROR: Record<'no_access' | 'limit' | 'not_found' | 'failed', (resetsAt?: string | null) => string> = {
-  no_access: () => 'A leitura da foto é do plano Completo. Preencha os dados à mão.',
-  limit: () => 'Você chegou ao limite de fotos lidas hoje. Amanhã libera de novo. Por enquanto, preencha os dados à mão.',
-  not_found: () => 'Não deu para achar o cronograma nesta foto. Tire outra foto, mais perto e com boa luz, ou preencha à mão.',
-  failed: () => 'Não foi possível ler a foto agora. Tente de novo ou preencha à mão.',
+const day = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' }) : '')
+
+const PHOTO_ERROR: Record<CoursePhotoFail, (resetsAt?: string | null) => string> = {
+  no_access: () => 'A leitura por foto ou PDF é do plano Completo. Preencha os dados à mão.',
+  limit_month: (at) => `Você chegou ao limite de cursos por foto ou PDF deste mês. Libera de novo em ${day(at) || '1º do mês que vem'}. Por enquanto, preencha à mão.`,
+  limit_day: () => 'Muitas tentativas hoje. Amanhã libera de novo. Por enquanto, preencha à mão.',
+  not_found: () => 'Não deu para achar o cronograma. Tente outra foto, mais perto e com boa luz, ou preencha à mão. Essa tentativa não contou no limite do mês.',
+  too_big: () => 'O arquivo é grande demais. Use um PDF de até 10 MB ou tire uma foto.',
+  too_many_pages: () => 'O PDF tem mais de 20 páginas. Envie só as páginas do cronograma ou tire uma foto.',
+  failed: () => 'Não foi possível ler agora. Tente de novo ou preencha à mão.',
+}
+
+/** Foto ou nome do PDF que está sendo lido. */
+function Preview({ photo, pdfName }: { photo: string | null; pdfName: string | null }) {
+  const { colors } = useTheme()
+  if (photo) return <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16 }} accessibilityLabel="Foto do cronograma" />
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 16, backgroundColor: colors.card }} accessible accessibilityLabel={`PDF do cronograma: ${pdfName ?? ''}`}>
+      <Icon name="file" size={24} color={colors.primary} />
+      <AppText variant="body" style={{ flex: 1 }} numberOfLines={2}>
+        {pdfName}
+      </AppText>
+    </View>
+  )
 }
 
 export function AddCourseScreen() {

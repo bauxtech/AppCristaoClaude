@@ -15,7 +15,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Página web da célula: Next.js, lendo o mesmo banco.
 - Banco, login e arquivos: Supabase, região São Paulo.
 - Funções do servidor: Edge Functions do Supabase. Transcrição pela API da OpenAI. Resumo do culto e chat pela API do Claude.
-- Modelos, decididos por custo e qualidade: chat no Claude Haiku 5.5; resumo do culto e conteúdo do dia no Claude Opus 5.5; leitura da foto do cronograma do curso no Claude Haiku 5.5, até 5 fotos por dia (app_settings.course_photo_per_day), sem guardar a foto; transcrição no gpt-4o-mini-transcribe. Todo assinante precisa dar lucro mesmo no uso máximo do plano.
+- Modelos, decididos por custo e qualidade: chat no Claude Haiku 5.5; resumo do culto e conteúdo do dia no Claude Opus 5.5; leitura da foto ou do PDF do cronograma do curso no Claude Haiku 5.5, até 2 cursos lidos por mês (só conta leitura que deu certo; app_settings.course_read_per_month) e 5 tentativas por dia (app_settings.course_photo_per_day), PDF de até 20 páginas e 10 MB, sem guardar o arquivo; transcrição no gpt-4o-mini-transcribe. Todo assinante precisa dar lucro mesmo no uso máximo do plano.
 - Assinatura: RevenueCat, com a compra nativa da App Store e do Google Play.
 - Avisos: serviço de notificação do Expo.
 - Nenhuma chave de API no app nem no repositório. Segredos ficam no Supabase e no EAS.
@@ -51,7 +51,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Bíblia: Bíblia Livre no lançamento (licença Creative Commons Atribuição, uso comercial permitido, crédito obrigatório no app). Não é domínio público. As licenciadas entram depois. Origem e licença registradas em src/features/bible/translations.ts e na tabela bible_translations.
 - Planos (decididos em 12/10), cada um mensal ou anual, com os mesmos limites:
   - Essencial (R$ 14,90/mês ou R$ 109,90/ano): Bíblia completa, planos de leitura, oração guiada, diário, pedidos, campanhas, igreja, ministérios, cursos (cadastro à mão; aulas, presença, material e notas), música, participar de célula, chat com 5 perguntas por dia. Sem culto. Sem curso pela foto do cronograma (botão com cadeado e "No plano Completo").
-  - Completo (R$ 24,90/mês ou R$ 179,90/ano): tudo do Essencial, chat com 10 perguntas por dia, 4 cultos por período, curso pela foto do cronograma.
+  - Completo (R$ 24,90/mês ou R$ 179,90/ano): tudo do Essencial, chat com 10 perguntas por dia, 4 cultos por período, curso pela foto ou PDF do cronograma.
   - Líder (R$ 39,90/mês ou R$ 299,90/ano): tudo do Completo, 8 cultos por período, criar e conduzir célula. Até 20 vagas para membros sem plano próprio, só para as funções da célula. Quem tem plano próprio e visitante não ocupam vaga. Quem o líder aprova como membro (ou o visitante que vira membro) pega uma vaga livre na hora. Quando uma vaga abre, ela fica livre até o líder dar para alguém. O líder vê na tela de membros quem está sem vaga e pode trocar (tira de um e dá para outro).
   - Funções e limites ficam na tabela plan_config do banco, editável no painel do Supabase sem versão nova do app.
 - Teste grátis: 7 dias corridos com acesso total, contados do primeiro login, controlados pelo servidor, sem forma de pagamento. Limites do teste: 10 perguntas por dia e 2 cultos. Um teste por número de celular (o hash do número fica guardado mesmo depois de excluir a conta). Quem entra pelo Google confirma o celular para começar o teste. Se a Apple recusar o teste pelo servidor, trocar app_settings.trial_mode para "store" e usar o teste da loja.

@@ -258,6 +258,11 @@ select tests.ok('quem tem plano próprio não ocupa vaga', public.seat_state('10
 -- Curso pela foto: Completo e Líder. No Essencial, não.
 select tests.ok('curso pela foto: 5 leituras por dia no Completo',
   (select count(*) from generate_series(1, 6) g where (public.use_limit('00000000-0000-0000-0000-000000000025', 'course_photo') ->> 'ok')::boolean) = 5);
+select tests.ok('curso pela foto ou PDF: 2 cursos por mês no Completo',
+  (select count(*) from generate_series(1, 3) g where (public.use_limit('00000000-0000-0000-0000-000000000025', 'course_read') ->> 'ok')::boolean) = 2);
+select tests.ok('o aviso do limite do mês diz quando libera (dia 1º do mês seguinte)',
+  (public.use_limit('00000000-0000-0000-0000-000000000025', 'course_read') ->> 'resets_at')::timestamptz
+    = ((date_trunc('month', now() at time zone 'America/Sao_Paulo') + interval '1 month')::timestamp at time zone 'America/Sao_Paulo'));
 select tests.ok('curso pela foto: Essencial não lê foto', (public.use_limit('00000000-0000-0000-0000-000000000024', 'course_photo') ->> 'reason') = 'no_access');
 select tests.ok('curso pela foto: no Completo, não no Essencial',
   public.can('00000000-0000-0000-0000-000000000025', 'course_photo') and not public.can('00000000-0000-0000-0000-000000000024', 'course_photo'));

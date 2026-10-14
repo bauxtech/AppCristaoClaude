@@ -1,7 +1,8 @@
-// Curso pela foto do cronograma (plano Completo e Líder): a IA lê a foto e a pessoa confere antes de salvar.
-// Nada da foto fica guardado no servidor.
+// Curso pela foto ou PDF do cronograma (plano Completo e Líder): a IA lê e a pessoa confere antes de salvar.
+// Nada fica guardado no servidor. Limites: cursos lidos por mês (só conta leitura que deu certo)
+// e tentativas por dia (contam mesmo as que falham, para ninguém mandar arquivo sem parar).
 
-import type { AskJson } from './claude-types.ts'
+import type { AskJson, FileType } from './claude-types.ts'
 import type { Usage } from './usage.ts'
 
 // Os mesmos tipos do app (src/features/church/data.ts). Vazio quando nenhum combina.
@@ -21,7 +22,7 @@ export const COURSE_SCHEMA = {
   additionalProperties: false,
 }
 
-export const COURSE_SYSTEM = `Você lê a foto do cronograma de um curso de igreja e devolve os dados em JSON.
+export const COURSE_SYSTEM = `Você lê a foto ou o PDF do cronograma de um curso de igreja e devolve os dados em JSON.
 Copie só o que está escrito na foto. Não invente: o que não aparecer fica vazio (ou 0 em lessons).
 Se o ano da primeira aula não aparecer, use o ano informado no pedido.
 type: escolha o tipo da lista que combina com o nome do curso; se nenhum combinar, deixe vazio.`
@@ -34,7 +35,11 @@ export interface CourseRead {
   time: string
 }
 
-export type CoursePhotoResult = { ok: true; course: CourseRead } | { ok: false; reason: 'no_access' | 'limit' | 'not_found' | 'failed'; resetsAt?: string | null }
+export type CoursePhotoResult =
+  | { ok: true; course: CourseRead }
+  | { ok: false; reason: 'no_access' | 'not_found' | 'failed' }
+  /** month: os cursos do mês acabaram. day: tentativas do dia acabaram. */
+  | { ok: false; reason: 'limit'; scope: 'month' | 'day'; resetsAt: string | null }
 
 const DATE = /^(\d{2})\/(\d{2})\/(\d{4})$/
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -54,26 +59,50 @@ export function cleanCourse(raw: unknown): CourseRead | null {
 }
 
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024
+export const MAX_PDF_BYTES = 10 * 1024 * 1024
+export const MAX_PDF_PAGES = 20
+
+/** Páginas do PDF, contando os objetos de página. Aproximado, mas suficiente para barrar arquivo grande. */
+export function pdfPages(bytes: Uint8Array): number {
+  const text = new TextDecoder('latin1').decode(bytes)
+  return (text.match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length
+}
+
+type Used = { usage: Usage; refund: () => Promise<void> }
 
 export interface CoursePhotoDeps {
-  /** Confere o plano e conta um uso (limite por dia). */
-  use: () => Promise<Usage>
-  /** Devolve o uso quando a leitura falha. */
-  refund: () => Promise<void>
+  /** Conta um curso no mês. Devolvido se a leitura não der certo. */
+  useMonth: () => Promise<Used>
+  /** Conta uma tentativa no dia. Só devolvida se o servidor falhar. */
+  useDay: () => Promise<Used>
   askJson: AskJson
 }
 
-export async function readCoursePhoto(deps: CoursePhotoDeps, image: { data: string; mediaType: 'image/jpeg' | 'image/png' | 'image/webp' }, year: number): Promise<CoursePhotoResult> {
-  const usage = await deps.use()
-  if (!usage.ok) return usage.reason === 'limit' ? { ok: false, reason: 'limit', resetsAt: usage.resetsAt } : { ok: false, reason: 'no_access' }
+const blocked = (u: Usage): CoursePhotoResult | null =>
+  u.ok ? null : u.reason === 'limit' ? { ok: false, reason: 'limit', scope: 'month', resetsAt: u.resetsAt } : { ok: false, reason: 'no_access' }
+
+export async function readCoursePhoto(deps: CoursePhotoDeps, file: { data: string; mediaType: FileType }, year: number): Promise<CoursePhotoResult> {
+  const month = await deps.useMonth()
+  const noMonth = blocked(month.usage)
+  if (noMonth) return noMonth
+  const day = await deps.useDay()
+  if (!day.usage.ok) {
+    await month.refund()
+    return day.usage.reason === 'limit' ? { ok: false, reason: 'limit', scope: 'day', resetsAt: day.usage.resetsAt } : { ok: false, reason: 'no_access' }
+  }
   try {
-    const raw = await deps.askJson({ system: COURSE_SYSTEM, prompt: `Ano atual: ${year}. Leia o cronograma da foto.`, schema: COURSE_SCHEMA, effort: 'low', maxTokens: 1000, image })
+    const what = file.mediaType === 'application/pdf' ? 'do PDF' : 'da foto'
+    const raw = await deps.askJson({ system: COURSE_SYSTEM, prompt: `Ano atual: ${year}. Leia o cronograma ${what}.`, schema: COURSE_SCHEMA, effort: 'low', maxTokens: 1000, image: file })
     const course = cleanCourse(raw)
-    if (!course) return { ok: false, reason: 'not_found' }
+    if (!course) {
+      await month.refund()
+      return { ok: false, reason: 'not_found' }
+    }
     return { ok: true, course }
   } catch (e) {
     console.error('course-photo', e)
-    await deps.refund()
+    await month.refund()
+    await day.refund()
     return { ok: false, reason: 'failed' }
   }
 }

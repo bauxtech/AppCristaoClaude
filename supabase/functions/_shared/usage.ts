@@ -17,7 +17,7 @@ export function usageFrom(r: Raw): Usage {
 type Rpc = { rpc(fn: string, args: Record<string, unknown>): PromiseLike<{ data: unknown; error: unknown }> }
 
 /** Conta um uso. Devolve o resultado e como devolver o uso se a resposta falhar. */
-export async function useLimit(db: Rpc, uid: string, kind: 'chat' | 'sermon' | 'course_photo'): Promise<{ usage: Usage; refund: () => Promise<void> }> {
+export async function useLimit(db: Rpc, uid: string, kind: 'chat' | 'sermon' | 'course_photo' | 'course_read'): Promise<{ usage: Usage; refund: () => Promise<void> }> {
   const { data, error } = await db.rpc('use_limit', { p_user: uid, p_kind: kind })
   if (error) throw new Error('Não foi possível conferir o plano')
   const raw = data as Raw
