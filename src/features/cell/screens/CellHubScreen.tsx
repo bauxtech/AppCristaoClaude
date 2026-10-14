@@ -68,7 +68,7 @@ function CellPlanNotice({ cellId, leader }: { cellId: string; leader: boolean })
       <Card style={{ gap: 6, borderColor: colors.primary }}>
         <AppText variant="bodyStrong">Você está sem vaga nesta célula</AppText>
         <AppText variant="small" tone="secondary">
-          Você vê a reunião, o horário, o endereço e o roteiro e confirma presença. Pedidos de oração, escala e avisos aparecem quando o líder te der uma vaga ou com o plano Essencial.
+          Você vê a reunião, o horário, o endereço e o roteiro e confirma presença. O resto da célula aparece quando o líder te der uma vaga ou com o plano Essencial.
         </AppText>
         <Button label="Ver plano Essencial" size="sm" onPress={() => router.push('/assinatura?plano=essencial' as '/assinatura')} style={{ alignSelf: 'flex-start' }} />
       </Card>
@@ -416,13 +416,13 @@ function MemberView({ cell }: { cell: Cell }) {
         <TileGrid
           items={[
             { label: 'Pedidos', sub: `${cell.prayers.filter((p) => !cell.hidden.includes(p.id) && !blockedIds.has(p.memberId)).length} na célula`, icon: 'chat', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/pedidos') },
-            { label: 'Carona', sub: 'Pedir ou oferecer', icon: 'car', onPress: () => router.push('/celula/carona') },
+            { label: 'Carona', sub: 'Pedir ou oferecer', icon: 'car', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/carona') },
             { label: 'Minha escala', sub: myNext ? myNext.role : 'Sem função esta semana', icon: 'calendarCheck', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/escala') },
             { label: 'Membros', sub: `${cell.members.length} pessoas`, icon: 'people', onPress: () => router.push('/celula/membros') },
             { label: 'Mural', sub: 'Avisos e enquetes', icon: 'flag', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/mural') },
-            { label: 'Materiais', sub: 'Arquivos', icon: 'file', onPress: () => router.push('/celula/materiais') },
-            { label: 'Playlist', sub: 'Músicas da semana', icon: 'music', onPress: () => router.push('/celula/playlist') },
-            { label: 'Plano de leitura', sub: 'Em grupo', icon: 'book', onPress: () => router.push('/celula/leitura') },
+            { label: 'Materiais', sub: 'Arquivos', icon: 'file', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/materiais') },
+            { label: 'Playlist', sub: 'Músicas da semana', icon: 'music', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/playlist') },
+            { label: 'Plano de leitura', sub: 'Em grupo', icon: 'book', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/leitura') },
           ]}
         />
       ) : (

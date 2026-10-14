@@ -297,7 +297,8 @@ interface Card {
   birthday: string | null
   role: CellRole
   status: 'pending' | 'approved' | 'rejected'
-  active: boolean
+  /** Só para líder, auxiliar e a própria pessoa. Para os outros vem vazio. */
+  active: boolean | null
   show_books: boolean
   books_read: number | null
   phone: string | null
@@ -378,7 +379,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
       phone: x.phone ?? '',
       ...(x.birthday ? { birthday: x.birthday } : {}),
       since: localMember(x.is_me ? 'me' : x.user_id)?.since ?? '',
-      active: x.active,
+      active: x.active ?? true,
       lastAttendance: lastAttendance(x.user_id),
       ...(x.is_me ? { isMe: true } : {}),
       showReadingProgress: x.show_reading,

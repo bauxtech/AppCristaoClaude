@@ -156,6 +156,7 @@ reset role;
 
 -- Vagas (14/10): quem o líder aprova como membro pega a vaga livre na hora. Com o limite em 1, o segundo fica sem vaga.
 update public.plan_config set cell_free_members = 1 where plan in ('lider', 'trial');
+insert into public.cell_playlist (cell_id, title) values ('10000000-0000-0000-0000-000000000009', 'Hino');
 -- O segundo é aprovado de novo com o limite já em 1: não há vaga livre para ele.
 select set_config('request.jwt.claims', '{}', false);
 update public.cell_members set status = 'pending' where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028';
@@ -172,6 +173,13 @@ select tests.ok('sem vaga: não vê a escala', tests.rows($$select * from public
 select tests.ok('sem vaga: não compartilha pedido com a célula', tests.denied($$insert into public.prayer_requests (user_id, text, shared_cell_id) values (auth.uid(), 'x', '10000000-0000-0000-0000-000000000009')$$));
 select tests.ok('o app sabe que ele está sem vaga', (public.my_access() -> 'cells' -> '10000000-0000-0000-0000-000000000009' ->> 'seat') = 'none'
   and not (public.my_access() -> 'cells' -> '10000000-0000-0000-0000-000000000009' ->> 'can_use')::boolean);
+select tests.ok('sem vaga: não vê carona, materiais, playlist nem enquetes',
+  tests.rows($$select * from public.cell_rides where cell_id = '10000000-0000-0000-0000-000000000009'$$) = 0
+  and tests.rows($$select * from public.cell_materials where cell_id = '10000000-0000-0000-0000-000000000009'$$) = 0
+  and tests.rows($$select * from public.cell_playlist where cell_id = '10000000-0000-0000-0000-000000000009'$$) = 0
+  and tests.rows($$select * from public.cell_polls where cell_id = '10000000-0000-0000-0000-000000000009'$$) = 0);
+select tests.ok('membro comum não vê quem está inativo (quem não paga)',
+  (select active from public.cell_member_cards('10000000-0000-0000-0000-000000000009') where user_id = '00000000-0000-0000-0000-000000000027') is null);
 select tests.ok('membro não vê a vaga dos outros', (select seat from public.cell_member_cards('10000000-0000-0000-0000-000000000009') where user_id = '00000000-0000-0000-0000-000000000027') is null);
 select tests.ok('membro não se dá uma vaga', tests.denied($$select public.set_member_seat('10000000-0000-0000-0000-000000000009', auth.uid(), true)$$));
 select tests.ok('membro não grava vaga direto na tabela', tests.denied($$insert into public.cell_seats (cell_id, user_id) values ('10000000-0000-0000-0000-000000000009', auth.uid())$$));

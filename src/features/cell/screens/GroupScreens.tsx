@@ -94,7 +94,7 @@ export function NewCellRequestScreen() {
   const prayer = usePrayer()
   const [text, setText] = useState('')
   return (
-    <CellGuard title="Novo pedido" action="seePrayers">
+    <CellGuard title="Novo pedido" action="seePrayers" needsSeat>
       {(cell) => (
         <Page title="Novo pedido">
           <TextField label="Seu pedido" value={text} onChangeText={setText} placeholder="Escreva seu pedido de oração" multiline maxLength={2000} />
@@ -116,7 +116,7 @@ export function NewCellRequestScreen() {
 
 /** Carona. O WhatsApp só abre depois que o pedido é aceito (regra decidida). */
 export function CarpoolScreen() {
-  return <CellGuard title="Carona" action="participate">{(cell) => <Carpool cell={cell} />}</CellGuard>
+  return <CellGuard title="Carona" action="participate" needsSeat>{(cell) => <Carpool cell={cell} />}</CellGuard>
 }
 
 function Carpool({ cell }: { cell: Cell }) {
@@ -237,7 +237,7 @@ function Carpool({ cell }: { cell: Cell }) {
 
 /** Plano de leitura em grupo, com o progresso de quem aceitou mostrar. */
 export function GroupReadingScreen() {
-  return <CellGuard title="Plano de leitura" action="participate">{(cell) => <GroupReading cell={cell} />}</CellGuard>
+  return <CellGuard title="Plano de leitura" action="participate" needsSeat>{(cell) => <GroupReading cell={cell} />}</CellGuard>
 }
 
 function GroupReading({ cell }: { cell: Cell }) {

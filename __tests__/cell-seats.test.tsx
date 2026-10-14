@@ -46,7 +46,7 @@ describe('membro sem vaga', () => {
   test('pedidos, escala e mural aparecem com cadeado e o texto combinado', async () => {
     mockSeatless = true
     await renderApp(<CellHubScreen />, asRole('membro'))
-    for (const label of ['Pedidos', 'Minha escala', 'Mural']) {
+    for (const label of ['Pedidos', 'Minha escala', 'Mural', 'Carona', 'Materiais', 'Playlist', 'Plano de leitura']) {
       expect(screen.getByRole('button', { name: `${label}. Bloqueado. Peça uma vaga ao líder ou assine o plano Essencial` })).toBeTruthy()
     }
     await fireEvent.press(screen.getByRole('button', { name: 'Pedidos. Bloqueado. Peça uma vaga ao líder ou assine o plano Essencial' }))

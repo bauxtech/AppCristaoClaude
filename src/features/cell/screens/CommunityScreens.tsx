@@ -179,7 +179,7 @@ export function MaterialsScreen() {
   const { update } = useCell()
   const { colors } = useTheme()
   return (
-    <CellGuard title="Materiais" action="participate">
+    <CellGuard title="Materiais" action="participate" needsSeat>
       {(cell) => {
         const manage = can(cell.myRole, 'manageMaterials')
         return (
@@ -240,7 +240,7 @@ export function PlaylistScreen() {
   const { colors } = useTheme()
   const validUrl = !url.trim() || /^https:\/\/\S+$/.test(url.trim())
   return (
-    <CellGuard title="Playlist da semana" action="participate">
+    <CellGuard title="Playlist da semana" action="participate" needsSeat>
       {(cell) => {
         const manage = can(cell.myRole, 'managePlaylist')
         return (
