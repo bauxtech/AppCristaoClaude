@@ -14,6 +14,7 @@ import { useBlockedIds } from '../../settings/SettingsContext'
 import { WEEKDAYS_PLURAL, type Cell } from '../data'
 import { formatMeeting, formatTime, missedTwoWeeks, nextMeeting } from '../meetings'
 import { can, ROLE_LABEL } from '../permissions'
+import { SEATLESS_LINE } from './Guard'
 import { TileGrid } from './parts'
 import { PlanButton } from '../../subscription/PlanLock'
 import { useSubscription } from '../../subscription/SubscriptionContext'
@@ -42,7 +43,7 @@ export function CellHubScreen() {
 
 /**
  * Célula sem líder no plano Líder: para na hora e fica só para leitura (nada é apagado).
- * Membro sem plano e sem vaga (mais de 20 sem plano): vê a célula, mas precisa de plano próprio para participar.
+ * Membro sem plano e sem vaga: vê a reunião e confirma presença. Pedidos, escala e avisos ficam trancados.
  */
 function CellPlanNotice({ cellId, leader }: { cellId: string; leader: boolean }) {
   const { colors } = useTheme()
@@ -62,14 +63,14 @@ function CellPlanNotice({ cellId, leader }: { cellId: string; leader: boolean })
       </Card>
     )
   }
-  if (!sub.canUseCell(cellId)) {
+  if (sub.cellSeatless(cellId)) {
     return (
       <Card style={{ gap: 6, borderColor: colors.primary }}>
-        <AppText variant="bodyStrong">Você está na lista, sem participar</AppText>
+        <AppText variant="bodyStrong">Você está sem vaga nesta célula</AppText>
         <AppText variant="small" tone="secondary">
-          As vagas sem plano desta célula acabaram. Com o plano Essencial, você confirma presença, entra na escala e participa da célula.
+          Você vê a reunião, o horário, o endereço e o roteiro e confirma presença. Pedidos de oração, escala e avisos aparecem quando o líder te der uma vaga ou com o plano Essencial.
         </AppText>
-        <Button label="Ver planos" size="sm" onPress={() => router.push('/assinatura?plano=essencial' as '/assinatura')} style={{ alignSelf: 'flex-start' }} />
+        <Button label="Ver plano Essencial" size="sm" onPress={() => router.push('/assinatura?plano=essencial' as '/assinatura')} style={{ alignSelf: 'flex-start' }} />
       </Card>
     )
   }
@@ -353,6 +354,10 @@ function LeaderView({ cell }: { cell: Cell }) {
 
 function MemberView({ cell }: { cell: Cell }) {
   const blockedIds = useBlockedIds()
+  const sub = useSubscription()
+  const seatless = sub.cellSeatless(cell.id)
+  const lock = seatless ? SEATLESS_LINE : undefined
+  const toPlans = () => router.push('/assinatura?plano=essencial' as '/assinatura')
   const toast = useToast()
   const { update } = useCell()
   const leader = cell.members.find((m) => m.role === 'lider')
@@ -410,11 +415,11 @@ function MemberView({ cell }: { cell: Cell }) {
       {!isVisitor ? (
         <TileGrid
           items={[
-            { label: 'Pedidos', sub: `${cell.prayers.filter((p) => !cell.hidden.includes(p.id) && !blockedIds.has(p.memberId)).length} na célula`, icon: 'chat', onPress: () => router.push('/celula/pedidos') },
+            { label: 'Pedidos', sub: `${cell.prayers.filter((p) => !cell.hidden.includes(p.id) && !blockedIds.has(p.memberId)).length} na célula`, icon: 'chat', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/pedidos') },
             { label: 'Carona', sub: 'Pedir ou oferecer', icon: 'car', onPress: () => router.push('/celula/carona') },
-            { label: 'Minha escala', sub: myNext ? myNext.role : 'Sem função esta semana', icon: 'calendarCheck', onPress: () => router.push('/celula/escala') },
+            { label: 'Minha escala', sub: myNext ? myNext.role : 'Sem função esta semana', icon: 'calendarCheck', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/escala') },
             { label: 'Membros', sub: `${cell.members.length} pessoas`, icon: 'people', onPress: () => router.push('/celula/membros') },
-            { label: 'Mural', sub: 'Avisos e enquetes', icon: 'flag', onPress: () => router.push('/celula/mural') },
+            { label: 'Mural', sub: 'Avisos e enquetes', icon: 'flag', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/mural') },
             { label: 'Materiais', sub: 'Arquivos', icon: 'file', onPress: () => router.push('/celula/materiais') },
             { label: 'Playlist', sub: 'Músicas da semana', icon: 'music', onPress: () => router.push('/celula/playlist') },
             { label: 'Plano de leitura', sub: 'Em grupo', icon: 'book', onPress: () => router.push('/celula/leitura') },
@@ -423,7 +428,7 @@ function MemberView({ cell }: { cell: Cell }) {
       ) : (
         <Card>
           <AppText variant="body" tone="secondary">
-            Como visitante, você vê a reunião, o endereço e o roteiro. Quando o líder mudar seu papel para membro, o resto da célula aparece aqui.
+            Como visitante, você vê a reunião, o endereço e o roteiro. Depois de algumas reuniões, ou antes se o líder mudar seu papel, você passa a membro e o resto da célula aparece aqui.
           </AppText>
         </Card>
       )}

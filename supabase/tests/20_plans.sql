@@ -154,14 +154,99 @@ select tests.ok('membro não muda a própria data de entrada para furar a fila d
   and tests.denied($$update public.cell_members set requested_at = '2000-01-01' where user_id = auth.uid()$$));
 reset role;
 
--- Vagas sem plano acabaram: o segundo membro sem plano (por ordem de entrada) fica de fora.
+-- Vagas (14/10): quem o líder aprova como membro pega a vaga livre na hora. Com o limite em 1, o segundo fica sem vaga.
 update public.plan_config set cell_free_members = 1 where plan in ('lider', 'trial');
+-- O segundo é aprovado de novo com o limite já em 1: não há vaga livre para ele.
+select set_config('request.jwt.claims', '{}', false);
+update public.cell_members set status = 'pending' where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028';
+update public.cell_members set status = 'approved' where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028';
+select tests.ok('as vagas são de quem foi aprovado primeiro',
+  public.seat_state('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000027') = 'seat'
+  and public.seat_state('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000028') = 'none');
 select tests.as_user('00000000-0000-0000-0000-000000000028');
-select tests.ok('sem vaga, membro sem plano precisa de plano próprio', tests.denied($$insert into public.cell_rsvps (cell_id, meeting_date, user_id, going) values ('10000000-0000-0000-0000-000000000009', current_date + 1, auth.uid(), true)$$));
+select tests.ok('sem vaga: ainda confirma presença', tests.allowed($$insert into public.cell_rsvps (cell_id, meeting_date, user_id, going) values ('10000000-0000-0000-0000-000000000009', current_date + 1, auth.uid(), true)$$));
+select tests.ok('sem vaga: vê a reunião', tests.runs($$select * from public.cell_meetings where cell_id = '10000000-0000-0000-0000-000000000009'$$));
+select tests.ok('sem vaga: não vê os avisos do mural', tests.rows($$select * from public.cell_board where cell_id = '10000000-0000-0000-0000-000000000009'$$) = 0);
+select tests.ok('sem vaga: não vê os pedidos de oração da célula', tests.rows($$select * from public.prayer_requests where shared_cell_id = '10000000-0000-0000-0000-000000000009'$$) = 0);
+select tests.ok('sem vaga: não vê a escala', tests.rows($$select * from public.cell_schedule where cell_id = '10000000-0000-0000-0000-000000000009'$$) = 0);
+select tests.ok('sem vaga: não compartilha pedido com a célula', tests.denied($$insert into public.prayer_requests (user_id, text, shared_cell_id) values (auth.uid(), 'x', '10000000-0000-0000-0000-000000000009')$$));
+select tests.ok('o app sabe que ele está sem vaga', (public.my_access() -> 'cells' -> '10000000-0000-0000-0000-000000000009' ->> 'seat') = 'none'
+  and not (public.my_access() -> 'cells' -> '10000000-0000-0000-0000-000000000009' ->> 'can_use')::boolean);
+select tests.ok('membro não vê a vaga dos outros', (select seat from public.cell_member_cards('10000000-0000-0000-0000-000000000009') where user_id = '00000000-0000-0000-0000-000000000027') is null);
+select tests.ok('membro não se dá uma vaga', tests.denied($$select public.set_member_seat('10000000-0000-0000-0000-000000000009', auth.uid(), true)$$));
+select tests.ok('membro não grava vaga direto na tabela', tests.denied($$insert into public.cell_seats (cell_id, user_id) values ('10000000-0000-0000-0000-000000000009', auth.uid())$$));
+select tests.ok('membro não lê a vaga dos outros na tabela', tests.rows($$select * from public.cell_seats where cell_id = '10000000-0000-0000-0000-000000000009' and user_id <> auth.uid()$$) = 0);
 reset role;
 select tests.ok('na lista, quem está sem vaga aparece como inativo',
   not (select active from public.cell_member_cards('10000000-0000-0000-0000-000000000009') where user_id = '00000000-0000-0000-0000-000000000028' limit 1) is not false);
+
+-- O líder troca quem usa a vaga.
+select tests.as_user('00000000-0000-0000-0000-000000000026');
+select tests.ok('líder vê quem está sem vaga', (select seat from public.cell_member_cards('10000000-0000-0000-0000-000000000009') where user_id = '00000000-0000-0000-0000-000000000028') = 'none');
+select tests.ok('líder vê quantas vagas sobram', (public.cell_seat_summary('10000000-0000-0000-0000-000000000009') ->> 'left')::int = 0);
+select tests.ok('sem vaga livre, não dá vaga', tests.denied($$select public.set_member_seat('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000028', true)$$));
+select tests.ok('líder tira a vaga de um', tests.runs($$select public.set_member_seat('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000027', false)$$));
+select tests.ok('a vaga que abriu fica livre até o líder escolher', (public.cell_seat_summary('10000000-0000-0000-0000-000000000009') ->> 'left')::int = 1);
+select tests.ok('e dá para outro', tests.runs($$select public.set_member_seat('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000028', true)$$));
+reset role;
+select tests.ok('a troca vale na hora',
+  public.seat_state('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000028') = 'seat'
+  and public.seat_state('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000027') = 'none');
+select tests.as_user('00000000-0000-0000-0000-000000000028');
+select tests.ok('com a vaga, passa a ver o mural', tests.rows($$select * from public.cell_board where cell_id = '10000000-0000-0000-0000-000000000009'$$) = 1);
+reset role;
+select set_config('request.jwt.claims', '{}', false);
+-- Devolve a vaga ao primeiro, como estava, para os testes seguintes.
+delete from public.cell_seats where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028';
+insert into public.cell_seats (cell_id, user_id) values ('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000027');
 update public.plan_config set cell_free_members = 20 where plan in ('lider', 'trial');
+select tests.ok('vaga livre não vai sozinha para quem estava sem vaga', public.seat_state('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000028') = 'none');
+insert into public.cell_seats (cell_id, user_id) values ('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000028');
+
+-- Visitante: não ocupa vaga e vira membro depois de 3 reuniões ou 30 dias.
+update public.cell_members set role = 'visitante' where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028';
+select tests.ok('visitante não ocupa vaga', public.seat_state('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000028') = 'visitor'
+  and not exists (select 1 from public.cell_seats where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028'));
+select tests.as_user('00000000-0000-0000-0000-000000000028');
+select tests.ok('visitante confirma presença', tests.allowed($$insert into public.cell_rsvps (cell_id, meeting_date, user_id, going) values ('10000000-0000-0000-0000-000000000009', current_date + 3, auth.uid(), true)$$));
+select tests.ok('visitante não vê os pedidos da célula', tests.rows($$select * from public.prayer_requests where shared_cell_id = '10000000-0000-0000-0000-000000000009'$$) = 0);
+select tests.ok('visitante não muda a data de quando virou visitante',
+  tests.runs($$update public.cell_members set visitor_since = '2000-01-01' where user_id = auth.uid() and cell_id = '10000000-0000-0000-0000-000000000009'$$)
+  and (select visitor_since > now() - interval '1 hour' from public.cell_members where user_id = auth.uid() and cell_id = '10000000-0000-0000-0000-000000000009'));
+reset role;
+select set_config('request.jwt.claims', '{}', false);
+-- Visitante há 5 dias (a data é mudada aqui sem o gatilho, só para o teste).
+alter table public.cell_members disable trigger track_visitor;
+update public.cell_members set visitor_since = now() - interval '5 days' where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028';
+alter table public.cell_members enable trigger track_visitor;
+insert into public.cell_meetings (cell_id, date) values ('10000000-0000-0000-0000-000000000009', current_date - 10);
+insert into public.cell_meetings (cell_id, date) values ('10000000-0000-0000-0000-000000000009', current_date - 3), ('10000000-0000-0000-0000-000000000009', current_date - 2);
+select public.promote_visitors();
+select tests.ok('com 2 reuniões desde a entrada (a de antes não conta), continua visitante', (select role from public.cell_members where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028') = 'visitante');
+insert into public.cell_meetings (cell_id, date) values ('10000000-0000-0000-0000-000000000009', current_date + 10);
+select public.promote_visitors();
+select tests.ok('reunião marcada para depois não conta', (select role from public.cell_members where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028') = 'visitante');
+insert into public.cell_meetings (cell_id, date) values ('10000000-0000-0000-0000-000000000009', current_date - 1);
+select public.promote_visitors();
+select tests.ok('na 3ª reunião, vira membro, mesmo tendo faltado', (select role from public.cell_members where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028') = 'membro');
+select tests.ok('ao virar membro, pega a vaga livre', public.seat_state('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000028') = 'seat');
+update public.cell_members set role = 'visitante' where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028';
+delete from public.cell_meetings where cell_id = '10000000-0000-0000-0000-000000000009';
+alter table public.cell_members disable trigger track_visitor;
+update public.cell_members set visitor_since = now() - interval '31 days' where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028';
+alter table public.cell_members enable trigger track_visitor;
+select public.promote_visitors();
+select tests.ok('com 30 dias, vira membro mesmo sem reuniões', (select role from public.cell_members where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028') = 'membro');
+update public.app_settings set value = '5' where key = 'visitor_meetings';
+select tests.ok('regras do visitante vêm da configuração', public.setting_int('visitor_meetings', 3) = 5);
+update public.app_settings set value = '3' where key = 'visitor_meetings';
+
+-- Quem tem plano próprio não ocupa vaga.
+select tests.ok('quem tem plano próprio não ocupa vaga', public.seat_state('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000026') = 'plan');
+
+-- Curso pela foto: Completo e Líder. No Essencial, não.
+select tests.ok('curso pela foto: no Completo, não no Essencial',
+  public.can('00000000-0000-0000-0000-000000000025', 'course_photo') and not public.can('00000000-0000-0000-0000-000000000024', 'course_photo'));
 
 select set_config('request.jwt.claims', '{}', false);
 insert into public.cell_members (cell_id, user_id, role, status) values ('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000024', 'membro', 'pending');

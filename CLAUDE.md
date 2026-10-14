@@ -45,22 +45,22 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Papéis: o auxiliar marca presença e edita a escala. O anfitrião não tem permissão a mais.
 - Líder: a célula pode ter mais de um. Só o único líder de uma célula com outros membros precisa passar a liderança antes de sair ou excluir a conta.
 - Telefone dos membros: aparece só para o líder.
-- Visitante: vê reunião, endereço e roteiro. Não vê os pedidos de oração.
+- Visitante: vê reunião, endereço e roteiro. Não vê os pedidos de oração. O líder escolhe ao aprovar se a pessoa entra como visitante ou membro. Visitante não ocupa vaga e vira membro sozinho depois de 3 reuniões da célula (contam as que aconteceram, mesmo se faltou) ou 30 dias, o que vier primeiro. O líder pode passar para membro antes. Os números ficam em app_settings (visitor_meetings, visitor_days).
 - Página web da célula: mostra só o bairro. O endereço completo aparece depois de a pessoa deixar nome e telefone.
 - Idade: só maiores de 18 no lançamento.
 - Bíblia: Bíblia Livre no lançamento (licença Creative Commons Atribuição, uso comercial permitido, crédito obrigatório no app). Não é domínio público. As licenciadas entram depois. Origem e licença registradas em src/features/bible/translations.ts e na tabela bible_translations.
 - Planos (decididos em 12/10), cada um mensal ou anual, com os mesmos limites:
-  - Essencial (R$ 14,90/mês ou R$ 109,90/ano): Bíblia completa, planos de leitura, oração guiada, diário, pedidos, campanhas, igreja, ministérios, cursos, música, participar de célula, chat com 5 perguntas por dia. Sem culto.
-  - Completo (R$ 24,90/mês ou R$ 179,90/ano): tudo do Essencial, chat com 10 perguntas por dia, 4 cultos por período.
-  - Líder (R$ 39,90/mês ou R$ 299,90/ano): tudo do Completo, 8 cultos por período, criar e conduzir célula. Até 20 membros da célula entram sem plano, só para as funções da célula (pela ordem de entrada). Do 21º em diante, cada um precisa de plano próprio.
+  - Essencial (R$ 14,90/mês ou R$ 109,90/ano): Bíblia completa, planos de leitura, oração guiada, diário, pedidos, campanhas, igreja, ministérios, cursos (cadastro à mão; aulas, presença, material e notas), música, participar de célula, chat com 5 perguntas por dia. Sem culto. Sem curso pela foto do cronograma (botão com cadeado e "No plano Completo").
+  - Completo (R$ 24,90/mês ou R$ 179,90/ano): tudo do Essencial, chat com 10 perguntas por dia, 4 cultos por período, curso pela foto do cronograma.
+  - Líder (R$ 39,90/mês ou R$ 299,90/ano): tudo do Completo, 8 cultos por período, criar e conduzir célula. Até 20 vagas para membros sem plano próprio, só para as funções da célula. Quem tem plano próprio e visitante não ocupam vaga. Quem o líder aprova como membro (ou o visitante que vira membro) pega uma vaga livre na hora. Quando uma vaga abre, ela fica livre até o líder dar para alguém. O líder vê na tela de membros quem está sem vaga e pode trocar (tira de um e dá para outro).
   - Funções e limites ficam na tabela plan_config do banco, editável no painel do Supabase sem versão nova do app.
 - Teste grátis: 7 dias corridos com acesso total, contados do primeiro login, controlados pelo servidor, sem forma de pagamento. Limites do teste: 10 perguntas por dia e 2 cultos. Um teste por número de celular (o hash do número fica guardado mesmo depois de excluir a conta). Quem entra pelo Google confirma o celular para começar o teste. Se a Apple recusar o teste pelo servidor, trocar app_settings.trial_mode para "store" e usar o teste da loja.
-- Depois do teste sem plano: grátis para sempre ler a Bíblia, trocar de tradução, ouvir capítulos (voz do celular), buscar, grifar, anotar, favoritar, marcar como lido, passagem do dia na Home e participar da célula de um líder com o plano Líder. O resto fica bloqueado. O que a pessoa criou nunca é apagado: fica só para leitura e ela pode apagar. Mesma regra quando a assinatura vence ou é cancelada.
+- Depois do teste sem plano: grátis para sempre ler a Bíblia, trocar de tradução, ouvir capítulos (voz do celular), buscar, grifar, anotar, favoritar, marcar como lido, passagem e reflexão do dia na Home e participar da célula de um líder com o plano Líder. O resto fica bloqueado. O que a pessoa criou nunca é apagado: fica só para leitura e ela pode apagar. Mesma regra quando a assinatura vence ou é cancelada.
 - Bloqueio na tela: dia 5 e dia 7, aviso no celular. Dia 8, a tela de planos aparece uma vez com o botão para seguir só com a Bíblia. Depois, cada função bloqueada mostra cadeado e "No plano X"; tocar abre a tela de planos. O anual aparece marcado.
 - Limites: chat zera à meia-noite (Brasília). Culto zera a cada período da assinatura. O limite é conferido ao começar; nunca corta uma transcrição já iniciada. O aviso mostra a data de renovação. O direito de uso é sempre conferido no servidor.
 - Líder sem o plano Líder: se a célula tem outro líder com o plano Líder, nada muda. Se não tem, a célula para na hora e fica só para leitura (sem reunião, escala, presença, avisos ou página web). Nada é apagado. O líder pode passar a liderança para quem tem o plano Líder; se voltar a assinar, tudo volta.
 - Contas da equipe: cortesia de plano pelo servidor (subscriptions.courtesy_plan e courtesy_until), sem loja.
-- Membro sem plano e sem vaga: fica na lista da célula como inativo e sai da escala.
+- Membro sem plano e sem vaga: vê a próxima reunião, horário, endereço e roteiro, e confirma presença. Não vê pedidos de oração, escala e avisos; esses itens aparecem com cadeado e "Peça uma vaga ao líder ou assine o plano Essencial". Sai da escala.
 - Total de dias: não existe sequência. O app mostra o total de dias com leitura ou oração.
 - Áudio do culto: o padrão é guardar só o texto. Quando a pessoa escolhe guardar o áudio, ele fica 30 dias.
 - Carona: botão que abre o WhatsApp quando o pedido é aceito.
@@ -68,7 +68,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Histórico do chat: guardado no servidor só com o consentimento de fé.
 - Retirar o consentimento de fé: apaga do servidor o diário, os pedidos de oração, o histórico do chat, o registro de que a pessoa orou pelos pedidos de outros e a tradição. No aparelho, eles continuam. Sem consentimento, o banco não aceita gravar esses dados. Dar o consentimento de novo envia o que está no aparelho.
 - Denúncia: vai para a equipe do app. O conteúdo some na hora para quem denunciou.
-- Conteúdo diário: escrito pela IA e publicado direto, sem revisão. O versículo vem sempre do texto bíblico do app, nunca da IA.
+- Conteúdo diário: escrito pela IA e publicado direto, sem revisão. Gerado uma vez por dia, igual para todos, nunca por pessoa. A reflexão do dia é livre para todos, inclusive sem plano. O versículo vem sempre do texto bíblico do app, nunca da IA.
 - Igreja: busca só pelo CNPJ (Receita) e cadastro à mão. Sem Google Places, por custo. Nome e endereço vêm do CNPJ. Horários de culto e acessibilidade: cada pessoa edita os da própria igreja e só ela vê. Na igreja cadastrada à mão, o que quem cadastrou informa vale para todos até a pessoa guardar os dela.
 - Música: só sugestões, sem conexão com Spotify. Só músicas brasileiras. A lista é escolhida pela IA e pode ser trocada pela equipe.
 - Culto longo: o servidor divide o áudio em partes de até 10 minutos antes da transcrição.

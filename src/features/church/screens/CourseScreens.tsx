@@ -81,7 +81,7 @@ export function CoursesScreen() {
           ))}
         </CoverGrid>
       ) : null}
-      <PlanButton feature="church" label="Curso pela foto do cronograma" icon="camera" variant="outline" onPress={() => router.push('/igreja/curso-foto')} />
+      <PlanButton feature="course_photo" label="Curso pela foto do cronograma" icon="camera" variant="outline" onPress={() => router.push('/igreja/curso-foto')} />
       <PlanButton feature="church" label="Adicionar curso à mão" icon="plus" variant="outline" onPress={() => router.push('/igreja/curso-novo')} />
     </Page>
   )

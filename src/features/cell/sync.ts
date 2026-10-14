@@ -5,6 +5,7 @@ import { isUuid, uuid } from '../../lib/uuid'
 import { DEFAULT_ROLES, type Cell, type Member } from './data'
 import { lastMeeting, nextMeeting } from './meetings'
 import type { CellRole } from './permissions'
+import { seatState } from '../subscription/plan'
 
 // Sincronização da célula com o banco. Os dados são de várias pessoas, então quem decide o que cada um
 // pode ler e gravar são as regras do banco (papel na célula). O app manda a diferença de cada mudança
@@ -305,6 +306,7 @@ interface Card {
   reading_joined: boolean
   show_reading: boolean
   reading_progress: number | null
+  seat: string | null
 }
 
 /**
@@ -351,6 +353,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   ])
   const all = [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden, polls, votes, counts, playlist, materials]
   const hist = myRole === 'lider' ? await db.rpc('cell_history', { p_cell: cellId }) : null
+  const seats = myRole === 'lider' ? await db.rpc('cell_seat_summary', { p_cell: cellId }) : null
   if (all.some((r) => r.error) || !row.data) return null
   const c = row.data
   const list = (cards.data ?? []) as Card[]
@@ -381,6 +384,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
       showReadingProgress: x.show_reading,
       ...(x.reading_progress != null ? { readingProgress: x.reading_progress } : {}),
       ...(photos.get(x.user_id) ? { photoUri: photos.get(x.user_id)! } : {}),
+      ...(seatState(x.seat) ? { seat: seatState(x.seat)! } : {}),
     }))
   const myCard = list.find((x) => x.is_me)
   const h = ((hist?.data ?? []) as { meetings: number; avg_attendance: number; answered: number }[])[0]
@@ -467,6 +471,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
     readingPlan: { planId: c.reading_plan_id ?? '', joined: !!myCard?.reading_joined },
     history: h ? { meetings: h.meetings, avgAttendance: h.avg_attendance, answered: h.answered } : (local?.history ?? { meetings: past.length, avgAttendance: 0, answered: 0 }),
     hidden: [...new Set([...(local?.hidden ?? []), ...hiddenIds])],
+    ...(seats?.data ? { seats: { total: Number((seats.data as { total?: number }).total ?? 0), left: Number((seats.data as { left?: number }).left ?? 0) } } : {}),
   }
 }
 
@@ -502,4 +507,12 @@ export async function requestJoinRemote(code: string): Promise<'ok' | 'invalid' 
   const { error } = await supabase.rpc('request_join', { p_code: code })
   if (!error) return 'ok'
   return /inv[aá]lido/i.test(error.message) ? 'invalid' : 'failed'
+}
+
+/** O líder dá ou tira a vaga de alguém. O banco confere se é líder, se há vaga livre e se a pessoa precisa dela. */
+export async function setMemberSeatRemote(cellId: string, userId: string, give: boolean): Promise<'ok' | 'full' | 'failed'> {
+  if (!supabase) return 'failed'
+  const { error } = await supabase.rpc('set_member_seat', { p_cell: cellId, p_user: userId, p_give: give })
+  if (!error) return 'ok'
+  return /vaga livre/i.test(error.message) ? 'full' : 'failed'
 }

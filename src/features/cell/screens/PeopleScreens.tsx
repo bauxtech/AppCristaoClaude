@@ -11,6 +11,8 @@ import type { Cell, Member } from '../data'
 import { formatMeeting, missedTwoWeeks, nextMeeting } from '../meetings'
 import { can, ROLE_LABEL, ROLES } from '../permissions'
 import { CellGuard } from './Guard'
+import { setMemberSeatRemote } from '../sync'
+import type { SeatState } from '../../subscription/plan'
 
 function formatPhone(p: string) {
   const d = onlyDigits(p)
@@ -124,9 +126,13 @@ export function MembersScreen() {
         return (
           <Page title="Membros">
             <AppText variant="small" tone="secondary">{`${cell.members.length} pessoas · ${cell.members.filter((m) => !m.active).length} inativas`}</AppText>
+            {leader && cell.seats ? (
+              <AppText variant="small" tone="secondary">{`Vagas sem plano: ${cell.seats.total - cell.seats.left} de ${cell.seats.total} em uso`}</AppText>
+            ) : null}
             <Card style={{ paddingVertical: 4 }}>
               {order.map((m, i) => {
-                const label = `${m.isMe ? `${m.name} (você)` : m.name}, ${ROLE_LABEL[m.role]}${!m.active ? ', inativo' : ''}${leader && missedTwoWeeks(m.lastAttendance) ? ', faltou 2 semanas' : ''}`
+                const seatTag = leader && !m.isMe ? SEAT_TAG[m.seat ?? ''] : undefined
+                const label = `${m.isMe ? `${m.name} (você)` : m.name}, ${ROLE_LABEL[m.role]}${seatTag ? `, ${seatTag.toLowerCase()}` : !m.active ? ', inativo' : ''}${leader && missedTwoWeeks(m.lastAttendance) ? ', faltou 2 semanas' : ''}`
                 const row = (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, borderBottomWidth: i < order.length - 1 ? 1 : 0, borderBottomColor: colors.line }}>
                     <Avatar name={m.name} strong={m.isMe} uri={m.photoUri} />
@@ -136,7 +142,7 @@ export function MembersScreen() {
                         <AppText variant="small" tone="secondary">
                           {ROLE_LABEL[m.role]}
                         </AppText>
-                        {!m.active ? <Tag label="Inativo" tone="neutral" /> : null}
+                        {seatTag ? <Tag label={seatTag} tone={m.seat === 'none' ? 'accent' : 'neutral'} /> : !m.active ? <Tag label="Inativo" tone="neutral" /> : null}
                         {leader && !m.isMe && missedTwoWeeks(m.lastAttendance) ? <Tag label="Faltou 2 semanas" tone="accent" /> : null}
                       </View>
                     </View>
@@ -155,12 +161,52 @@ export function MembersScreen() {
               })}
             </Card>
             <AppText variant="small" tone="secondary">
-              Quem não assinou o app aparece como inativo e sai da escala.
+              {leader && cell.seats
+                ? 'Quem está sem vaga vê a reunião e confirma presença, mas não vê pedidos, escala e avisos, e sai da escala. Para dar ou trocar uma vaga, abra a pessoa.'
+                : 'Quem está inativo sai da escala.'}
             </AppText>
           </Page>
         )
       }}
     </CellGuard>
+  )
+}
+
+/** Situação da vaga na lista do líder. Quem tem plano próprio não precisa de etiqueta. */
+const SEAT_TAG: Record<string, string | undefined> = { seat: 'Com vaga', none: 'Sem vaga' }
+
+/** O líder dá ou tira a vaga. Para trocar, tira de uma pessoa e dá para outra. */
+function SeatCard({ cell, m }: { cell: Cell; m: Member & { seat: SeatState } }) {
+  const toast = useToast()
+  const { refresh } = useCell()
+  const [busy, setBusy] = useState(false)
+  const first = m.name.split(' ')[0]
+  const left = cell.seats?.left ?? 0
+
+  async function set(give: boolean) {
+    setBusy(true)
+    const r = await setMemberSeatRemote(cell.id, m.id, give)
+    await refresh()
+    setBusy(false)
+    if (r === 'ok') toast(give ? `${first} agora usa uma vaga` : `A vaga de ${first} ficou livre`)
+    else toast(r === 'full' ? 'Todas as vagas estão em uso' : 'Não foi possível mudar a vaga. Tente de novo.')
+  }
+
+  const text =
+    m.seat === 'plan' ? `${first} tem plano próprio e não usa vaga.`
+    : m.seat === 'visitor' ? 'Visitante não ocupa vaga. Ao virar membro, pega uma vaga livre, se houver.'
+    : m.seat === 'seat' ? `${first} usa uma das vagas sem plano da célula.`
+    : left > 0 ? `${first} está sem vaga: vê a reunião e confirma presença, mas não vê pedidos, escala e avisos.`
+    : `${first} está sem vaga e todas estão em uso. Para trocar, tire a vaga de outra pessoa e volte aqui.`
+
+  return (
+    <Card style={{ gap: 8 }} accessibilityLiveRegion="polite">
+      <AppText variant="bodyStrong">Vaga na célula</AppText>
+      <AppText variant="small" tone="secondary">{text}</AppText>
+      {cell.seats ? <AppText variant="small" tone="secondary">{`${cell.seats.total - left} de ${cell.seats.total} vagas em uso`}</AppText> : null}
+      {m.seat === 'seat' ? <Button label="Tirar vaga" variant="outline" size="sm" disabled={busy} onPress={() => void set(false)} style={{ alignSelf: 'flex-start' }} /> : null}
+      {m.seat === 'none' ? <Button label="Dar vaga" size="sm" disabled={busy || left <= 0} onPress={() => void set(true)} style={{ alignSelf: 'flex-start' }} /> : null}
+    </Card>
   )
 }
 
@@ -198,7 +244,7 @@ function MemberDetail({ cell, m }: { cell: Cell; m: Member }) {
           {m.name}
         </AppText>
         <AppText variant="small" tone="secondary">{`Na célula desde ${m.since.split('-').reverse().slice(1).join('/')}`}</AppText>
-        {!m.active ? <Tag label="Inativo: não assinou o app" tone="neutral" /> : null}
+        {m.seat === 'none' ? <Tag label="Sem vaga" tone="accent" /> : !m.active && !m.seat ? <Tag label="Inativo: não assinou o app" tone="neutral" /> : null}
       </View>
 
       {missedTwoWeeks(m.lastAttendance) ? (
@@ -207,6 +253,8 @@ function MemberDetail({ cell, m }: { cell: Cell; m: Member }) {
           <AppText variant="small" style={{ flex: 1 }}>{`${first} faltou nas últimas 2 semanas. Considere entrar em contato.`}</AppText>
         </Card>
       ) : null}
+
+      {m.seat && cell.myRole === 'lider' ? <SeatCard cell={cell} m={m as Member & { seat: SeatState }} /> : null}
 
       <View style={{ gap: 8 }} accessibilityRole="radiogroup" accessibilityLabel="Papel na célula">
         <AppText variant="bodyStrong">Papel na célula</AppText>

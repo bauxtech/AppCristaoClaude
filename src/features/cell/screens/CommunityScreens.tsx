@@ -38,7 +38,7 @@ export function ReportButton({ what, content, onReport }: { what: string; conten
 }
 
 export function BoardScreen() {
-  return <CellGuard title="Mural" action="participate">{(cell) => <Board cell={cell} />}</CellGuard>
+  return <CellGuard title="Mural" action="participate" needsSeat>{(cell) => <Board cell={cell} />}</CellGuard>
 }
 
 function Board({ cell }: { cell: Cell }) {

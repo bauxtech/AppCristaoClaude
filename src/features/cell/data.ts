@@ -1,3 +1,4 @@
+import type { SeatState } from '../subscription/plan'
 // Dados de exemplo da célula, a partir do protótipo. Saem daqui quando o app ligar ao banco.
 
 import type { CellRole } from './permissions'
@@ -27,6 +28,8 @@ export interface Member {
   readingProgress?: number
   /** Foto, quando a pessoa deixa mostrar. Link temporário. */
   photoUri?: string
+  /** Vaga (só o líder e a própria pessoa recebem): plano próprio, vaga do líder, visitante ou sem vaga. */
+  seat?: SeatState
 }
 
 export interface PlanSection {
@@ -112,6 +115,8 @@ export interface Cell {
   rides: Ride[]
   readingPlan: { planId: string; joined: boolean }
   history: { meetings: number; avgAttendance: number; answered: number }
+  /** Só para o líder: vagas sem plano da célula e quantas sobram. */
+  seats?: { total: number; left: number }
   /** Itens denunciados por esta pessoa. Somem na hora para ela. */
   hidden: string[]
 }

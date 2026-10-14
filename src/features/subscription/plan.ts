@@ -6,7 +6,7 @@
 export type PlanId = 'essencial' | 'completo' | 'lider'
 export type AccessPlan = 'free' | 'trial' | PlanId
 export type Billing = 'monthly' | 'annual'
-export type Feature = 'reading_plans' | 'prayer' | 'church' | 'music' | 'chat' | 'sermon' | 'cell' | 'cell_lead'
+export type Feature = 'reading_plans' | 'prayer' | 'church' | 'music' | 'chat' | 'sermon' | 'cell' | 'cell_lead' | 'course_photo'
 
 export const TRIAL_DAYS = 7
 /** Prazo para regularizar na loja quando a renovação falha. */
@@ -53,11 +53,11 @@ export const planInfo = (id: PlanId) => PLANS.find((p) => p.id === id)!
 const DEFAULTS: Record<AccessPlan, { features: Feature[]; chat: number; sermon: number }> = {
   free: { features: [], chat: 0, sermon: 0 },
   essencial: { features: ['reading_plans', 'prayer', 'church', 'music', 'cell', 'chat'], chat: 5, sermon: 0 },
-  completo: { features: ['reading_plans', 'prayer', 'church', 'music', 'cell', 'chat', 'sermon'], chat: 10, sermon: 4 },
-  lider: { features: ['reading_plans', 'prayer', 'church', 'music', 'cell', 'chat', 'sermon', 'cell_lead'], chat: 10, sermon: 8 },
-  trial: { features: ['reading_plans', 'prayer', 'church', 'music', 'cell', 'chat', 'sermon', 'cell_lead'], chat: 10, sermon: 2 },
+  completo: { features: ['reading_plans', 'prayer', 'church', 'music', 'cell', 'chat', 'sermon', 'course_photo'], chat: 10, sermon: 4 },
+  lider: { features: ['reading_plans', 'prayer', 'church', 'music', 'cell', 'chat', 'sermon', 'cell_lead', 'course_photo'], chat: 10, sermon: 8 },
+  trial: { features: ['reading_plans', 'prayer', 'church', 'music', 'cell', 'chat', 'sermon', 'cell_lead', 'course_photo'], chat: 10, sermon: 2 },
 }
-const DEFAULT_MIN: Record<Feature, PlanId> = { reading_plans: 'essencial', prayer: 'essencial', church: 'essencial', music: 'essencial', cell: 'essencial', chat: 'essencial', sermon: 'completo', cell_lead: 'lider' }
+const DEFAULT_MIN: Record<Feature, PlanId> = { reading_plans: 'essencial', prayer: 'essencial', church: 'essencial', music: 'essencial', cell: 'essencial', chat: 'essencial', sermon: 'completo', cell_lead: 'lider', course_photo: 'completo' }
 
 export type StoreStatus = 'active' | 'canceledActive' | 'paymentFailed' | 'expired' | null
 
@@ -78,8 +78,11 @@ export interface Access {
   paywallSeen: boolean
   chat: { limit: number; used: number; resetsAt: string | null }
   sermon: { limit: number; used: number; resetsAt: string | null }
-  /** Células em que a pessoa é membro aprovado: se a célula funciona e se ela usa as funções. */
-  cells: Record<string, { active: boolean; canUse: boolean }>
+  /**
+   * Células em que a pessoa é membro aprovado: se a célula funciona, se ela usa as funções
+   * e a vaga (plan: plano próprio, seat: vaga do líder, visitor: visitante, none: sem vaga).
+   */
+  cells: Record<string, { active: boolean; canUse: boolean; seat: SeatState | null }>
 }
 
 type ServerAccess = {
@@ -98,8 +101,12 @@ type ServerAccess = {
   paywall_seen?: boolean
   chat?: { limit?: number; used?: number; resets_at?: string | null }
   sermon?: { limit?: number; used?: number; resets_at?: string | null }
-  cells?: Record<string, { active?: boolean; can_use?: boolean }> | null
+  cells?: Record<string, { active?: boolean; can_use?: boolean; seat?: string | null }> | null
 }
+
+export type SeatState = 'plan' | 'seat' | 'visitor' | 'none'
+const SEATS: SeatState[] = ['plan', 'seat', 'visitor', 'none']
+export const seatState = (v: unknown): SeatState | null => (SEATS.includes(v as SeatState) ? (v as SeatState) : null)
 
 const STATUS: Record<string, StoreStatus> = { active: 'active', canceled_active: 'canceledActive', payment_failed: 'paymentFailed', expired: 'expired' }
 const isPlan = (p: unknown): p is AccessPlan => typeof p === 'string' && p in DEFAULTS
@@ -122,7 +129,7 @@ export function accessFromServer(r: ServerAccess): Access {
     paywallSeen: !!r.paywall_seen,
     chat: { limit: r.chat?.limit ?? DEFAULTS[plan].chat, used: r.chat?.used ?? 0, resetsAt: r.chat?.resets_at ?? null },
     sermon: { limit: r.sermon?.limit ?? DEFAULTS[plan].sermon, used: r.sermon?.used ?? 0, resetsAt: r.sermon?.resets_at ?? null },
-    cells: Object.fromEntries(Object.entries(r.cells ?? {}).map(([id, c]) => [id, { active: !!c.active, canUse: !!c.can_use }])),
+    cells: Object.fromEntries(Object.entries(r.cells ?? {}).map(([id, c]) => [id, { active: !!c.active, canUse: !!c.can_use, seat: seatState(c.seat) }])),
   }
 }
 

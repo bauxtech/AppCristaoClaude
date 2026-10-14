@@ -11,7 +11,7 @@ import { InfoRow } from './parts'
 
 export function ScheduleScreen() {
   return (
-    <CellGuard title="Escala da semana" action="participate">
+    <CellGuard title="Escala da semana" action="participate" needsSeat>
       {(cell) => {
         const next = nextMeeting(cell)
         const mine = cell.schedule.filter((s) => s.memberId === 'me')

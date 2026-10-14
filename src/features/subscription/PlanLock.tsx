@@ -16,6 +16,7 @@ const FEATURE_NAME: Record<Feature, string> = {
   sermon: 'Gravar e transcrever culto',
   cell: 'Célula',
   cell_lead: 'Criar e conduzir célula',
+  course_photo: 'Curso pela foto do cronograma',
 }
 
 /** Abre a tela de planos já no plano que libera a função. */

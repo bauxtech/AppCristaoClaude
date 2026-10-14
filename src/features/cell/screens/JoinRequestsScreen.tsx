@@ -4,10 +4,21 @@ import { formatDiaryDate } from '../../prayer/dates'
 import { useCell } from '../CellContext'
 import { CellGuard } from './Guard'
 
-/** O líder aprova cada pessoa que pediu para entrar (regra decidida). */
+/** O líder aprova cada pessoa que pediu para entrar (regra decidida), como membro ou como visitante. */
 export function JoinRequestsScreen() {
   const toast = useToast()
   const { update } = useCell()
+
+  // Membro sem plano pega uma vaga livre na hora. Visitante não ocupa vaga e vira membro depois de algumas reuniões.
+  function approve(j: { id: string; name: string; phone: string }, role: 'membro' | 'visitante') {
+    update((c) => ({
+      ...c,
+      pendingJoins: c.pendingJoins.filter((x) => x.id !== j.id),
+      members: [...c.members, { id: j.id, name: j.name, role, phone: j.phone, since: new Date().toISOString().slice(0, 10), active: true, lastAttendance: [] }],
+    }))
+    toast(role === 'visitante' ? `${j.name} entrou como visitante` : `${j.name} entrou na célula`)
+  }
+
   return (
     <CellGuard title="Pedidos de entrada" action="approveJoin">
       {(cell) => (
@@ -33,20 +44,9 @@ export function JoinRequestsScreen() {
                   }}
                   style={{ flex: 1 }}
                 />
-                <Button
-                  label="Aprovar"
-                  size="sm"
-                  onPress={() => {
-                    update((c) => ({
-                      ...c,
-                      pendingJoins: c.pendingJoins.filter((x) => x.id !== j.id),
-                      members: [...c.members, { id: j.id, name: j.name, role: 'membro', phone: j.phone, since: new Date().toISOString().slice(0, 10), active: true, lastAttendance: [] }],
-                    }))
-                    toast(`${j.name} entrou na célula`)
-                  }}
-                  style={{ flex: 1 }}
-                />
+                <Button label="Aprovar" size="sm" onPress={() => approve(j, 'membro')} style={{ flex: 1 }} />
               </View>
+              <Button label="Aprovar como visitante" variant="text" size="sm" onPress={() => approve(j, 'visitante')} />
             </Card>
           ))}
         </Page>

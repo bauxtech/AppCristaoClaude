@@ -25,6 +25,8 @@ interface SubValue {
   canUseCell: (cellId: string) => boolean
   /** A célula funciona (tem líder no plano Líder). */
   cellActive: (cellId: string) => boolean
+  /** Membro sem plano e sem vaga numa célula funcionando: vê a reunião e confirma presença; pedidos, escala e avisos ficam trancados. */
+  cellSeatless: (cellId: string) => boolean
   /** Entrou pelo Google ou pela Apple e ainda não confirmou o celular: o teste começa depois disso. */
   needsPhoneForTrial: boolean
   /** Dia 8: a tela de planos aparece uma vez ao abrir o app. */
@@ -114,6 +116,7 @@ export function SubscriptionProvider({ children, initial, now }: { children: Rea
       // Célula que ainda não veio na resposta (acabou de entrar): o servidor decide; a tela não tranca antes.
       canUseCell: (id) => a.cells[id]?.canUse ?? true,
       cellActive: (id) => a.cells[id]?.active ?? true,
+      cellSeatless: (id) => !!a.cells[id]?.active && a.cells[id]?.seat === 'none',
       needsPhoneForTrial: remote && !!server && a.trialMode === 'server' && a.plan === 'free' && !a.trialUsed && !a.trialStart,
       showEndOfTrial: a.plan === 'free' && !!a.trialStart && !a.paywallSeen && (remote ? !!server : true),
       markPaywallSeen: () => {

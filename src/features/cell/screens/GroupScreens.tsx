@@ -17,7 +17,7 @@ import { ReportButton } from './CommunityScreens'
 
 /** Pedidos da célula. Visitante não vê (regra decidida). */
 export function CellPrayersScreen() {
-  return <CellGuard title="Pedidos da célula" action="seePrayers">{(cell) => <CellPrayers cell={cell} />}</CellGuard>
+  return <CellGuard title="Pedidos da célula" action="seePrayers" needsSeat>{(cell) => <CellPrayers cell={cell} />}</CellGuard>
 }
 
 function CellPrayers({ cell }: { cell: Cell }) {

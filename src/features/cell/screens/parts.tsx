@@ -9,6 +9,8 @@ export interface TileItem {
   icon: IconName
   onPress: () => void
   badge?: string
+  /** Trancado (membro sem vaga): mostra o cadeado no lugar do ícone e o texto no lugar da descrição. */
+  locked?: string
 }
 
 /** Atalhos em duas colunas, como no protótipo. */
@@ -21,16 +23,17 @@ export function TileGrid({ items }: { items: TileItem[] }) {
           <Pressable
             onPress={t.onPress}
             accessibilityRole="button"
-            accessibilityLabel={`${t.label}, ${t.sub}${t.badge ? `, ${t.badge}` : ''}`}
+            accessibilityLabel={t.locked ? `${t.label}. Bloqueado. ${t.locked}` : `${t.label}, ${t.sub}${t.badge ? `, ${t.badge}` : ''}`}
+            accessibilityHint={t.locked ? 'Abre a tela de planos' : undefined}
             style={({ pressed }) => ({ minHeight: 96, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 4, opacity: pressed ? 0.8 : 1 })}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-              <Icon name={t.icon} size={20} color={colors.primary} />
+              <Icon name={t.locked ? 'lock' : t.icon} size={20} color={t.locked ? colors.textSecondary : colors.primary} />
               {t.badge ? <Tag label={t.badge} tone="accent" /> : null}
             </View>
             <AppText variant="bodyStrong">{t.label}</AppText>
             <AppText variant="small" tone="secondary">
-              {t.sub}
+              {t.locked ?? t.sub}
             </AppText>
           </Pressable>
         </View>
