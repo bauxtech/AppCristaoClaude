@@ -1,6 +1,8 @@
 import * as DocumentPicker from 'expo-document-picker'
 import * as ImagePicker from 'expo-image-picker'
 import { useImagePicker } from '../../../lib/useImagePicker'
+import { IS_REMOTE } from '../../../lib/supabase'
+import { readCoursePhotoRemote } from '../coursePhoto'
 import { NotesLockedInline, useNotesLocked } from '../../settings/NotesLock'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
@@ -492,17 +494,41 @@ export function CourseByPhotoScreen() {
   const toast = useToast()
   const { setCourses } = useChurch()
   const [photo, setPhoto] = useState<string | null>(null)
-  const [name, setName] = useState(PHOTO_SAMPLE.name)
-  const [type, setType] = useState(PHOTO_SAMPLE.type)
+  const [reading, setReading] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const [name, setName] = useState(IS_REMOTE ? '' : PHOTO_SAMPLE.name)
+  const [type, setType] = useState<string | null>(IS_REMOTE ? null : PHOTO_SAMPLE.type)
   const [first, setFirst] = useState('')
-  const [count, setCount] = useState(String(PHOTO_SAMPLE.lessons))
-  const [time, setTime] = useState(PHOTO_SAMPLE.time)
+  const [count, setCount] = useState(IS_REMOTE ? '' : String(PHOTO_SAMPLE.lessons))
+  const [time, setTime] = useState(IS_REMOTE ? '' : PHOTO_SAMPLE.time)
   const [error, setError] = useState<string | undefined>()
-  const { pickImage, permissionSheet } = useImagePicker()
+  const { pickImage, pickImageData, permissionSheet } = useImagePicker()
 
   async function take(source: 'camera' | 'library' = 'camera') {
-    const uri = await pickImage(source, 'para fotografar o cronograma do curso', { quality: 0.7 })
-    if (uri) setPhoto(uri)
+    const purpose = 'para fotografar o cronograma do curso'
+    if (!IS_REMOTE) {
+      const uri = await pickImage(source, purpose, { quality: 0.7 })
+      if (uri) setPhoto(uri)
+      return
+    }
+    // Qualidade menor: a foto vai para o servidor e só precisa dar para ler o texto.
+    const img = await pickImageData(source, purpose, { quality: 0.4 })
+    if (!img) return
+    setPhoto(img.uri)
+    setReading(true)
+    setNote(null)
+    const r = await readCoursePhotoRemote(img.base64, img.mimeType)
+    setReading(false)
+    if (r.ok) {
+      setName(r.course.name)
+      setType(COURSE_TYPES.includes(r.course.type) ? r.course.type : null)
+      setFirst(r.course.firstDate)
+      setCount(r.course.lessons ? String(r.course.lessons) : '')
+      setTime(r.course.time)
+      setNote('Confira o que o app leu e corrija o que precisar.')
+    } else {
+      setNote(PHOTO_ERROR[r.reason](r.resetsAt))
+    }
   }
 
   if (!photo) {
@@ -515,10 +541,21 @@ export function CourseByPhotoScreen() {
             Foto do cronograma
           </AppText>
         </View>
-        <Button label="Tirar foto do cronograma" icon="camera" onPress={() => take('camera')} />
-        <Button label="Escolher da galeria" icon="image" variant="outline" onPress={() => take('library')} />
+        <Button label="Tirar foto do cronograma" icon="camera" onPress={() => void take('camera')} />
+        <Button label="Escolher da galeria" icon="image" variant="outline" onPress={() => void take('library')} />
         <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-          O app lê o nome do curso, as datas e os horários. Você confere antes de salvar.
+          O app lê o nome do curso, as datas e os horários. Você confere antes de salvar. A foto não fica guardada.
+        </AppText>
+      </Page>
+    )
+  }
+
+  if (reading) {
+    return (
+      <Page title="Lendo a foto">
+        <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16 }} accessibilityLabel="Foto do cronograma" />
+        <AppText variant="body" tone="secondary" accessibilityLiveRegion="polite">
+          Lendo o cronograma. Leva alguns segundos.
         </AppText>
       </Page>
     )
@@ -527,8 +564,8 @@ export function CourseByPhotoScreen() {
   return (
     <Page title="Conferir o curso">
       <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16 }} accessibilityLabel="Foto do cronograma" />
-      <AppText variant="small" tone="secondary">
-        Na prévia, os dados lidos são de exemplo. Confira e corrija o que precisar.
+      <AppText variant="small" tone="secondary" accessibilityLiveRegion="polite">
+        {IS_REMOTE ? (note ?? '') : 'Na prévia, os dados lidos são de exemplo. Confira e corrija o que precisar.'}
       </AppText>
       <TextField label="Nome do curso" value={name} onChangeText={setName} maxLength={80} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }} accessibilityRole="radiogroup" accessibilityLabel="Tipo">
@@ -551,7 +588,7 @@ export function CourseByPhotoScreen() {
             const iso = brToISO(first)
             if (!iso) return setError('Digite a data no formato DD/MM/AAAA.')
             if (!isValidTime(time)) return setError('Digite o horário no formato 09:00.')
-            setCourses((x) => [...x, { id: `c${Date.now()}`, name: name.trim(), type, lessons: weeklyLessons(iso, Number(count), time), cards: [] }])
+            setCourses((x) => [...x, { id: `c${Date.now()}`, name: name.trim(), type: type ?? '', lessons: weeklyLessons(iso, Number(count), time), cards: [] }])
             toast('Curso salvo')
             router.back()
           }}
@@ -560,6 +597,13 @@ export function CourseByPhotoScreen() {
       </View>
     </Page>
   )
+}
+
+const PHOTO_ERROR: Record<'no_access' | 'limit' | 'not_found' | 'failed', (resetsAt?: string | null) => string> = {
+  no_access: () => 'A leitura da foto é do plano Completo. Preencha os dados à mão.',
+  limit: () => 'Você chegou ao limite de fotos lidas hoje. Amanhã libera de novo. Por enquanto, preencha os dados à mão.',
+  not_found: () => 'Não deu para achar o cronograma nesta foto. Tire outra foto, mais perto e com boa luz, ou preencha à mão.',
+  failed: () => 'Não foi possível ler a foto agora. Tente de novo ou preencha à mão.',
 }
 
 export function AddCourseScreen() {

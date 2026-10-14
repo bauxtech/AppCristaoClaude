@@ -48,6 +48,15 @@ export function useImagePicker() {
     return !res.canceled && res.assets[0] ? res.assets[0].uri : null
   }
 
+  /** Como pickImage, mas devolve também a foto em base64 e o tipo, para mandar ao servidor. */
+  async function pickImageData(source: Source, purpose: string, options: Options = {}): Promise<{ uri: string; base64: string; mimeType: string } | null> {
+    if (source === 'camera' && !(await cameraAllowed(purpose))) return null
+    const opts = { ...options, base64: true }
+    const res = source === 'camera' ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], ...opts })
+    const a = !res.canceled ? res.assets[0] : null
+    return a?.base64 ? { uri: a.uri, base64: a.base64, mimeType: a.mimeType ?? 'image/jpeg' } : null
+  }
+
   const permissionSheet = (
     <Sheet visible={!!sheet} onClose={() => close(false)} title={sheet?.kind === 'denied' ? 'A câmera está desligada' : 'Usar a câmera'}>
       <AppText variant="body" tone="secondary" style={{ textAlign: 'center' }}>
@@ -69,5 +78,5 @@ export function useImagePicker() {
     </Sheet>
   )
 
-  return { pickImage, permissionSheet }
+  return { pickImage, pickImageData, permissionSheet }
 }

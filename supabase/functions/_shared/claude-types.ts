@@ -7,6 +7,8 @@ export interface AskJsonRequest {
   schema: Record<string, unknown>
   effort?: 'low' | 'medium' | 'high'
   maxTokens?: number
+  /** Foto enviada junto, antes do texto (base64, sem o prefixo data:). */
+  image?: { data: string; mediaType: 'image/jpeg' | 'image/png' | 'image/webp' }
 }
 
 /** Faz a pergunta e devolve o objeto já lido do JSON. Lança erro quando o modelo recusa ou a resposta vem cortada. */

@@ -29,3 +29,6 @@ verify_jwt = true
 
 [functions.sync-subscription]
 verify_jwt = true
+
+[functions.course-photo]
+verify_jwt = true

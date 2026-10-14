@@ -8,6 +8,8 @@ import type { AskJson } from './claude-types.ts'
 export const MODEL = Deno.env.get('CLAUDE_MODEL') ?? 'claude-opus-5-5'
 export const CHAT_MODEL = Deno.env.get('CHAT_MODEL') ?? 'claude-haiku-5-5'
 export const SUMMARY_MODEL = Deno.env.get('SUMMARY_MODEL') ?? MODEL
+// Leitura da foto do cronograma do curso: tarefa simples de extrair texto, no modelo mais barato.
+export const PHOTO_MODEL = Deno.env.get('PHOTO_MODEL') ?? CHAT_MODEL
 
 const client = new Anthropic()
 
@@ -15,13 +17,23 @@ const client = new Anthropic()
 const hasFallback = (model: string) => /^claude-(opus-5|fable-5|sonnet-5-5)/.test(model)
 
 export function askJsonFor(model: string): AskJson {
-  return async ({ system, prompt, schema, effort = 'medium', maxTokens = 4000 }) => {
+  return async ({ system, prompt, schema, effort = 'medium', maxTokens = 4000, image }) => {
     const params = {
       model,
       max_tokens: maxTokens,
       // O texto do sistema não muda entre pedidos: fica em cache e sai mais barato.
       system: [{ type: 'text' as const, text: system, cache_control: { type: 'ephemeral' as const } }],
-      messages: [{ role: 'user' as const, content: prompt }],
+      messages: [
+        {
+          role: 'user' as const,
+          content: image
+            ? [
+                { type: 'image' as const, source: { type: 'base64' as const, media_type: image.mediaType, data: image.data } },
+                { type: 'text' as const, text: prompt },
+              ]
+            : prompt,
+        },
+      ],
       output_config: { effort, format: { type: 'json_schema' as const, schema } },
     }
     const response = hasFallback(model)
