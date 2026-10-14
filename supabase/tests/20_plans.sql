@@ -226,6 +226,9 @@ select tests.ok('com 2 reuniões desde a entrada (a de antes não conta), contin
 insert into public.cell_meetings (cell_id, date) values ('10000000-0000-0000-0000-000000000009', current_date + 10);
 select public.promote_visitors();
 select tests.ok('reunião marcada para depois não conta', (select role from public.cell_members where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028') = 'visitante');
+insert into public.cell_meetings (cell_id, date, cancelled) values ('10000000-0000-0000-0000-000000000009', current_date - 4, true);
+select public.promote_visitors();
+select tests.ok('reunião cancelada não conta', (select role from public.cell_members where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028') = 'visitante');
 insert into public.cell_meetings (cell_id, date) values ('10000000-0000-0000-0000-000000000009', current_date - 1);
 select public.promote_visitors();
 select tests.ok('na 3ª reunião, vira membro, mesmo tendo faltado', (select role from public.cell_members where cell_id = '10000000-0000-0000-0000-000000000009' and user_id = '00000000-0000-0000-0000-000000000028') = 'membro');
