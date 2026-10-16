@@ -10,7 +10,7 @@ export function CompareScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title="Comparar traduções" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
         <Card style={{ gap: 6 }}>
           <AppText variant="bodyStrong">Disponível com a segunda tradução</AppText>
           <AppText variant="body" tone="secondary">

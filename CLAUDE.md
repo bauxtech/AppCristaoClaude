@@ -23,9 +23,9 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 ## DESIGN
 - A referência visual é o repositório do protótipo. Leia os valores no código, não em imagem.
 - Estrutura: 5 abas (Hoje, Bíblia, Célula, Igreja, Eu), botão do chat e oração como painel por cima.
-- Fontes: Nunito na interface (geométrica e arredondada) e Literata no texto bíblico. Texto bíblico em 19.
-- Paleta da marca acasa (12/10): verde principal #254C3A (ícone, botões principais, destaques), verde claro #A9BBA7 (elementos secundários e progresso), off-white #F6F4EE (fundo), areia #E8DCC9 (cartões e áreas de apoio), carvão #1F1F1F (textos e ícones). Escuro e alto contraste derivados dela, em src/theme/colors.ts. Verde claro e areia não carregam texto nem informação sozinhos. O seletor de paletas e o controle Demo do protótipo não entram no app; o protótipo continua sendo a referência de layout, não de cor.
-- Ícone: fundo verde principal com o "a" em off-white. Direção visual: fundos claros, bastante espaço em branco e cartões discretos.
+- Fontes: Nunito na interface (geométrica e arredondada) e Literata no texto bíblico e nos títulos. Texto bíblico em 19. Título das abas em Literata 34; título de cartão e da barra de topo em Literata 20 (visual do site, 16/10).
+- Paleta da marca acasa (12/10): verde principal #254C3A (ícone, botões principais, destaques), verde claro #A9BBA7 (elementos secundários e progresso), off-white #F6F4EE, areia #E8DCC9, carvão #1F1F1F (textos e ícones). No modo claro, desde 16/10 (visual do site): fundo branco, cartões off-white e divisórias #ECE6DA. Escuro e alto contraste derivados dela, em src/theme/colors.ts. Verde claro e areia não carregam texto nem informação sozinhos. O seletor de paletas e o controle Demo do protótipo não entram no app; o protótipo continua sendo a referência de layout, não de cor.
+- Ícone: fundo verde principal com o "a" em off-white. Direção visual: fundo branco, títulos grandes em serifa, bastante espaço em branco e cartões discretos (margem lateral 20, cantos de 20).
 - Componentes primeiro, telas depois.
 - Tela que existe no protótipo: siga o protótipo. Tela que não existe: construa a partir de docs/, com os mesmos componentes.
 - Ao entregar uma tela, compare com o protótipo e liste as diferenças.

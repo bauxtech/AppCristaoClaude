@@ -25,7 +25,7 @@ export function TileGrid({ items }: { items: TileItem[] }) {
             accessibilityRole="button"
             accessibilityLabel={t.locked ? `${t.label}. Bloqueado. ${t.locked}` : `${t.label}, ${t.sub}${t.badge ? `, ${t.badge}` : ''}`}
             accessibilityHint={t.locked ? 'Abre a tela de planos' : undefined}
-            style={({ pressed }) => ({ minHeight: 96, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 4, opacity: pressed ? 0.8 : 1 })}
+            style={({ pressed }) => ({ minHeight: 96, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 4, opacity: pressed ? 0.8 : 1 })}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
               <Icon name={t.locked ? 'lock' : t.icon} size={20} color={t.locked ? colors.textSecondary : colors.primary} />

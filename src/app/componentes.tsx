@@ -32,7 +32,7 @@ function Componentes() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title="Componentes" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 48 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }}>
         <Card>
           <SectionLabel>Modo</SectionLabel>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>

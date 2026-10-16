@@ -44,7 +44,7 @@ export function BooksScreen() {
             </AppText>
             <IconButton icon="search" label="Buscar na Bíblia" onPress={() => router.push('/biblia/busca')} />
           </View>
-          <View style={{ backgroundColor: colors.primarySoft, borderRadius: 16, padding: 16, gap: 8 }}>
+          <View style={{ backgroundColor: colors.primarySoft, borderRadius: 20, padding: 20, gap: 8 }}>
             <AppText variant="bodyStrong" tone="brand">
               Progresso da leitura
             </AppText>

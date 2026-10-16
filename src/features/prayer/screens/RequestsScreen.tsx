@@ -49,7 +49,7 @@ export function RequestsScreen() {
       )}
 
       {campaign ? (
-        <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.primarySoft, padding: 16, gap: 10 }}>
+        <View style={{ borderRadius: 20, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.primarySoft, padding: 20, gap: 10 }}>
           <View style={{ alignItems: 'flex-start', gap: 6 }}>
             <Tag label="Em andamento" tone="solid" />
             <AppText variant="bodyStrong">{campaign.name}</AppText>
@@ -70,7 +70,7 @@ function RequestCard({ r, hasCell }: { r: PrayerRequest; hasCell: boolean }) {
       onPress={() => router.push({ pathname: '/oracao/pedidos/[id]', params: { id: r.id } })}
       accessibilityRole="button"
       accessibilityLabel={`${r.title}. ${when}${shared ? '. Compartilhado com a célula' : ''}${r.videoUri ? '. Em vídeo, Libras' : ''}`}
-      style={({ pressed }) => ({ padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pressed ? 0.8 : 1 })}
+      style={({ pressed }) => ({ padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pressed ? 0.8 : 1 })}
     >
       <View style={{ flex: 1, gap: 6 }}>
         <AppText style={{ fontFamily: fonts.medium }}>{r.title}</AppText>

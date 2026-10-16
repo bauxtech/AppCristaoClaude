@@ -64,7 +64,7 @@ export function HomeScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{
-        paddingTop: insets.top + 16,
+        paddingTop: insets.top + 24,
         paddingBottom: 140,
       }}
     >

@@ -104,7 +104,7 @@ function Ready({ s }: { s: Sermon }) {
 
   return (
     <Page title="Resultado" right={<IconButton icon="more" label="Mais opções do culto" onPress={() => setSheet('options')} />}>
-      <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.primarySoft, padding: 16, gap: 4 }}>
+      <View style={{ borderRadius: 20, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.primarySoft, padding: 20, gap: 4 }}>
         <AppText variant="small" tone="secondary">{[s.church, formatMeetingDay(s.date)].filter(Boolean).join(' · ')}</AppText>
         <AppText variant="bodyStrong">{s.theme || 'Culto sem tema'}</AppText>
         <AppText variant="small" tone="secondary">{`${s.preacher ? `${s.preacher} · ` : ''}${formatDuration(s.trim.end - s.trim.start)} · ${s.verses.length} ${s.verses.length === 1 ? 'versículo citado' : 'versículos citados'}`}</AppText>

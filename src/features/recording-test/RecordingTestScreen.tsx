@@ -159,7 +159,7 @@ export function RecordingTestScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title="Teste de gravação" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 48 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }}>
         <Card>
           <SectionLabel>Como fazer</SectionLabel>
           {[

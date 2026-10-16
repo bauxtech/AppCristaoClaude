@@ -78,7 +78,7 @@ export function TapCard({ label, onPress, children, hint }: { label: string; onP
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={hint}
-      style={({ pressed }) => ({ padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 4, opacity: pressed ? 0.8 : 1 })}
+      style={({ pressed }) => ({ padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 4, opacity: pressed ? 0.8 : 1 })}
     >
       {children}
     </Pressable>

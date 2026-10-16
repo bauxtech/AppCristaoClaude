@@ -18,7 +18,7 @@ export function BookContextScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title={`Contexto de ${book.name}`} onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
           {fields.map((f) => (
             <Card key={f.label} style={{ flexGrow: 1, flexBasis: 140, padding: 14, gap: 4 }} accessible accessibilityLabel={`${f.label}: ${f.value}`}>

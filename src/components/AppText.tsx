@@ -1,6 +1,6 @@
 import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native'
 import { useTheme } from '../theme/ThemeProvider'
-import { fonts, maxFontScale, size } from '../theme/typography'
+import { fonts, maxFontScale, maxTitleScale, size } from '../theme/typography'
 
 type Variant = 'screenTitle' | 'title' | 'body' | 'bodyStrong' | 'small' | 'label' | 'bible' | 'bibleRef'
 type Tone = 'primary' | 'secondary' | 'accent' | 'danger' | 'brand' | 'onPrimary'
@@ -12,7 +12,7 @@ interface Props extends TextProps {
 
 const variants: Record<Variant, TextStyle> = {
   screenTitle: { fontFamily: fonts.bible, fontSize: size.screenTitle, lineHeight: 40, letterSpacing: -0.6 },
-  title: { fontFamily: fonts.bible, fontSize: 20, lineHeight: 26, letterSpacing: -0.2 },
+  title: { fontFamily: fonts.bible, fontSize: size.title, lineHeight: 26, letterSpacing: -0.2 },
   body: { fontFamily: fonts.regular, fontSize: size.body, lineHeight: 24 },
   bodyStrong: { fontFamily: fonts.semibold, fontSize: size.body, lineHeight: 22 },
   small: { fontFamily: fonts.regular, fontSize: size.small, lineHeight: 20 },
@@ -42,5 +42,5 @@ export function AppText({ variant = 'body', tone = 'primary', style, ...rest }: 
         lineHeight: flat.lineHeight ? flat.lineHeight * LARGE_TEXT_FACTOR : undefined,
       }
     : flat
-  return <Text maxFontSizeMultiplier={maxFontScale} style={scaled} {...rest} />
+  return <Text maxFontSizeMultiplier={variant === 'screenTitle' ? maxTitleScale : maxFontScale} style={scaled} {...rest} />
 }

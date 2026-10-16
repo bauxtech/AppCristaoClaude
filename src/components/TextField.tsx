@@ -38,7 +38,7 @@ export const TextField = forwardRef<TextInput, Props>(function TextField({ label
         }}
         style={{
           minHeight: multiline ? 120 : 52,
-          borderRadius: 16,
+          borderRadius: 14,
           borderWidth: focused || error ? 2 : 1,
           borderColor: error ? colors.danger : focused ? colors.primary : colors.lineStrong,
           backgroundColor: colors.card,

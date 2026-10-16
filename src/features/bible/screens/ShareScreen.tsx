@@ -29,7 +29,7 @@ export function ShareScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title="Compartilhar versículo" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
         <View
           accessible
           accessibilityLabel={`Prévia da imagem: ${verse?.text ?? ''} ${ref}`}

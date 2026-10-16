@@ -32,7 +32,7 @@ function NoteBody() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title="Anotar" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }} keyboardShouldPersistTaps="handled">
         <View style={{ backgroundColor: colors.primarySoft, borderRadius: 12, padding: 14, gap: 4 }}>
           <AppText variant="small" tone="brand" style={{ fontFamily: fonts.semibold }}>
             {ref}

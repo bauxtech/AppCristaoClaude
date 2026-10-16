@@ -13,7 +13,7 @@ export function LibrasScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title="Bíblia em Libras" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
         <Card style={{ flexDirection: 'row', gap: 10, backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }}>
           <Icon name="info" size={18} color={colors.primary} />
           <AppText variant="body" style={{ flex: 1 }}>

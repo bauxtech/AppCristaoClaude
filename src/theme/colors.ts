@@ -1,5 +1,5 @@
 // Paleta da marca acasa (12/10): verde principal #254C3A, verde claro #A9BBA7, off-white #F6F4EE, areia #E8DCC9, carvão #1F1F1F.
-// O claro usa os valores da marca. Escuro e alto contraste foram derivados dela.
+// O claro usa os valores da marca, com fundo branco e cartões off-white (visual do site, 16/10). Escuro e alto contraste foram derivados dela.
 // Todo texto passa de 4,5 para 1 sobre fundo, cartão e destaque; bordas e ícones que informam, de 3 para 1.
 // O verde claro e a areia não carregam texto nem informação sozinhos (contraste baixo sobre o off-white).
 
@@ -26,7 +26,7 @@ export interface Palette {
 }
 
 export const light: Palette = {
-  bg: '#FFFFFF', // branco (teste do visual do site)
+  bg: '#FFFFFF', // branco (visual do site, 16/10)
   card: '#F6F4EE', // off-white
   text: '#1F1F1F', // carvão
   textSecondary: '#4F534B',

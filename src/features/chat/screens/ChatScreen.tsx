@@ -183,7 +183,7 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
         </View>
       ) : null}
 
-      <ScrollView ref={scroll} contentContainerStyle={{ padding: 16, gap: 12 }} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
+      <ScrollView ref={scroll} contentContainerStyle={{ padding: 20, gap: 16 }} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
         {!conv || conv.messages.length === 0 ? (
           <>
             <AppText variant="body" tone="secondary">

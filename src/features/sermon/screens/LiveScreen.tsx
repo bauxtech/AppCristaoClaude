@@ -102,7 +102,7 @@ export function LiveScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
         {confirm ? (
           <ConfirmCard title="Descartar gravação?" message="O áudio gravado até agora será perdido." confirmLabel="Descartar" onCancel={() => setConfirm(false)} onConfirm={discard} />
         ) : null}

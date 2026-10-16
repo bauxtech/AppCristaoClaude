@@ -12,7 +12,7 @@ export function CrossRefsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title="Referências cruzadas" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
         <AppText variant="label" tone="secondary">{`Ligadas a ${ref}`}</AppText>
         {isSample ? (
           CROSS_REFS.map((r) => (

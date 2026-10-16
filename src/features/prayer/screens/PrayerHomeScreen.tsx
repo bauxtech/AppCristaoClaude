@@ -25,7 +25,7 @@ export function PrayerHomeScreen() {
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 12, flexDirection: 'row', justifyContent: 'flex-end' }}>
         <IconButton icon="close" label="Fechar oração" onPress={() => router.back()} />
       </View>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 48, gap: 16 }}>
         <View style={{ paddingHorizontal: 4, paddingBottom: 4, gap: 4 }}>
           <AppText variant="screenTitle" accessibilityRole="header">
             Oração
@@ -77,7 +77,7 @@ function Tile({ icon, title, sub, onPress }: { icon: IconName; title: string; su
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${title}, ${sub}`}
-      style={({ pressed }) => ({ flex: 1, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 4, opacity: pressed ? 0.8 : 1 })}
+      style={({ pressed }) => ({ flex: 1, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 4, opacity: pressed ? 0.8 : 1 })}
     >
       <View style={{ marginBottom: 8 }}>
         <Icon name={icon} size={22} color={colors.primary} />

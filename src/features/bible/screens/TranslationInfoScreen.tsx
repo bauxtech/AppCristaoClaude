@@ -11,7 +11,7 @@ export function TranslationInfoScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title="Sobre a tradução" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 120 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 120 }}>
         <Card style={{ gap: 8 }}>
           <AppText variant="title" accessibilityRole="header">
             {t.name}

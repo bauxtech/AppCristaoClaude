@@ -21,7 +21,7 @@ export function ChaptersScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title={book.name} onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120, gap: 16 }}>
         <AppText variant="label" tone="secondary">{`${book.chapters} capítulos`}</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           {Array.from({ length: book.chapters }, (_, i) => i + 1).map((ch) => {

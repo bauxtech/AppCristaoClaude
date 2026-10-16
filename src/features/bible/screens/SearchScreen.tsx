@@ -18,7 +18,7 @@ export function SearchScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title="Buscar na Bíblia" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
         <TextField label="Palavra, tema ou referência" value={query} onChangeText={setQuery} placeholder="Ex.: perdão ou Jo 3:16" autoFocus returnKeyType="search" />
         {!query ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

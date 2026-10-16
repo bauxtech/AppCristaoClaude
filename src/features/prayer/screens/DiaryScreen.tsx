@@ -64,7 +64,7 @@ export function DiaryScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`${formatDiaryDate(e.date)}. ${e.text}`}
                   accessibilityHint="Abre a entrada"
-                  style={({ pressed }) => ({ padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 6, opacity: pressed ? 0.8 : 1 })}
+                  style={({ pressed }) => ({ padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 6, opacity: pressed ? 0.8 : 1 })}
                 >
                   <AppText variant="small" tone="secondary">
                     {formatDiaryDate(e.date)}

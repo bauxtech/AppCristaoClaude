@@ -640,7 +640,7 @@ function Preview({ photo, pdfName }: { photo: string | null; pdfName: string | n
   const { colors } = useTheme()
   if (photo) return <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16 }} accessibilityLabel="Foto do cronograma" />
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 16, backgroundColor: colors.card }} accessible accessibilityLabel={`PDF do cronograma: ${pdfName ?? ''}`}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, borderRadius: 20, backgroundColor: colors.card }} accessible accessibilityLabel={`PDF do cronograma: ${pdfName ?? ''}`}>
       <Icon name="file" size={24} color={colors.primary} />
       <AppText variant="body" style={{ flex: 1 }} numberOfLines={2}>
         {pdfName}

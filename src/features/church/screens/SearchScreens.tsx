@@ -115,7 +115,7 @@ export function SearchChurchScreen() {
           onPress={() => router.push({ pathname: '/igreja/confirmar', params: { id: c.id } })}
           accessibilityRole="button"
           accessibilityLabel={`${c.name}, ${c.city}${c.cnpj ? `, CNPJ ${c.cnpj}` : ', cadastrada à mão'}${c.accessibility.libras ? ', tem intérprete de Libras' : ''}`}
-          style={({ pressed }) => ({ padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 4, opacity: pressed ? 0.8 : 1 })}
+          style={({ pressed }) => ({ padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, gap: 4, opacity: pressed ? 0.8 : 1 })}
         >
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
             <AppText variant="bodyStrong" style={{ flex: 1 }}>

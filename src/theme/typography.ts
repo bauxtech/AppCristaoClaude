@@ -1,4 +1,5 @@
-// Fontes e tamanhos. Nunito na interface (marca acasa: geométrica e arredondada), Literata no texto bíblico.
+// Fontes e tamanhos. Nunito na interface (marca acasa: geométrica e arredondada), Literata no texto bíblico
+// e nos títulos (visual do site, 16/10).
 // Tamanhos em pontos; o sistema aumenta conforme a fonte escolhida no celular.
 
 export const fonts = {
@@ -18,13 +19,15 @@ export const size = {
   small: 14,
   /** Corpo do texto. */
   body: 16,
-  /** Título de cartão e da barra de topo. */
-  title: 17,
+  /** Título de cartão e da barra de topo, em Literata. */
+  title: 20,
   /** Texto bíblico. */
   bible: 19,
-  /** Título da tela principal de cada aba. */
+  /** Título da tela principal de cada aba, em Literata. */
   screenTitle: 34,
 } as const
 
 /** Limite para o aumento de fonte do sistema não quebrar a tela. */
 export const maxFontScale = 2
+/** Os títulos grandes já começam em 34: crescem até 1,5 vez, como os títulos grandes do iPhone. */
+export const maxTitleScale = 1.5
