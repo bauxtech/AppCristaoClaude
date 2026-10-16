@@ -86,6 +86,12 @@ export interface Cell {
   reference: string
   neighborhood: string
   coverUri?: string
+  /** Endereço da página na internet: acasa.app.br/celulas/<webSlug>. Vazio até o líder escolher. */
+  webSlug?: string | null
+  /** Logo na página, quando o líder enviou. */
+  logoUrl?: string | null
+  /** A equipe tirou o logo do ar depois de uma denúncia. */
+  logoHidden?: boolean
   code: string
   maxSize: number
   archived: boolean
@@ -225,7 +231,7 @@ export function sampleCell(myRole: CellRole, myName: string): Cell {
 }
 
 /** Célula recém-criada, só com o líder. */
-export function newCell(input: { name: string; type: CellType | null; day: number; time: string; address: string; reference: string; neighborhood: string }, myName: string): Cell {
+export function newCell(input: { name: string; type: CellType | null; day: number; time: string; address: string; reference: string; neighborhood: string; webSlug?: string }, myName: string): Cell {
   const code = Math.random().toString(36).slice(2, 8).toUpperCase().replace(/[^A-Z0-9]/g, 'X')
   return {
     id: `c${Date.now().toString(36)}`,

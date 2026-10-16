@@ -32,10 +32,12 @@ begin
 end $$;
 revoke all on function public.call_routine from public, anon, authenticated;
 
-select cron.unschedule(jobname) from cron.job where jobname in ('conteudo-do-dia', 'limpeza-diaria', 'enviar-avisos', 'avisos-do-teste', 'promover-visitantes');
+select cron.unschedule(jobname) from cron.job where jobname in ('conteudo-do-dia', 'limpeza-diaria', 'enviar-avisos', 'avisos-do-teste', 'promover-visitantes', 'liberar-enderecos');
 select cron.schedule('conteudo-do-dia', '7 6 * * *', $$select public.call_routine('daily-content')$$);
 select cron.schedule('limpeza-diaria', '13 7 * * *', $$select public.call_routine('purge')$$);
 select cron.schedule('enviar-avisos', '* * * * *', $$select public.call_routine('push')$$);
 select cron.schedule('avisos-do-teste', '3 13 * * *', $$select public.trial_reminders()$$);
 -- Visitante com 3 reuniões ou 30 dias vira membro. 00h09 em Brasília.
 select cron.schedule('promover-visitantes', '9 3 * * *', $$select public.promote_visitors()$$);
+-- Endereço da página de célula parada há 90 dias fica livre; antigos com mais de 30 dias saem. 00h17 em Brasília.
+select cron.schedule('liberar-enderecos', '17 3 * * *', $$select public.release_cell_slugs()$$);

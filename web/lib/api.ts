@@ -1,6 +1,6 @@
 // Acesso aos dados da página.
 // Com NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY definidos, chama as funções públicas do banco
-// (public_cell_page, leave_contact, leave_web_prayer). A chave anon é pública por desenho: as regras ficam no banco.
+// (public_cell_page, leave_contact, leave_web_prayer, report_cell_page). A chave anon é pública por desenho: as regras ficam no banco.
 // Sem elas, usa os dados de exemplo abaixo. O endereço NUNCA fica no código da página: só chega depois do contato.
 
 import type { PrivateAddress, PublicCell } from './data'
@@ -25,6 +25,8 @@ const DEMO_ADDRESS: PrivateAddress = { address: 'Endereço de exemplo (na versã
 const DEMO: Record<string, PublicCell> = {
   ABC123: {
     code: 'ABC123',
+    slug: 'jovens-da-central',
+    logoUrl: null,
     name: 'Jovens da Central',
     type: 'Jovens',
     churchName: 'Igreja Batista Central de São Paulo',
@@ -54,6 +56,8 @@ const DEMO: Record<string, PublicCell> = {
   },
   NOVA01: {
     code: 'NOVA01',
+    slug: 'celula-do-bairro',
+    logoUrl: null,
     name: 'Célula do Bairro',
     type: 'Mista',
     churchName: null,
@@ -70,6 +74,8 @@ const DEMO: Record<string, PublicCell> = {
   },
   ARQ001: {
     code: 'ARQ001',
+    slug: null,
+    logoUrl: null,
     name: 'Casais em Missão',
     type: 'Casais',
     churchName: null,
@@ -87,6 +93,12 @@ const DEMO: Record<string, PublicCell> = {
 }
 
 export const DEMO_CODES = Object.keys(DEMO)
+export const DEMO_SLUGS = Object.values(DEMO).flatMap((c) => (c.slug ? [c.slug] : []))
+
+function demoCell(key: string) {
+  if (key.startsWith('c:')) return DEMO[normalizeCode(key.slice(2))]
+  return Object.values(DEMO).find((c) => c.slug === key.toLowerCase()) ?? DEMO[normalizeCode(key)]
+}
 
 function nextOf(day: number, time: string, now: Date) {
   const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + ((day - now.getDay() + 7) % 7))
@@ -100,27 +112,33 @@ export function normalizeCode(raw: string) {
   return raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
 }
 
-/** Dados públicos. Nunca inclui endereço completo, membros, telefones ou pedidos. */
-/** Código da célula no endereço da página: /c/ABC123/ vira ABC123. */
-export function codeFromPath(path: string): string | null {
-  const m = /^\/c\/([^/]+)\/?$/.exec(path)
-  if (!m || m[1] === '_') return null
-  return decodeURIComponent(m[1])
+/** Endereço do site → como achar a célula. /celulas/jovens-da-central/ vira "jovens-da-central"; o link antigo /c/ABC123/ vira "c:ABC123". */
+export function keyFromPath(path: string): string | null {
+  const slug = /^\/celulas\/([^/]+)\/?$/.exec(path)
+  if (slug) return slug[1] === '_' ? null : decodeURIComponent(slug[1]).toLowerCase()
+  const code = /^\/c\/([^/]+)\/?$/.exec(path)
+  if (code) return code[1] === '_' ? null : `c:${normalizeCode(decodeURIComponent(code[1]))}`
+  return null
 }
 
-export async function getPublicCell(rawCode: string, now = new Date()): Promise<PublicCell | null> {
-  const code = normalizeCode(rawCode)
+/** Endereço público do logo no balde cell-logos. */
+function logoUrl(path: string | null) {
+  return path && SUPABASE_URL ? `${SUPABASE_URL}/storage/v1/object/public/cell-logos/${path.split('/').map(encodeURIComponent).join('/')}` : null
+}
+
+/** Dados públicos. Nunca inclui endereço completo, membros, telefones ou pedidos. */
+export async function getPublicCell(key: string, now = new Date()): Promise<PublicCell | null> {
   if (REMOTE) {
-    const rows = await rpc<{ name: string; type: string | null; weekday: number | null; time: string | null; neighborhood: string | null; leader_first_name: string | null; archived: boolean }[]>('public_cell_page', { p_code: code })
+    const rows = await rpc<{ name: string; type: string | null; weekday: number | null; time: string | null; neighborhood: string | null; leader_first_name: string | null; archived: boolean; slug: string | null; logo_path: string | null }[]>('public_cell_page', { p_code: key })
     const r = rows[0]
     if (!r) return null
     const day = r.weekday ?? 0
     const time = r.time ?? '20:00'
     const status = r.archived ? 'archived' : 'active'
     // Roteiro e materiais não aparecem na página pública até isso ser decidido.
-    return { code, name: r.name, type: r.type, churchName: null, neighborhood: r.neighborhood ?? '', city: '', coverUrl: null, leaderFirstName: r.leader_first_name ?? '', day, time, status, nextMeeting: status === 'active' ? nextOf(day, time, now) : null, plan: null, materials: [] }
+    return { code: key, slug: r.slug, logoUrl: logoUrl(r.logo_path), name: r.name, type: r.type, churchName: null, neighborhood: r.neighborhood ?? '', city: '', coverUrl: null, leaderFirstName: r.leader_first_name ?? '', day, time, status, nextMeeting: status === 'active' ? nextOf(day, time, now) : null, plan: null, materials: [] }
   }
-  const c = DEMO[code]
+  const c = demoCell(key)
   if (!c) return null
   return { ...c, nextMeeting: c.status === 'active' ? nextOf(c.day, c.time, now) : null }
 }
@@ -130,26 +148,37 @@ export function isValidPhone(digits: string) {
 }
 
 /** Deixa nome e telefone para o líder. Devolve o endereço completo. */
-export async function leaveContact(rawCode: string, name: string, phoneDigits: string): Promise<PrivateAddress> {
+export async function leaveContact(key: string, name: string, phoneDigits: string): Promise<PrivateAddress> {
   if (name.trim().length < 2) throw new Error('Nome inválido')
   if (!isValidPhone(phoneDigits)) throw new Error('Telefone inválido')
   if (REMOTE) {
-    const rows = await rpc<PrivateAddress[]>('leave_contact', { p_code: normalizeCode(rawCode), p_name: name.trim(), p_phone: phoneDigits })
+    const rows = await rpc<PrivateAddress[]>('leave_contact', { p_code: key, p_name: name.trim(), p_phone: phoneDigits })
     if (!rows[0]) throw new Error('Célula indisponível')
     return { address: rows[0].address ?? '', reference: rows[0].reference ?? '' }
   }
-  const c = DEMO[normalizeCode(rawCode)]
+  const c = demoCell(key)
   if (!c || c.status !== 'active') throw new Error('Célula indisponível')
   return DEMO_ADDRESS
 }
 
 /** Pedido de oração para o líder. Vai só para o líder, não aparece na página. */
-export async function leavePrayer(rawCode: string, text: string, name?: string): Promise<void> {
+export async function leavePrayer(key: string, text: string, name?: string): Promise<void> {
   if (!text.trim()) throw new Error('Pedido vazio')
   if (REMOTE) {
-    await rpc('leave_web_prayer', { p_code: normalizeCode(rawCode), p_name: name ?? null, p_text: text.trim() })
+    await rpc('leave_web_prayer', { p_code: key, p_name: name ?? null, p_text: text.trim() })
     return
   }
-  const c = DEMO[normalizeCode(rawCode)]
+  const c = demoCell(key)
   if (!c || c.status !== 'active') throw new Error('Célula indisponível')
+}
+
+export type ReportReason = 'logo' | 'nome' | 'outro'
+
+/** Denúncia da página: vai para a equipe do acasa, sem login. */
+export async function reportPage(key: string, reason: ReportReason, detail?: string): Promise<void> {
+  if (REMOTE) {
+    await rpc('report_cell_page', { p_code: key, p_reason: reason, p_detail: detail?.trim() || null })
+    return
+  }
+  if (!demoCell(key)) throw new Error('Célula indisponível')
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { codeFromPath, getPublicCell, isValidPhone, leaveContact, leavePrayer, REMOTE } from '../lib/api'
+import { getPublicCell, isValidPhone, keyFromPath, leaveContact, leavePrayer, REMOTE, reportPage, type ReportReason } from '../lib/api'
 import type { PrivateAddress, PublicCell } from '../lib/data'
 import { formatMeeting, maskPhone, weekly } from '../lib/format'
 import { AlertIcon, CheckIcon } from './Icons'
@@ -14,10 +14,17 @@ export function CellPage({ code }: { code: string }) {
 
   useEffect(() => {
     let alive = true
-    // Com o banco, a página é uma só para todos os códigos: o código vem do endereço aberto.
-    const real = REMOTE ? (codeFromPath(window.location.pathname) ?? code) : code
+    // Com o banco, a página é uma só para todos os endereços: a célula vem do endereço aberto.
+    const real = REMOTE ? (keyFromPath(window.location.pathname) ?? code) : code
     getPublicCell(real)
-      .then((cell) => alive && setLoad(cell ? { state: 'ok', cell } : { state: 'missing' }))
+      .then((cell) => {
+        if (!alive) return
+        // Endereço antigo ou link /c/<código>: a barra do navegador passa a mostrar o endereço atual da célula.
+        if (cell?.slug && REMOTE && window.location.pathname.replace(/\/$/, '') !== `/celulas/${cell.slug}`) {
+          window.history.replaceState(null, '', `/celulas/${cell.slug}/`)
+        }
+        setLoad(cell ? { state: 'ok', cell } : { state: 'missing' })
+      })
       .catch(() => alive && setLoad({ state: 'error' }))
     return () => {
       alive = false
@@ -52,12 +59,35 @@ function Unavailable({ title, text }: { title: string; text: string }) {
   )
 }
 
+/** Quem denunciou o logo não vê mais o logo neste navegador. */
+const HIDDEN_LOGO_KEY = 'acasa-logo-denunciado'
+
+function logoHiddenHere(url: string) {
+  try {
+    return (JSON.parse(localStorage.getItem(HIDDEN_LOGO_KEY) ?? '[]') as string[]).includes(url)
+  } catch {
+    return false
+  }
+}
+
+function hideLogoHere(url: string) {
+  try {
+    const list = JSON.parse(localStorage.getItem(HIDDEN_LOGO_KEY) ?? '[]') as string[]
+    localStorage.setItem(HIDDEN_LOGO_KEY, JSON.stringify([...list, url].slice(-50)))
+  } catch {
+    // Sem armazenamento no navegador: o logo some só até recarregar.
+  }
+}
+
 function ActiveCell({ cell }: { cell: PublicCell }) {
   const [address, setAddress] = useState<PrivateAddress | null>(null)
+  const [logo, setLogo] = useState<string | null>(null)
+  useEffect(() => setLogo(cell.logoUrl && !logoHiddenHere(cell.logoUrl) ? cell.logoUrl : null), [cell.logoUrl])
   return (
     <main id="conteudo" className="wrap">
       <header className="hero">
         {cell.coverUrl ? <img className="cover" src={cell.coverUrl} alt="" /> : null}
+        {logo ? <img className="logo" src={logo} alt={`Logo da célula ${cell.name}`} width={72} height={72} /> : null}
         <p className="label">Convite para a célula</p>
         <h1>{cell.name}</h1>
         <p className="sub">{[cell.churchName, `${cell.neighborhood}, ${cell.city}`].filter(Boolean).join(' · ')}</p>
@@ -140,6 +170,15 @@ function ActiveCell({ cell }: { cell: PublicCell }) {
       <GetApp />
       <footer>
         <p>Esta página mostra só o que o líder publicou. Os pedidos de oração vão só para o líder.</p>
+        <ReportForm
+          code={cell.code}
+          onReported={(reason) => {
+            if (reason === 'logo' && cell.logoUrl) {
+              hideLogoHere(cell.logoUrl)
+              setLogo(null)
+            }
+          }}
+        />
       </footer>
     </main>
   )
@@ -264,6 +303,75 @@ function PrayerForm({ code, leader }: { code: string; leader: string }) {
         </button>
       </form>
     </section>
+  )
+}
+
+const REASONS: { value: ReportReason; label: string }[] = [
+  { value: 'logo', label: 'O logo é impróprio' },
+  { value: 'nome', label: 'O nome ou o endereço da página é impróprio' },
+  { value: 'outro', label: 'Outro motivo' },
+]
+
+/** Denúncia: vai para a equipe do acasa. O logo denunciado some na hora para quem denunciou. */
+function ReportForm({ code, onReported }: { code: string; onReported: (reason: ReportReason) => void }) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState<ReportReason>('logo')
+  const [detail, setDetail] = useState('')
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+
+  if (state === 'sent') {
+    return (
+      <p role="status">
+        <CheckIcon /> Denúncia enviada para a equipe do acasa. Obrigado.
+      </p>
+    )
+  }
+  if (!open) {
+    return (
+      <button type="button" className="link" onClick={() => setOpen(true)}>
+        Denunciar esta página
+      </button>
+    )
+  }
+  return (
+    <form
+      className="report"
+      aria-labelledby="denunciar"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        setState('sending')
+        try {
+          await reportPage(code, reason, detail)
+          onReported(reason)
+          setState('sent')
+        } catch {
+          setState('error')
+        }
+      }}
+    >
+      <h2 id="denunciar">Denunciar esta página</h2>
+      <fieldset style={{ border: 0, margin: 0, padding: 0 }}>
+        <legend className="muted">O que está errado?</legend>
+        {REASONS.map((r) => (
+          <label key={r.value} className="check">
+            <input type="radio" name="motivo" value={r.value} checked={reason === r.value} onChange={() => setReason(r.value)} />
+            <span>{r.label}</span>
+          </label>
+        ))}
+      </fieldset>
+      <label>
+        Detalhes (opcional)
+        <textarea value={detail} onChange={(e) => setDetail(e.target.value)} maxLength={500} rows={3} />
+      </label>
+      {state === 'error' ? (
+        <p role="alert" className="error">
+          Não foi possível enviar. Confira a internet e tente de novo.
+        </p>
+      ) : null}
+      <button className="btn outline block" type="submit" disabled={state === 'sending'}>
+        {state === 'sending' ? 'Enviando' : 'Enviar denúncia'}
+      </button>
+    </form>
   )
 }
 

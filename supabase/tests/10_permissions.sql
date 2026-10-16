@@ -282,11 +282,11 @@ reset role;
 select tests.as_anon();
 select tests.ok('sem login não lê nenhuma tabela', tests.denied($$select * from public.cells$$));
 select tests.ok('sem login não lê perfis', tests.denied($$select * from public.profiles$$));
-select tests.ok('a página mostra o bairro', (select neighborhood from public.public_cell_page('ABC123')) = 'Pinheiros');
+select tests.ok('a página mostra o bairro', (select neighborhood from public.public_cell_page('c:ABC123')) = 'Pinheiros');
 select tests.ok('a página não tem coluna de endereço',
   pg_get_function_result('public.public_cell_page(text)'::regprocedure) !~ '(address|reference)');
-select tests.ok('sem nome e telefone não recebe o endereço', tests.denied($$select * from public.leave_contact('ABC123', '', '')$$));
-select tests.ok('com nome e telefone recebe o endereço completo', (select address from public.leave_contact('ABC123', 'Maria', '(11) 98888-7777')) = 'Rua das Flores, 100, ap 12');
+select tests.ok('sem nome e telefone não recebe o endereço', tests.denied($$select * from public.leave_contact('c:ABC123', '', '')$$));
+select tests.ok('com nome e telefone recebe o endereço completo', (select address from public.leave_contact('c:ABC123', 'Maria', '(11) 98888-7777')) = 'Rua das Flores, 100, ap 12');
 select tests.ok('sem login não roda funções do app', tests.denied($$select * from public.cell_member_cards('10000000-0000-0000-0000-000000000001')$$));
 select tests.ok('sem login não roda a limpeza', tests.denied($$select * from public.purge_expired()$$));
 reset role;

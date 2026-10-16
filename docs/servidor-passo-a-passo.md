@@ -128,6 +128,12 @@ Se ela for publicada em algum serviço (por exemplo Netlify ou Vercel), coloque 
 
 Os valores são os mesmos do passo 1.
 
+O endereço público é `acasa.app.br/celulas/<nome>`. O arquivo `web/public/_redirects` já faz o Netlify entregar a página certa para qualquer nome. Na Vercel, isso precisa de uma regra parecida.
+
+A rotina `liberar-enderecos` (em `supabase/setup/rotinas.sql`) libera, todo dia, o endereço de célula parada há 90 dias e apaga os endereços antigos com mais de 30 dias. Rode o arquivo de novo no SQL Editor depois de aplicar a migração `20261016002600_cell_web_address.sql`.
+
+Denúncias feitas pela página ficam na tabela `web_reports`. Para tirar um logo do ar, marque `logo_hidden` na célula, em Table Editor > cells.
+
 ## 10. Login com Apple e com Google no iPhone
 
 O código já está no app. Para funcionar, faltam estes passos, todos depois de ter a conta Apple Developer.

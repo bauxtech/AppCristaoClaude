@@ -6,6 +6,7 @@ import { DEFAULT_ROLES, type Cell, type Member } from './data'
 import { lastMeeting, nextMeeting } from './meetings'
 import type { CellRole } from './permissions'
 import { seatState } from '../subscription/plan'
+import { logoPublicUrl } from './webPage'
 
 // Sincronização da célula com o banco. Os dados são de várias pessoas, então quem decide o que cada um
 // pode ler e gravar são as regras do banco (papel na célula). O app manda a diferença de cada mudança
@@ -278,7 +279,7 @@ export function createCellOps(c: Cell): SyncOp[] {
   // Como a célula nasce no banco: sem escala, sem roteiro e com o tamanho máximo padrão (10).
   const blank: Cell = { ...c, schedule: [], plan: [], planTitle: '', planRef: '', maxSize: 10 }
   return [
-    { kind: 'rpc', fn: 'create_cell', args: { p_id: c.id, p_name: c.name, p_type: c.type, p_weekday: c.day, p_time: c.time, p_address: c.address, p_reference: c.reference, p_neighborhood: c.neighborhood } },
+    { kind: 'rpc', fn: 'create_cell', args: { p_id: c.id, p_name: c.name, p_type: c.type, p_weekday: c.day, p_time: c.time, p_address: c.address, p_reference: c.reference, p_neighborhood: c.neighborhood, p_web_slug: c.webSlug || null } },
     ...cellDiffOps(blank, c),
   ]
 }
@@ -334,7 +335,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   const asMe = (id: string | null) => (id === uid ? 'me' : id)
   const today = now.toISOString().slice(0, 10)
   const [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden, polls, votes, counts, playlist, materials] = await Promise.all([
-    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, reading_plan_id, created_at').eq('id', cellId).single(),
+    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, reading_plan_id, created_at, web_slug, logo_path, logo_hidden').eq('id', cellId).single(),
     db.rpc('cell_member_cards', { p_cell: cellId }),
     db.from('cell_schedule').select('id, role_name, member_id').eq('cell_id', cellId).is('meeting_date', null),
     db.from('cell_meetings').select('id, date, time, extra, cancelled').eq('cell_id', cellId).order('date', { ascending: true }),
@@ -427,6 +428,9 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
     reference: c.reference ?? '',
     neighborhood: c.neighborhood ?? '',
     ...(cover ? { coverUri: cover } : {}),
+    webSlug: c.web_slug ?? null,
+    logoUrl: c.logo_hidden ? null : logoPublicUrl(c.logo_path),
+    logoHidden: !!c.logo_hidden,
     code: c.invite_code,
     maxSize: c.max_size ?? 10,
     archived: c.archived,

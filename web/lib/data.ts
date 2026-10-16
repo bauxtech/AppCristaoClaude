@@ -4,7 +4,12 @@
 // No banco, isto vira uma função pública que devolve só estes campos. O resto fica protegido pelas regras de acesso.
 
 export interface PublicCell {
+  /** Como a página acha a célula: o endereço (/celulas/<nome>) ou 'c:<código>' nos links antigos. */
   code: string
+  /** Endereço próprio, quando o líder escolheu. */
+  slug: string | null
+  /** Logo da célula, quando o líder enviou e a equipe não tirou do ar. */
+  logoUrl: string | null
   name: string
   type: string | null
   churchName: string | null

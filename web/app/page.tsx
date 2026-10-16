@@ -10,16 +10,16 @@ export default function Home() {
       </header>
       <ul className="stack" style={{ listStyle: 'none', padding: 0 }}>
         <li className="card">
-          <Link href="/c/ABC123/">Célula com roteiro e materiais</Link>
+          <Link href="/celulas/jovens-da-central/">Célula com roteiro e materiais</Link>
         </li>
         <li className="card">
-          <Link href="/c/NOVA01/">Célula sem roteiro e sem materiais</Link>
+          <Link href="/celulas/celula-do-bairro/">Célula sem roteiro e sem materiais</Link>
         </li>
         <li className="card">
-          <Link href="/c/ARQ001/">Célula arquivada</Link>
+          <Link href="/c/ARQ001/">Célula arquivada (link antigo, pelo código)</Link>
         </li>
         <li className="card">
-          <Link href="/c/INVALIDO/">Link inválido</Link>
+          <Link href="/celulas/invalido/">Link inválido</Link>
         </li>
       </ul>
     </main>

@@ -93,12 +93,39 @@ describe('página da célula', () => {
 })
 
 describe('endereço do convite', () => {
-  test('lê o código de /c/<código>/', async () => {
-    const { codeFromPath } = await import('../lib/api')
-    expect(codeFromPath('/c/ABC123/')).toBe('ABC123')
-    expect(codeFromPath('/c/abc123')).toBe('abc123')
-    expect(codeFromPath('/c/_/')).toBeNull()
-    expect(codeFromPath('/')).toBeNull()
-    expect(codeFromPath('/c/ABC123/outra')).toBeNull()
+  test('lê o nome de /celulas/<nome>/ e o código dos links antigos /c/<código>/', async () => {
+    const { keyFromPath } = await import('../lib/api')
+    expect(keyFromPath('/celulas/jovens-da-central/')).toBe('jovens-da-central')
+    expect(keyFromPath('/celulas/Jovens-Da-Central')).toBe('jovens-da-central')
+    expect(keyFromPath('/celulas/_/')).toBeNull()
+    expect(keyFromPath('/c/ABC123/')).toBe('c:ABC123')
+    expect(keyFromPath('/c/abc123')).toBe('c:ABC123')
+    expect(keyFromPath('/c/_/')).toBeNull()
+    expect(keyFromPath('/')).toBeNull()
+    expect(keyFromPath('/c/ABC123/outra')).toBeNull()
+    expect(keyFromPath('/celulas/viva/outra')).toBeNull()
   })
 })
+
+describe('endereço próprio, logo e denúncia', () => {
+  test('a página abre pelo nome escolhido pelo líder', async () => {
+    render(<CellPage code="jovens-da-central" />)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Jovens da Central' })).toBeInTheDocument()
+  })
+
+  test('nome que não existe mostra que o convite não vale', async () => {
+    render(<CellPage code="nao-existe" />)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Este convite não vale mais' })).toBeInTheDocument()
+  })
+
+  test('denúncia vai sem login e mostra a confirmação', async () => {
+    const user = userEvent.setup()
+    render(<CellPage code="jovens-da-central" />)
+    await screen.findByRole('heading', { level: 1 })
+    await user.click(screen.getByRole('button', { name: 'Denunciar esta página' }))
+    await user.click(screen.getByRole('radio', { name: 'O nome ou o endereço da página é impróprio' }))
+    await user.click(screen.getByRole('button', { name: 'Enviar denúncia' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Denúncia enviada para a equipe do acasa')
+  })
+})
+

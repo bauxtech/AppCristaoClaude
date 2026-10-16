@@ -28,6 +28,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Nunit
 
 header.hero { padding: 32px 0 20px; }
 .cover { width: 100%; aspect-ratio: 16 / 7; object-fit: cover; border-radius: 16px; margin-bottom: 16px; }
+.logo { display: block; width: 72px; height: 72px; object-fit: contain; border-radius: 16px; border: 1px solid var(--line); background: var(--card); margin-bottom: 16px; }
 h1 { font-size: 1.75rem; line-height: 1.2; margin: 0 0 4px; font-weight: 700; text-wrap: balance; }
 h2 { font-size: 1.0625rem; margin: 0 0 8px; font-weight: 600; }
 .sub { color: var(--text2); margin: 0; }
@@ -65,3 +66,6 @@ textarea { min-height: 120px; resize: vertical; }
 .icon { flex: none; width: 24px; height: 24px; }
 footer { color: var(--text2); font-size: 0.875rem; text-align: center; margin-top: 32px; }
 a { color: var(--primary); }
+.link { background: none; border: 0; padding: 0 8px; min-height: 48px; font: inherit; color: var(--primary); text-decoration: underline; cursor: pointer; }
+.report { text-align: left; margin-top: 16px; }
+.report fieldset { display: grid; gap: 8px; }

@@ -1,0 +1,108 @@
+import { readBytes } from '../../lib/files'
+import { supabase } from '../../lib/supabase'
+
+// Página da célula na internet: acasa.app.br/celulas/<nome>. Decidido em 16/10.
+// As regras valem no banco (check_cell_web_slug, set_cell_web_slug, set_cell_logo). Aqui só se repetem
+// para avisar enquanto o líder digita.
+
+export const WEB_BASE = 'https://acasa.app.br/celulas/'
+export const SLUG_MIN = 3
+export const SLUG_MAX = 30
+/** Logo: o banco aceita até 1 MB. */
+export const LOGO_MAX_BYTES = 1024 * 1024
+
+export type SlugStatus = 'ok' | 'invalid' | 'reserved' | 'blocked' | 'taken' | 'no_access' | 'failed'
+
+export const SLUG_MESSAGE: Record<Exclude<SlugStatus, 'ok'>, string> = {
+  invalid: `Use de ${SLUG_MIN} a ${SLUG_MAX} letras sem acento, números e hífen. Sem hífen no começo, no fim ou dois seguidos.`,
+  reserved: 'Este endereço é reservado pelo acasa. Escolha outro.',
+  blocked: 'Este endereço não é permitido. Escolha outro.',
+  taken: 'Este endereço já é de outra célula. Escolha outro.',
+  no_access: 'Só o líder de uma célula ativa muda o endereço.',
+  failed: 'Não foi possível conferir agora. Confira a internet e tente de novo.',
+}
+
+export function webUrl(slug: string) {
+  return `${WEB_BASE}${slug}`
+}
+
+/** Nome da célula → sugestão de endereço: "Célula dos Jovens!" vira "celula-dos-jovens". */
+export function slugify(name: string) {
+  return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, SLUG_MAX)
+    .replace(/-+$/g, '')
+}
+
+/** Enquanto a pessoa digita: deixa só o que o endereço aceita. */
+export function cleanSlugInput(text: string) {
+  return text
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .slice(0, SLUG_MAX)
+}
+
+/** Mesma regra do banco para o formato. Palavras reservadas e palavrões o banco confere. */
+export function slugFormatOk(slug: string) {
+  return new RegExp(`^[a-z0-9][a-z0-9-]{${SLUG_MIN - 2},${SLUG_MAX - 2}}[a-z0-9]$`).test(slug) && !slug.includes('--')
+}
+
+const STATUSES: SlugStatus[] = ['ok', 'invalid', 'reserved', 'blocked', 'taken', 'no_access']
+const asStatus = (v: unknown): SlugStatus => (STATUSES.includes(v as SlugStatus) ? (v as SlugStatus) : 'failed')
+
+/** O endereço está livre para esta célula? Sem célula (ainda criando), confere para uma célula nova. */
+export async function checkSlugRemote(slug: string, cellId?: string): Promise<SlugStatus> {
+  if (!slugFormatOk(slug)) return 'invalid'
+  if (!supabase) return 'ok'
+  const { data, error } = await supabase.rpc('check_cell_web_slug', { p_slug: slug, p_cell: cellId ?? null })
+  return error ? 'failed' : asStatus(data)
+}
+
+export async function setSlugRemote(cellId: string, slug: string): Promise<SlugStatus> {
+  if (!slugFormatOk(slug)) return 'invalid'
+  if (!supabase) return 'ok'
+  const { data, error } = await supabase.rpc('set_cell_web_slug', { p_cell: cellId, p_slug: slug })
+  return error ? 'failed' : asStatus(data)
+}
+
+export function logoPublicUrl(path: string | null | undefined) {
+  const base = process.env.EXPO_PUBLIC_SUPABASE_URL
+  return path && base ? `${base}/storage/v1/object/public/cell-logos/${path}` : null
+}
+
+export type LogoResult = { ok: true; path: string | null; url: string | null } | { ok: false; reason: 'too_big' | 'no_access' | 'failed' }
+
+const EXT: Record<string, 'jpg' | 'png' | 'webp'> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+
+/** Envia o logo para a pasta da célula e põe na página. */
+export async function uploadLogoRemote(cellId: string, uri: string, mimeType: string): Promise<LogoResult> {
+  if (!supabase) return { ok: true, path: null, url: uri }
+  const ext = EXT[mimeType] ?? 'jpg'
+  const bytes = await readBytes(uri)
+  if (!bytes) return { ok: false, reason: 'failed' }
+  if (bytes.byteLength > LOGO_MAX_BYTES) return { ok: false, reason: 'too_big' }
+  // Nome novo a cada envio: a página não mostra o logo antigo guardado pelo navegador.
+  const path = `${cellId}/logo-${Date.now().toString(36)}.${ext}`
+  const up = await supabase.storage.from('cell-logos').upload(path, bytes, { contentType: ext === 'jpg' ? 'image/jpeg' : `image/${ext}` })
+  if (up.error) return { ok: false, reason: 'failed' }
+  const { data, error } = await supabase.rpc('set_cell_logo', { p_cell: cellId, p_path: path })
+  if (error || data !== 'ok') {
+    await supabase.storage.from('cell-logos').remove([path])
+    return { ok: false, reason: data === 'no_access' ? 'no_access' : 'failed' }
+  }
+  return { ok: true, path, url: logoPublicUrl(path) }
+}
+
+export async function removeLogoRemote(cellId: string): Promise<'ok' | 'no_access' | 'failed'> {
+  if (!supabase) return 'ok'
+  const { data, error } = await supabase.rpc('set_cell_logo', { p_cell: cellId, p_path: null })
+  if (error) return 'failed'
+  return data === 'ok' ? 'ok' : data === 'no_access' ? 'no_access' : 'failed'
+}

@@ -1,12 +1,13 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
-import { AppText, Button, Card, Chip, ConfirmCard, Page, SectionLabel, Switch, useToast } from '../../../components'
+import { AppText, Button, Card, Chip, ConfirmCard, Page, SectionLabel, Switch, TapCard, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { IS_REMOTE } from '../../../lib/supabase'
 import { useCell } from '../CellContext'
 import type { Cell } from '../data'
 import { ROLE_LABEL, ROLES } from '../permissions'
+import { webUrl } from '../webPage'
 import { CellGuard } from './Guard'
 
 export function OptionsScreen() {
@@ -41,6 +42,15 @@ function Options({ cell }: { cell: Cell }) {
           }}
         />
       </Card>
+
+      {isLeader ? (
+        <TapCard label={`Página na internet. ${cell.webSlug ? webUrl(cell.webSlug).replace('https://', '') : 'Escolha o endereço e o logo'}`} onPress={() => router.push('/celula/pagina')}>
+          <AppText variant="bodyStrong">Página na internet</AppText>
+          <AppText variant="small" tone="secondary">
+            {cell.webSlug ? webUrl(cell.webSlug).replace('https://', '') : 'Escolha o endereço e o logo da página'}
+          </AppText>
+        </TapCard>
+      ) : null}
 
       {isLeader ? (
         <Card style={{ gap: 10 }}>
