@@ -13,7 +13,7 @@ export function Page({ title, children, right, onBack }: { title: string; childr
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <TopBar title={title} onBack={onBack ?? (() => router.back())} right={right} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 24, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
         {children}
       </ScrollView>
     </KeyboardAvoidingView>

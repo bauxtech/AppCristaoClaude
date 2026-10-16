@@ -32,7 +32,7 @@ export function BooksScreen() {
   return (
     <FlatList
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 120, gap: 6 }}
+      contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 8 }}
       data={list}
       keyExtractor={(b) => b.name}
       keyboardShouldPersistTaps="handled"

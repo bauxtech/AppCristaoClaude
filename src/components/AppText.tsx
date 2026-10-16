@@ -11,8 +11,8 @@ interface Props extends TextProps {
 }
 
 const variants: Record<Variant, TextStyle> = {
-  screenTitle: { fontFamily: fonts.semibold, fontSize: size.screenTitle, lineHeight: 32 },
-  title: { fontFamily: fonts.semibold, fontSize: size.title, lineHeight: 24 },
+  screenTitle: { fontFamily: fonts.bible, fontSize: size.screenTitle, lineHeight: 40, letterSpacing: -0.6 },
+  title: { fontFamily: fonts.bible, fontSize: 20, lineHeight: 26, letterSpacing: -0.2 },
   body: { fontFamily: fonts.regular, fontSize: size.body, lineHeight: 24 },
   bodyStrong: { fontFamily: fonts.semibold, fontSize: size.body, lineHeight: 22 },
   small: { fontFamily: fonts.regular, fontSize: size.small, lineHeight: 20 },

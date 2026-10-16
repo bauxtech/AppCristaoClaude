@@ -117,7 +117,7 @@ export function HomeScreen() {
         </View>
       </View>
 
-      <View style={{ paddingHorizontal: 16, gap: 12 }}>
+      <View style={{ paddingHorizontal: 20, gap: 20 }}>
         <TrialBanner />
         <TrialPhoneCard />
         <LastDayCard />

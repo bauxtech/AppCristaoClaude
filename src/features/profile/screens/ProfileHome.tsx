@@ -42,7 +42,7 @@ export function ProfileHome() {
   const name = session.profile.name || 'Seu nome'
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
       {settings.deletionAt ? (
         <Card style={{ gap: 8, borderColor: colors.danger }}>
           <AppText variant="bodyStrong">Conta marcada para exclusão</AppText>

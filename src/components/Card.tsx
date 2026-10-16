@@ -7,7 +7,7 @@ export function Card({ style, children, ...rest }: ViewProps) {
   return (
     <View
       style={[
-        { backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16, padding: 20 },
+        { backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 20, padding: 24 },
         style,
       ]}
       {...rest}

@@ -34,7 +34,7 @@ export function CellHubScreen() {
   )
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
       {cell && !cell.archived ? <CellPlanNotice cellId={cell.id} leader={cell.myRole === 'lider'} /> : null}
       {cellStatus === 'pending' && !cell ? <Awaiting /> : !cell ? <Empty /> : cell.archived ? <Archived cell={cell} /> : cell.myRole === 'lider' ? <LeaderView cell={cell} /> : <MemberView cell={cell} />}
     </ScrollView>

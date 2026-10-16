@@ -23,7 +23,7 @@ export const size = {
   /** Texto bíblico. */
   bible: 19,
   /** Título da tela principal de cada aba. */
-  screenTitle: 24,
+  screenTitle: 34,
 } as const
 
 /** Limite para o aumento de fonte do sistema não quebrar a tela. */

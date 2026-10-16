@@ -43,7 +43,7 @@ export function ChurchHubScreen() {
 
   if (!main) {
     return (
-      <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}>
+      <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
         <AppText variant="screenTitle" accessibilityRole="header" style={{ paddingHorizontal: 4 }}>
           Igreja
         </AppText>
@@ -70,7 +70,7 @@ export function ChurchHubScreen() {
   const activeCourses = courses.filter((c) => !c.completedAt).length
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 }}>
         <View style={{ flex: 1 }}>
           <AppText variant="screenTitle" accessibilityRole="header">

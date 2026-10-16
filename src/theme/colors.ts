@@ -26,11 +26,11 @@ export interface Palette {
 }
 
 export const light: Palette = {
-  bg: '#F6F4EE', // off-white
-  card: '#E8DCC9', // areia
+  bg: '#FFFFFF', // branco (teste do visual do site)
+  card: '#F6F4EE', // off-white
   text: '#1F1F1F', // carvão
   textSecondary: '#4F534B',
-  line: '#D6CBB6',
+  line: '#ECE6DA',
   lineStrong: '#73786D',
   primary: '#254C3A', // verde principal
   primaryText: '#F6F4EE',
