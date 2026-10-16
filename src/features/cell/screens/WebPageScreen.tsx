@@ -107,19 +107,19 @@ function WebPage({ cell }: { cell: Cell }) {
     if (!a) return
     setLogoBusy(true)
     setError(null)
-    const r = await uploadLogoRemote(cell.id, a.uri, a.mimeType ?? 'image/jpeg')
+    const r = await uploadLogoRemote(cell.id, a.uri, a.mimeType ?? 'image/jpeg', cell.logoPath)
     setLogoBusy(false)
     if (!r.ok) return setError(LOGO_ERROR[r.reason])
-    update((c) => ({ ...c, logoUrl: r.url, logoHidden: false }))
+    update((c) => ({ ...c, logoUrl: r.url, logoPath: r.path, logoHidden: false }))
     toast('Logo da célula trocado')
   }
 
   async function removeLogo() {
     setLogoBusy(true)
-    const r = await removeLogoRemote(cell.id)
+    const r = await removeLogoRemote(cell.id, cell.logoPath)
     setLogoBusy(false)
     if (r !== 'ok') return setError(LOGO_ERROR[r])
-    update((c) => ({ ...c, logoUrl: null }))
+    update((c) => ({ ...c, logoUrl: null, logoPath: null }))
     toast('Logo removido')
   }
 

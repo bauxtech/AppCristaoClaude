@@ -84,7 +84,10 @@ insert into storage.objects (bucket_id, name) values ('cell-logos', '10000000-00
 select tests.ok('o líder não envia logo na pasta de outra célula',
   tests.denied($$insert into storage.objects (bucket_id, name) values ('cell-logos', '10000000-0000-0000-0000-000000000032/logo-x.png')$$));
 select tests.ok('logo fora da pasta da célula não é aceito', public.set_cell_logo('10000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000032/logo-x.png') = 'invalid');
-select tests.ok('o líder põe o logo na página', public.set_cell_logo('10000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000031/logo-a1.png') = 'ok');
+select tests.ok('logo que não foi enviado não entra na página', public.set_cell_logo('10000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000031/logo-a0.png') = 'invalid');
+insert into storage.objects (bucket_id, name) values ('cell-logos', '10000000-0000-0000-0000-000000000031/logo-a0.png');
+select public.set_cell_logo('10000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000031/logo-a0.png');
+select tests.ok('o líder troca o logo (o arquivo antigo o app apaga pela API do Storage)', public.set_cell_logo('10000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000031/logo-a1.png') = 'ok');
 reset role;
 select tests.as_user('00000000-0000-0000-0000-000000000033');
 select tests.ok('quem não é líder não envia logo',

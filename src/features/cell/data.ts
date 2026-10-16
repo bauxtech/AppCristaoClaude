@@ -90,6 +90,8 @@ export interface Cell {
   webSlug?: string | null
   /** Logo na página, quando o líder enviou. */
   logoUrl?: string | null
+  /** Caminho do logo no balde cell-logos, para apagar o arquivo antigo ao trocar. */
+  logoPath?: string | null
   /** A equipe tirou o logo do ar depois de uma denúncia. */
   logoHidden?: boolean
   code: string

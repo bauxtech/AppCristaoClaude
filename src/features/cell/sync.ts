@@ -431,6 +431,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
     webSlug: c.web_slug ?? null,
     logoUrl: c.logo_hidden ? null : logoPublicUrl(c.logo_path),
     logoHidden: !!c.logo_hidden,
+    logoPath: c.logo_path ?? null,
     code: c.invite_code,
     maxSize: c.max_size ?? 10,
     archived: c.archived,

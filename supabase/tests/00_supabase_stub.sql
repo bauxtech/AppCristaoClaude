@@ -32,6 +32,15 @@ create table if not exists storage.objects (
   created_at timestamptz default now()
 );
 alter table storage.objects enable row level security;
+-- Como no Supabase: apagar linha de storage.objects direto é proibido (só pela API do Storage).
+create or replace function storage.protect_delete() returns trigger language plpgsql as $$
+begin
+  if coalesce(current_setting('storage.allow_delete_query', true), '') <> 'true' then
+    raise exception 'Direct deletion from storage tables is not allowed. Use the Storage API instead' using errcode = '42501';
+  end if;
+  return null;
+end $$;
+create trigger protect_objects_delete before delete on storage.objects for each statement execute function storage.protect_delete();
 create or replace function storage.foldername(name text) returns text[] language sql immutable as $$
   select string_to_array(name, '/')
 $$;
