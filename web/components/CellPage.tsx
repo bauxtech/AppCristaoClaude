@@ -20,8 +20,9 @@ export function CellPage({ code }: { code: string }) {
       .then((cell) => {
         if (!alive) return
         // Endereço antigo ou link /c/<código>: a barra do navegador passa a mostrar o endereço atual da célula.
+        // Sem a barra no fim, como o site acasa.app.br usa.
         if (cell?.slug && REMOTE && window.location.pathname.replace(/\/$/, '') !== `/celulas/${cell.slug}`) {
-          window.history.replaceState(null, '', `/celulas/${cell.slug}/`)
+          window.history.replaceState(null, '', `/celulas/${cell.slug}`)
         }
         setLoad(cell ? { state: 'ok', cell } : { state: 'missing' })
       })
