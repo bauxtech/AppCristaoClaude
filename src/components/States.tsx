@@ -34,8 +34,9 @@ export function ConnectionFrame({ children }: { children: ReactNode }) {
           accessibilityLiveRegion="polite"
           style={{ paddingTop: insets.top + 6, paddingBottom: 6, paddingHorizontal: 16, backgroundColor: online ? colors.primary : colors.darkSurface, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
         >
-          <Icon name={online ? 'clock' : 'alert'} size={14} color="#FFFFFF" />
-          <AppText variant="small" style={{ color: '#FFFFFF', fontFamily: fonts.medium, textAlign: 'center', flexShrink: 1 }}>
+          {/* Sobre o verde, a cor de texto do verde: no escuro o verde é claro e o branco some. */}
+          <Icon name={online ? 'clock' : 'alert'} size={14} color={online ? colors.primaryText : '#FFFFFF'} />
+          <AppText variant="small" style={{ color: online ? colors.primaryText : '#FFFFFF', fontFamily: fonts.medium, textAlign: 'center', flexShrink: 1 }}>
             {text}
           </AppText>
         </View>
