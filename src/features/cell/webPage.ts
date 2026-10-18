@@ -5,7 +5,9 @@ import { supabase } from '../../lib/supabase'
 // As regras valem no banco (check_cell_web_slug, set_cell_web_slug, set_cell_logo). Aqui só se repetem
 // para avisar enquanto o líder digita.
 
-export const WEB_BASE = 'https://acasa.app.br/celulas/'
+/** Hoje só o endereço com www responde com segurança. */
+export const SITE = 'https://www.acasa.app.br'
+export const WEB_BASE = `${SITE}/celulas/`
 export const SLUG_MIN = 3
 export const SLUG_MAX = 30
 /** Logo: o banco aceita até 1 MB. */
@@ -24,6 +26,16 @@ export const SLUG_MESSAGE: Record<Exclude<SlugStatus, 'ok'>, string> = {
 
 export function webUrl(slug: string) {
   return `${WEB_BASE}${slug}`
+}
+
+/** Link pelo código de convite: vale para toda célula, inclusive a que ainda não tem endereço próprio. */
+export function codeUrl(code: string) {
+  return `${SITE}/c/${code}`
+}
+
+/** O link público da célula: o endereço próprio, ou o do código enquanto o líder não escolhe. */
+export function publicUrl(cell: { webSlug?: string | null; code: string }) {
+  return cell.webSlug ? webUrl(cell.webSlug) : codeUrl(cell.code)
 }
 
 /** Nome da célula → sugestão de endereço: "Célula dos Jovens!" vira "celula-dos-jovens". */

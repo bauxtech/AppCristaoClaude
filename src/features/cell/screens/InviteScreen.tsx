@@ -7,7 +7,7 @@ import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { useCell } from '../CellContext'
 import { can } from '../permissions'
-import { webUrl } from '../webPage'
+import { publicUrl } from '../webPage'
 
 export function formatCode(code: string) {
   return `${code.slice(0, 3)}-${code.slice(3)}`
@@ -26,7 +26,7 @@ export function InviteScreen() {
     )
   }
   const code = formatCode(cell.code)
-  const page = cell.webSlug ? ` Para ver a célula antes: ${webUrl(cell.webSlug)}` : ''
+  const page = cell.code ? ` Para ver a célula antes: ${publicUrl(cell)}` : ''
   const message = `Entre na célula ${cell.name} pelo app acasa. Abra o acasa, toque em Célula, Entrar com convite e digite o código ${code}.${page}`
 
   return (

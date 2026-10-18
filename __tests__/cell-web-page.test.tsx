@@ -4,7 +4,7 @@ import { sampleCell, type Cell } from '../src/features/cell/data'
 import { CreateCellScreen } from '../src/features/cell/screens/CreateCellScreen'
 import { OptionsScreen } from '../src/features/cell/screens/OptionsScreen'
 import { WebPageScreen } from '../src/features/cell/screens/WebPageScreen'
-import { cleanSlugInput, slugFormatOk, slugify, webUrl } from '../src/features/cell/webPage'
+import { cleanSlugInput, codeUrl, publicUrl, slugFormatOk, slugify, webUrl } from '../src/features/cell/webPage'
 import { renderApp } from '../test-utils/render'
 
 function asLeader(patch: Partial<Cell> = {}) {
@@ -36,7 +36,13 @@ describe('endereço da página', () => {
   })
 
   test('o link fica no domínio do acasa', () => {
-    expect(webUrl('celula-viva')).toBe('https://acasa.app.br/celulas/celula-viva')
+    expect(webUrl('celula-viva')).toBe('https://www.acasa.app.br/celulas/celula-viva')
+  })
+
+  test('sem endereço próprio, o link público é o do código de convite', () => {
+    expect(codeUrl('AB12CD')).toBe('https://www.acasa.app.br/c/AB12CD')
+    expect(publicUrl({ webSlug: null, code: 'AB12CD' })).toBe('https://www.acasa.app.br/c/AB12CD')
+    expect(publicUrl({ webSlug: 'celula-viva', code: 'AB12CD' })).toBe('https://www.acasa.app.br/celulas/celula-viva')
   })
 })
 
@@ -73,7 +79,7 @@ describe('criar célula com endereço', () => {
 describe('página na internet', () => {
   test('o líder vê o link e pode copiar e compartilhar', async () => {
     await renderApp(<WebPageScreen />, asLeader({ webSlug: 'celula-viva' }))
-    expect(screen.getByText('acasa.app.br/celulas/celula-viva')).toBeTruthy()
+    expect(screen.getByText('www.acasa.app.br/celulas/celula-viva')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Copiar link' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Compartilhar' })).toBeTruthy()
     expect(screen.getByText('Se trocar, o endereço antigo leva para o novo por 30 dias.')).toBeTruthy()
@@ -90,7 +96,13 @@ describe('página na internet', () => {
     jest.useRealTimers()
     expect(await screen.findByText('Endereço livre')).toBeTruthy()
     await fireEvent.press(screen.getByRole('button', { name: 'Salvar endereço' }))
-    expect(await screen.findByText('acasa.app.br/celulas/viva-moema')).toBeTruthy()
+    expect(await screen.findByText('www.acasa.app.br/celulas/viva-moema')).toBeTruthy()
+  })
+
+  test('célula sem endereço próprio já tem link, pelo código de convite', async () => {
+    await renderApp(<WebPageScreen />, asLeader({ webSlug: null, code: 'AB12CD' }))
+    expect(screen.getByText('www.acasa.app.br/c/AB12CD')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Copiar link' })).toBeTruthy()
   })
 
   test('logo tirado pela equipe: o líder é avisado', async () => {

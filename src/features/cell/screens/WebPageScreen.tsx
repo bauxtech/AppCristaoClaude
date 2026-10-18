@@ -6,7 +6,7 @@ import { AppText, Button, Card, Icon, Page, SectionLabel, TextField, useToast } 
 import { useTheme } from '../../../theme/ThemeProvider'
 import { useCell } from '../CellContext'
 import type { Cell } from '../data'
-import { checkSlugRemote, cleanSlugInput, removeLogoRemote, setSlugRemote, SLUG_MESSAGE, slugFormatOk, uploadLogoRemote, WEB_BASE, webUrl, type SlugStatus } from '../webPage'
+import { checkSlugRemote, cleanSlugInput, publicUrl, removeLogoRemote, setSlugRemote, SLUG_MESSAGE, slugFormatOk, uploadLogoRemote, WEB_BASE, type SlugStatus } from '../webPage'
 import { CellGuard } from './Guard'
 
 /** Campo do endereço da página, com a conferência de que está livre enquanto o líder digita. */
@@ -89,7 +89,8 @@ function WebPage({ cell }: { cell: Cell }) {
   const [saving, setSaving] = useState(false)
   const [logoBusy, setLogoBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const link = cell.webSlug ? webUrl(cell.webSlug) : null
+  // Sem endereço próprio, vale o link pelo código de convite.
+  const link = publicUrl(cell)
 
   async function saveSlug() {
     setSaving(true)
@@ -131,30 +132,27 @@ function WebPage({ cell }: { cell: Cell }) {
 
       <Card style={{ gap: 12 }}>
         <SectionLabel>Link da página</SectionLabel>
-        {link ? (
-          <>
-            <AppText variant="bodyStrong" selectable>
-              {link.replace('https://', '')}
-            </AppText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Button
-                label="Copiar link"
-                icon="copy"
-                variant="soft"
-                size="sm"
-                onPress={async () => {
-                  await Clipboard.setStringAsync(link)
-                  toast('Link copiado')
-                }}
-              />
-              <Button label="Compartilhar" icon="external" variant="soft" size="sm" onPress={() => Share.share({ message: `${cell.name}: ${link}` }).catch(() => {})} />
-            </View>
-          </>
-        ) : (
-          <AppText variant="body" tone="secondary">
-            Escolha um endereço para a página. Duas células podem ter o mesmo nome, mas cada endereço é de uma só.
+        <AppText variant="bodyStrong" selectable>
+          {link.replace('https://', '')}
+        </AppText>
+        {cell.webSlug ? null : (
+          <AppText variant="small" tone="secondary">
+            Este é o link pelo código de convite. Escolha um endereço abaixo para ter um link com o nome da célula.
           </AppText>
         )}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <Button
+            label="Copiar link"
+            icon="copy"
+            variant="soft"
+            size="sm"
+            onPress={async () => {
+              await Clipboard.setStringAsync(link)
+              toast('Link copiado')
+            }}
+          />
+          <Button label="Compartilhar" icon="external" variant="soft" size="sm" onPress={() => Share.share({ message: `${cell.name}: ${link}` }).catch(() => {})} />
+        </View>
       </Card>
 
       <Card style={{ gap: 12 }}>
