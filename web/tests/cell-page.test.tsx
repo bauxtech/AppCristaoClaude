@@ -129,3 +129,19 @@ describe('endereço próprio, logo e denúncia', () => {
   })
 })
 
+describe('revisão de 18/10', () => {
+  test('endereço malformado ou fora do formato não trava nem vira código', async () => {
+    const { keyFromPath } = await import('../lib/api')
+    expect(keyFromPath('/celulas/%E0%A4%A/')).toBeNull()
+    expect(keyFromPath('/celulas/c%3A781B3E')).toBeNull()
+    expect(keyFromPath('/celulas/ab')).toBeNull()
+    expect(keyFromPath('/c/%E0%A4%A/')).toBeNull()
+  })
+
+  test('célula parada não aparece como arquivada', async () => {
+    render(<CellPage code="celula-parada" />)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Célula Parada está com as reuniões paradas' })).toBeInTheDocument()
+    expect(screen.queryByText(/arquivada/)).not.toBeInTheDocument()
+  })
+})
+

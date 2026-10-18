@@ -151,7 +151,7 @@ export function LoginScreen() {
         </AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
           <Button label="Termos de Uso" variant="text" size="sm" onPress={() => router.push('/termos-completos')} />
-          <Button label="Privacidade" variant="text" size="sm" onPress={() => openLegal('privacy')} />
+          <Button label="Privacidade" variant="text" size="sm" onPress={() => openLegal('privacy')} accessibilityHint="Abre o site do acasa" />
           <Button label="Dados de fé" variant="text" size="sm" onPress={() => router.push('/dados-de-fe')} />
         </View>
         <Button label="Perdi acesso ao meu número" variant="text" size="sm" onPress={() => router.push('/recuperar-conta')} />

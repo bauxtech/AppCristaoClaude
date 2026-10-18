@@ -62,11 +62,7 @@ export const MAX_PHOTO_BYTES = 5 * 1024 * 1024
 export const MAX_PDF_BYTES = 10 * 1024 * 1024
 export const MAX_PDF_PAGES = 20
 
-/** Páginas do PDF, contando os objetos de página. Aproximado, mas suficiente para barrar arquivo grande. */
-export function pdfPages(bytes: Uint8Array): number {
-  const text = new TextDecoder('latin1').decode(bytes)
-  return (text.match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length
-}
+// As páginas do PDF são contadas em course-photo/index.ts, com a pdf-lib (lê também PDF comprimido).
 
 type Used = { usage: Usage; refund: () => Promise<void> }
 

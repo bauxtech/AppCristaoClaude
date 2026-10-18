@@ -20,7 +20,8 @@ export interface PublicCell {
   /** 0 = domingo */
   day: number
   time: string
-  status: 'active' | 'archived'
+  /** paused: o líder está sem o plano Líder; a célula volta quando ele assinar de novo. */
+  status: 'active' | 'archived' | 'paused'
   nextMeeting: { date: string; time: string } | null
   plan: { title: string; ref: string; sections: { title: string; content: string; minutes: number }[] } | null
   materials: { name: string; kind: 'PDF' | 'Imagem'; size: string; url: string }[]

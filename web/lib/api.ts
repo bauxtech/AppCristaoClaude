@@ -72,6 +72,24 @@ const DEMO: Record<string, PublicCell> = {
     plan: null,
     materials: [],
   },
+  PAU001: {
+    code: 'PAU001',
+    slug: 'celula-parada',
+    logoUrl: null,
+    name: 'Célula Parada',
+    type: 'Mista',
+    churchName: null,
+    neighborhood: 'Centro',
+    city: 'Salvador, BA',
+    coverUrl: null,
+    leaderFirstName: 'Lia',
+    day: 2,
+    time: '20:00',
+    status: 'paused',
+    nextMeeting: null,
+    plan: null,
+    materials: [],
+  },
   ARQ001: {
     code: 'ARQ001',
     slug: null,
@@ -114,10 +132,24 @@ export function normalizeCode(raw: string) {
 
 /** Endereço do site → como achar a célula. /celulas/jovens-da-central/ vira "jovens-da-central"; o link antigo /c/ABC123/ vira "c:ABC123". */
 export function keyFromPath(path: string): string | null {
+  const decode = (v: string) => {
+    try {
+      return decodeURIComponent(v)
+    } catch {
+      return null
+    }
+  }
   const slug = /^\/celulas\/([^/]+)\/?$/.exec(path)
-  if (slug) return slug[1] === '_' ? null : decodeURIComponent(slug[1]).toLowerCase()
+  if (slug) {
+    const v = decode(slug[1])?.toLowerCase() ?? ''
+    // Só o formato que o banco aceita para o endereço. Assim um "c:" no endereço novo não vira código de convite.
+    return /^[a-z0-9-]{3,30}$/.test(v) ? v : null
+  }
   const code = /^\/c\/([^/]+)\/?$/.exec(path)
-  if (code) return code[1] === '_' ? null : `c:${normalizeCode(decodeURIComponent(code[1]))}`
+  if (code) {
+    const v = normalizeCode(decode(code[1]) ?? '')
+    return v && code[1] !== '_' ? `c:${v}` : null
+  }
   return null
 }
 
@@ -129,12 +161,12 @@ function logoUrl(path: string | null) {
 /** Dados públicos. Nunca inclui endereço completo, membros, telefones ou pedidos. */
 export async function getPublicCell(key: string, now = new Date()): Promise<PublicCell | null> {
   if (REMOTE) {
-    const rows = await rpc<{ name: string; type: string | null; weekday: number | null; time: string | null; neighborhood: string | null; leader_first_name: string | null; archived: boolean; slug: string | null; logo_path: string | null }[]>('public_cell_page', { p_code: key })
+    const rows = await rpc<{ name: string; type: string | null; weekday: number | null; time: string | null; neighborhood: string | null; leader_first_name: string | null; archived: boolean; paused: boolean; slug: string | null; logo_path: string | null }[]>('public_cell_page', { p_code: key })
     const r = rows[0]
     if (!r) return null
     const day = r.weekday ?? 0
     const time = r.time ?? '20:00'
-    const status = r.archived ? 'archived' : 'active'
+    const status = r.archived ? 'archived' : r.paused ? 'paused' : 'active'
     // Roteiro e materiais não aparecem na página pública até isso ser decidido.
     return { code: key, slug: r.slug, logoUrl: logoUrl(r.logo_path), name: r.name, type: r.type, churchName: null, neighborhood: r.neighborhood ?? '', city: '', coverUrl: null, leaderFirstName: r.leader_first_name ?? '', day, time, status, nextMeeting: status === 'active' ? nextOf(day, time, now) : null, plan: null, materials: [] }
   }

@@ -285,7 +285,7 @@ select tests.as_user('00000000-0000-0000-0000-000000000021');
 select tests.ok('célula parada: ninguém entra pelo convite', tests.denied($$select * from public.request_join('NINA01')$$));
 reset role;
 select tests.as_anon();
-select tests.ok('célula parada: a página web mostra que não está se reunindo', (select archived from public.public_cell_page('c:NINA01')));
+select tests.ok('célula parada: a página web mostra que não está se reunindo', (select paused from public.public_cell_page('c:NINA01')));
 select tests.ok('célula parada: a página web não recebe contato', tests.denied($$select * from public.leave_contact('c:NINA01', 'Maria', '11987654321')$$));
 reset role;
 

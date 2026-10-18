@@ -169,8 +169,8 @@ function LegalLinks() {
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
       <Button label="Restaurar compra" variant="text" size="sm" onPress={restore} />
-      <Button label="Termos de Uso" variant="text" size="sm" onPress={() => openLegal('terms')} />
-      <Button label="Privacidade" variant="text" size="sm" onPress={() => openLegal('privacy')} />
+      <Button label="Termos de Uso" variant="text" size="sm" onPress={() => openLegal('terms')} accessibilityHint="Abre o site do acasa" />
+      <Button label="Privacidade" variant="text" size="sm" onPress={() => openLegal('privacy')} accessibilityHint="Abre o site do acasa" />
     </View>
   )
 }

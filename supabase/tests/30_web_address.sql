@@ -121,14 +121,14 @@ reset role;
 -- ─── Registros de acesso (6 meses) e contatos da página (12 meses) ──────────
 
 select tests.as_user('00000000-0000-0000-0000-000000000031');
-select set_config('request.headers', '{"x-forwarded-for": "200.1.2.3, 10.0.0.1"}', false);
+select set_config('request.headers', '{"x-forwarded-for": "6.6.6.6, 200.1.2.3"}', false);
 select public.log_access();
 select public.log_access();
 select tests.ok('ninguém lê os registros de acesso pelo app', tests.denied($$select * from public.access_logs$$));
 select tests.ok('ninguém roda a limpeza pelo app', tests.denied($$select public.purge_logs_and_web_contacts()$$));
 reset role;
 select set_config('request.headers', '', false);
-select tests.ok('o acesso fica registrado com o IP de quem chamou, uma vez por hora',
+select tests.ok('o acesso fica registrado com o IP posto pelo proxy (o último), não o que o celular inventou, uma vez por hora',
   (select count(*) from public.access_logs where user_id = '00000000-0000-0000-0000-000000000031') = 1
   and (select ip from public.access_logs where user_id = '00000000-0000-0000-0000-000000000031') = '200.1.2.3');
 select tests.as_anon();
@@ -156,3 +156,47 @@ select tests.ok('célula encerrada: os contatos e pedidos da página saem na hor
   not exists (select 1 from public.cell_leads where cell_id = '10000000-0000-0000-0000-000000000031' and source = 'web')
   and not exists (select 1 from public.cell_web_prayers where cell_id = '10000000-0000-0000-0000-000000000031'));
 update public.cells set archived = false where id = '10000000-0000-0000-0000-000000000031';
+
+-- ─── Revisão de 18/10 ────────────────────────────────────────────────────────
+
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+select set_config('request.headers', '{"cf-connecting-ip": "177.10.10.10", "x-forwarded-for": "9.9.9.9"}', false);
+select public.log_access();
+reset role;
+select set_config('request.headers', '', false);
+select tests.ok('dentro da mesma hora, outro IP não cria registro novo',
+  (select count(*) from public.access_logs where user_id = '00000000-0000-0000-0000-000000000031' and at > now() - interval '1 hour') = 1);
+delete from public.access_logs where user_id = '00000000-0000-0000-0000-000000000031';
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+select set_config('request.headers', '{"cf-connecting-ip": "177.10.10.10", "x-forwarded-for": "9.9.9.9"}', false);
+select public.log_access();
+reset role;
+select set_config('request.headers', '', false);
+select tests.ok('com o cabeçalho do Cloudflare, vale o IP dele', (select ip from public.access_logs where user_id = '00000000-0000-0000-0000-000000000031') = '177.10.10.10');
+
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+select tests.ok('na pasta do logo, só arquivo com nome de logo',
+  tests.denied($$insert into storage.objects (bucket_id, name) values ('cell-logos', '10000000-0000-0000-0000-000000000031/qualquer.png')$$));
+reset role;
+update public.subscriptions set status = 'expired', renews_at = now() - interval '1 day', trial_start = now() - interval '30 days' where user_id = '00000000-0000-0000-0000-000000000031';
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+select tests.ok('líder de célula parada não envia logo',
+  tests.denied($$insert into storage.objects (bucket_id, name) values ('cell-logos', '10000000-0000-0000-0000-000000000031/logo-z9.png')$$));
+reset role;
+select tests.as_anon();
+select tests.ok('célula parada aparece como parada, não como arquivada',
+  (select paused and not archived from public.public_cell_page('celula-viva')));
+reset role;
+update public.subscriptions set status = 'active', renews_at = now() + interval '30 days' where user_id = '00000000-0000-0000-0000-000000000031';
+
+-- Quem perde a vaga sai da escala.
+update public.subscriptions set trial_start = now() - interval '30 days', status = 'expired' where user_id = '00000000-0000-0000-0000-000000000033';
+insert into public.cell_members (cell_id, user_id, role, status, joined_at) values
+  ('10000000-0000-0000-0000-000000000031', '00000000-0000-0000-0000-000000000033', 'membro', 'approved', now())
+  on conflict (cell_id, user_id) do update set status = 'approved', role = 'membro';
+insert into public.cell_seats (cell_id, user_id) values ('10000000-0000-0000-0000-000000000031', '00000000-0000-0000-0000-000000000033') on conflict do nothing;
+insert into public.cell_schedule (cell_id, role_name, member_id) values ('10000000-0000-0000-0000-000000000031', 'Lanche', '00000000-0000-0000-0000-000000000033');
+select tests.ok('com vaga, a pessoa está na escala', exists (select 1 from public.cell_schedule where role_name = 'Lanche' and member_id = '00000000-0000-0000-0000-000000000033'));
+delete from public.cell_seats where cell_id = '10000000-0000-0000-0000-000000000031' and user_id = '00000000-0000-0000-0000-000000000033';
+select tests.ok('ao perder a vaga, a pessoa sai da escala e a função continua lá',
+  exists (select 1 from public.cell_schedule where cell_id = '10000000-0000-0000-0000-000000000031' and role_name = 'Lanche' and member_id is null));

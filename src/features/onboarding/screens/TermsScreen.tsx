@@ -57,7 +57,7 @@ export function TermsScreen() {
           <SelectCard kind="checkbox" label="Termos de Uso" description="Li e aceito os Termos de Uso do aplicativo." selected={state.terms} onPress={() => toggle('terms')} />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
             <Button label="Ler os Termos" variant="text" size="sm" onPress={() => router.push('/termos-completos')} />
-            <Button label="Política de privacidade" variant="text" size="sm" onPress={() => openLegal('privacy')} />
+            <Button label="Política de privacidade" variant="text" size="sm" onPress={() => openLegal('privacy')} accessibilityHint="Abre o site do acasa" />
           </View>
         </View>
         <View style={{ gap: 4 }}>

@@ -1,6 +1,6 @@
 // Curso pela foto ou PDF: a resposta da IA é conferida antes de chegar ao app, e os limites contam certo. O Claude é simulado.
 import { describe, expect, test, vi } from 'vitest'
-import { cleanCourse, pdfPages, readCoursePhoto, type CoursePhotoDeps } from '../_shared/course-photo.ts'
+import { cleanCourse, readCoursePhoto, type CoursePhotoDeps } from '../_shared/course-photo.ts'
 import type { Usage } from '../_shared/usage.ts'
 
 const IMG = { data: 'aGVsbG8=', mediaType: 'image/jpeg' as const }
@@ -74,9 +74,4 @@ describe('curso pela foto ou PDF', () => {
     expect(cleanCourse({ found: true, name: '', type: '', firstDate: '', lessons: 0, time: '' })).toBeNull()
   })
 
-  test('conta as páginas do PDF sem contar o índice de páginas', () => {
-    const pdf = (n: number) => new TextEncoder().encode('%PDF-1.4\n1 0 obj << /Type /Pages /Count ' + n + ' >>\n' + Array.from({ length: n }, (_, i) => `${i + 2} 0 obj << /Type /Page /Parent 1 0 R >>`).join('\n'))
-    expect(pdfPages(pdf(3))).toBe(3)
-    expect(pdfPages(pdf(21))).toBe(21)
-  })
 })

@@ -15,7 +15,12 @@ export function CellPage({ code }: { code: string }) {
   useEffect(() => {
     let alive = true
     // Com o banco, a página é uma só para todos os endereços: a célula vem do endereço aberto.
-    const real = REMOTE ? (keyFromPath(window.location.pathname) ?? code) : code
+    // Endereço fora do formato: não procura nada e mostra que o convite não vale.
+    const real = REMOTE ? keyFromPath(window.location.pathname) : code
+    if (!real) {
+      setLoad({ state: 'missing' })
+      return
+    }
     getPublicCell(real)
       .then((cell) => {
         if (!alive) return
@@ -45,6 +50,7 @@ export function CellPage({ code }: { code: string }) {
   if (load.state === 'missing') return <Unavailable title="Este convite não vale mais" text="O link está errado ou a célula mudou de código. Peça um novo convite para quem te chamou." />
   const cell = load.cell
   if (cell.status === 'archived') return <Unavailable title={`${cell.name} não está mais se reunindo`} text="A célula foi arquivada pelo líder. Peça a quem te convidou o convite de outra célula." />
+  if (cell.status === 'paused') return <Unavailable title={`${cell.name} está com as reuniões paradas`} text="Por enquanto, a célula não recebe novos contatos pela página. Fale com quem te convidou para saber quando volta." />
   return <ActiveCell cell={cell} />
 }
 

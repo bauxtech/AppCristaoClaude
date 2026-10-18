@@ -22,14 +22,14 @@ Deno.serve(async (req) => {
   }
   try {
     for (const [table, owner] of EXPORT_TABLES) parts[table] = await readAll(db, table, (q) => q.eq(owner, uid))
-    for (const [table, owners] of EXPORT_EITHER) parts[table] = await readAll(db, table, (q) => q.or(owners.map((o) => `${o}.eq.${uid}`).join(',')))
   } catch (e) {
     return json({ error: `Não foi possível ler ${(e as Error).message}` }, 500)
   }
-  // Denúncias: o app não lê essa tabela; o servidor lê só as feitas por esta pessoa (o id vem do login conferido).
+  // Denúncias, mural, caronas, escala e trocas: o servidor lê só as linhas desta pessoa (o id vem do login conferido).
   const adm = admin()
   try {
     for (const [table, owner] of ADMIN_EXPORT_TABLES) parts[table] = await readAll(adm, table, (q) => q.eq(owner, uid))
+    for (const [table, owners] of EXPORT_EITHER) parts[table] = await readAll(adm, table, (q) => q.or(owners.map((o) => `${o}.eq.${uid}`).join(',')))
   } catch (e) {
     return json({ error: `Não foi possível ler ${(e as Error).message}` }, 500)
   }
