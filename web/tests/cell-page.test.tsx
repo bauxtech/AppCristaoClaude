@@ -145,3 +145,15 @@ describe('revisão de 18/10', () => {
   })
 })
 
+describe('célula sem bairro', () => {
+  test('não mostra "Bairro" vazio nem vírgula solta', async () => {
+    const { getPublicCell } = await import('../lib/api')
+    const base = await getPublicCell('jovens-da-central')
+    const { ActiveCellForTest } = await import('../components/CellPage')
+    render(<ActiveCellForTest cell={{ ...base!, neighborhood: '', city: '', churchName: null }} />)
+    expect(screen.getByText('O endereço aparece quando você deixa seu nome e telefone.')).toBeInTheDocument()
+    expect(screen.queryByText(/^Bairro/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^,/)).not.toBeInTheDocument()
+  })
+})
+

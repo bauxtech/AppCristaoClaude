@@ -97,7 +97,10 @@ function ActiveCell({ cell }: { cell: PublicCell }) {
         {logo ? <img className="logo" src={logo} alt={`Logo da célula ${cell.name}`} width={72} height={72} /> : null}
         <p className="label">Convite para a célula</p>
         <h1>{cell.name}</h1>
-        <p className="sub">{[cell.churchName, `${cell.neighborhood}, ${cell.city}`].filter(Boolean).join(' · ')}</p>
+        {/* Bairro e cidade só quando o líder preencheu: sem eles, a linha some em vez de mostrar uma vírgula solta. */}
+        {[cell.churchName, [cell.neighborhood, cell.city].filter(Boolean).join(', ')].filter(Boolean).length ? (
+          <p className="sub">{[cell.churchName, [cell.neighborhood, cell.city].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}</p>
+        ) : null}
         <ul className="tags" aria-label="Sobre a célula">
           <li className="tag">{weekly(cell.day, cell.time)}</li>
           {cell.type ? <li className="tag">{cell.type}</li> : null}
@@ -117,7 +120,7 @@ function ActiveCell({ cell }: { cell: PublicCell }) {
           </>
         ) : (
           <p className="muted" style={{ margin: 0 }}>
-            {`Bairro ${cell.neighborhood}. O endereço aparece quando você deixa seu nome e telefone.`}
+            {cell.neighborhood ? `Bairro ${cell.neighborhood}. O endereço aparece quando você deixa seu nome e telefone.` : 'O endereço aparece quando você deixa seu nome e telefone.'}
           </p>
         )}
       </section>
@@ -403,3 +406,6 @@ function GetApp() {
     </section>
   )
 }
+
+/** Só para testes: a página de uma célula ativa, sem passar pelo banco. */
+export const ActiveCellForTest = ActiveCell
