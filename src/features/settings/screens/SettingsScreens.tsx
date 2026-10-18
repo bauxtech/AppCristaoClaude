@@ -18,6 +18,7 @@ import { AUDIO_DAYS } from '../../sermon/data'
 import { useSettings } from '../SettingsContext'
 import { isValidEmail } from './AccountScreens'
 import { verseText } from '../../bible/text'
+import { openLegal } from '../../../lib/legal'
 
 function SwitchRow({ label, sub, value, onChange, divider }: { label: string; sub?: string; value: boolean; onChange: (v: boolean) => void; divider?: boolean }) {
   const { colors } = useTheme()
@@ -445,7 +446,8 @@ export function HelpScreen() {
     <Page title="Ajuda e termos">
       <Card style={{ paddingVertical: 4 }}>
         <ListRow label="Termos de Uso" onPress={() => router.push('/termos-completos')} divider />
-        <ListRow label="Dados de fé e privacidade" onPress={() => router.push('/dados-de-fe')} divider />
+        <ListRow label="Política de privacidade" sub="Abre o site do acasa" onPress={() => openLegal('privacy')} divider />
+        <ListRow label="Dados de fé" onPress={() => router.push('/dados-de-fe')} divider />
         <ListRow label="Falar com suporte" onPress={() => router.push('/configuracoes/suporte')} />
       </Card>
       <SectionLabel>Perguntas frequentes</SectionLabel>

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AppState } from 'react-native'
+import { logAccess } from '../../lib/accessLog'
 import { getItem, setItem } from '../../lib/storage'
 import { restorePurchase, syncSubscription } from '../../lib/store'
 import { IS_REMOTE, supabase } from '../../lib/supabase'
@@ -82,9 +83,12 @@ export function SubscriptionProvider({ children, initial, now }: { children: Rea
   useEffect(() => {
     if (!remote || !uid) return
     void refresh()
+    void logAccess()
     // Ao voltar para o app: o dia pode ter virado, o teste terminado ou a assinatura renovado.
     const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') void refresh()
+      if (s !== 'active') return
+      void refresh()
+      void logAccess()
     })
     return () => sub.remove()
   }, [remote, uid, refresh])

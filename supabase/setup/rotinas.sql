@@ -32,7 +32,7 @@ begin
 end $$;
 revoke all on function public.call_routine from public, anon, authenticated;
 
-select cron.unschedule(jobname) from cron.job where jobname in ('conteudo-do-dia', 'limpeza-diaria', 'enviar-avisos', 'avisos-do-teste', 'promover-visitantes', 'liberar-enderecos');
+select cron.unschedule(jobname) from cron.job where jobname in ('conteudo-do-dia', 'limpeza-diaria', 'enviar-avisos', 'avisos-do-teste', 'promover-visitantes', 'liberar-enderecos', 'limpar-registros');
 select cron.schedule('conteudo-do-dia', '7 6 * * *', $$select public.call_routine('daily-content')$$);
 select cron.schedule('limpeza-diaria', '13 7 * * *', $$select public.call_routine('purge')$$);
 select cron.schedule('enviar-avisos', '* * * * *', $$select public.call_routine('push')$$);
@@ -41,3 +41,5 @@ select cron.schedule('avisos-do-teste', '3 13 * * *', $$select public.trial_remi
 select cron.schedule('promover-visitantes', '9 3 * * *', $$select public.promote_visitors()$$);
 -- Endereço da página de célula parada há 90 dias fica livre; antigos com mais de 30 dias saem. 00h17 em Brasília.
 select cron.schedule('liberar-enderecos', '17 3 * * *', $$select public.release_cell_slugs()$$);
+-- Registros de acesso com mais de 6 meses; contatos da página da célula com mais de 12 meses ou de célula encerrada. 00h21 em Brasília.
+select cron.schedule('limpar-registros', '21 3 * * *', $$select public.purge_logs_and_web_contacts()$$);

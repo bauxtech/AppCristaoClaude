@@ -67,6 +67,9 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Áudio do culto: o padrão é guardar só o texto. Quando a pessoa escolhe guardar o áudio, ele fica 30 dias.
 - Carona: botão que abre o WhatsApp quando o pedido é aceito.
 - Exclusão da conta: dados apagados em 30 dias.
+- Registros de acesso (18/10): data, hora e IP de cada uso, guardados 6 meses (Marco Civil, art. 15), mesmo depois de excluir a conta. Tabela access_logs, ninguém lê pelo app.
+- Contatos e pedidos deixados pela página da célula (18/10): apagados depois de 12 meses ou quando a célula é encerrada. Os visitantes cadastrados à mão pelo líder ficam.
+- Termos e privacidade (18/10): textos completos no site (www.acasa.app.br/termos e /privacidade). No app, um resumo e o texto do consentimento de fé, que diz exatamente o que depende dele. O consentimento cobre o que o banco bloqueia sem ele (diário, pedidos, histórico do chat, registro de oração e tradição). Se célula, igreja e jornada também precisam de consentimento é pergunta para o advogado.
 - Histórico do chat: guardado no servidor só com o consentimento de fé.
 - Retirar o consentimento de fé: apaga do servidor o diário, os pedidos de oração, o histórico do chat, o registro de que a pessoa orou pelos pedidos de outros e a tradição. No aparelho, eles continuam. Sem consentimento, o banco não aceita gravar esses dados. Dar o consentimento de novo envia o que está no aparelho.
 - Denúncia: vai para a equipe do app. O conteúdo some na hora para quem denunciou.

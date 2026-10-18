@@ -1,6 +1,7 @@
 import { router } from 'expo-router'
 import { ScrollView, View } from 'react-native'
-import { AppText, TopBar } from '../../../components'
+import { AppText, Button, TopBar } from '../../../components'
+import { openLegal } from '../../../lib/legal'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { FAITH_TEXT, TERMS_TEXT } from '../data'
 
@@ -20,6 +21,10 @@ export function LegalTextScreen({ kind }: { kind: 'terms' | 'faith' }) {
             <AppText variant="body">{s.body}</AppText>
           </View>
         ))}
+        <View style={{ gap: 4 }}>
+          {kind === 'terms' ? <Button label="Ler os Termos de uso completos" icon="external" variant="outline" onPress={() => openLegal('terms')} accessibilityHint="Abre o site do acasa" /> : null}
+          <Button label="Ler a Política de privacidade" icon="external" variant="text" onPress={() => openLegal('privacy')} accessibilityHint="Abre o site do acasa" />
+        </View>
       </ScrollView>
     </View>
   )

@@ -10,6 +10,7 @@ import { fonts } from '../../../theme/typography'
 import { longDate } from '../../settings/screens/AccountScreens'
 import { PLAN_NAME, PLANS, planInfo, TRIAL_DAYS, type Billing, type PlanId, type PreviewSub } from '../plan'
 import { useSubscription } from '../SubscriptionContext'
+import { openLegal } from '../../../lib/legal'
 
 function Check({ text }: { text: string }) {
   const { colors } = useTheme()
@@ -168,8 +169,8 @@ function LegalLinks() {
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
       <Button label="Restaurar compra" variant="text" size="sm" onPress={restore} />
-      <Button label="Termos de Uso" variant="text" size="sm" onPress={() => router.push('/termos-completos')} />
-      <Button label="Privacidade" variant="text" size="sm" onPress={() => router.push('/dados-de-fe')} />
+      <Button label="Termos de Uso" variant="text" size="sm" onPress={() => openLegal('terms')} />
+      <Button label="Privacidade" variant="text" size="sm" onPress={() => openLegal('privacy')} />
     </View>
   )
 }

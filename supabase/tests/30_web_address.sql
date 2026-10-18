@@ -117,3 +117,42 @@ select tests.ok('depois de 90 dias parada, o endereço fica livre', (select web_
 select tests.as_user('00000000-0000-0000-0000-000000000031');
 select tests.ok('ninguém roda a liberação de endereços pelo app', tests.denied($$select public.release_cell_slugs()$$));
 reset role;
+
+-- ─── Registros de acesso (6 meses) e contatos da página (12 meses) ──────────
+
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+select set_config('request.headers', '{"x-forwarded-for": "200.1.2.3, 10.0.0.1"}', false);
+select public.log_access();
+select public.log_access();
+select tests.ok('ninguém lê os registros de acesso pelo app', tests.denied($$select * from public.access_logs$$));
+select tests.ok('ninguém roda a limpeza pelo app', tests.denied($$select public.purge_logs_and_web_contacts()$$));
+reset role;
+select set_config('request.headers', '', false);
+select tests.ok('o acesso fica registrado com o IP de quem chamou, uma vez por hora',
+  (select count(*) from public.access_logs where user_id = '00000000-0000-0000-0000-000000000031') = 1
+  and (select ip from public.access_logs where user_id = '00000000-0000-0000-0000-000000000031') = '200.1.2.3');
+select tests.as_anon();
+select tests.ok('sem login, não registra acesso', tests.denied($$select public.log_access()$$));
+reset role;
+
+insert into public.access_logs (user_id, ip, at) values ('00000000-0000-0000-0000-000000000031', '1.1.1.1', now() - interval '7 months');
+insert into public.cell_leads (cell_id, name, phone, source, created_at) values
+  ('10000000-0000-0000-0000-000000000031', 'Antigo', '11911112222', 'web', now() - interval '13 months'),
+  ('10000000-0000-0000-0000-000000000031', 'Cadastrado à mão', '11911113333', 'manual', now() - interval '13 months');
+insert into public.cell_web_prayers (cell_id, text, created_at) values ('10000000-0000-0000-0000-000000000031', 'Pedido antigo', now() - interval '13 months');
+select public.purge_logs_and_web_contacts();
+select tests.ok('registro de acesso com mais de 6 meses é apagado; o recente fica',
+  (select count(*) from public.access_logs where user_id = '00000000-0000-0000-0000-000000000031') = 1);
+select tests.ok('contato da página com mais de 12 meses é apagado; o recente fica',
+  not exists (select 1 from public.cell_leads where name = 'Antigo')
+  and exists (select 1 from public.cell_leads where name = 'Visitante' and cell_id = '10000000-0000-0000-0000-000000000031'));
+select tests.ok('visitante cadastrado à mão pelo líder não é apagado', exists (select 1 from public.cell_leads where name = 'Cadastrado à mão'));
+select tests.ok('pedido da página com mais de 12 meses é apagado; o recente fica',
+  not exists (select 1 from public.cell_web_prayers where text = 'Pedido antigo')
+  and exists (select 1 from public.cell_web_prayers where text = 'Pedido pela página'));
+update public.cells set archived = true where id = '10000000-0000-0000-0000-000000000031';
+select public.purge_logs_and_web_contacts();
+select tests.ok('célula encerrada: os contatos e pedidos da página saem na hora',
+  not exists (select 1 from public.cell_leads where cell_id = '10000000-0000-0000-0000-000000000031' and source = 'web')
+  and not exists (select 1 from public.cell_web_prayers where cell_id = '10000000-0000-0000-0000-000000000031'));
+update public.cells set archived = false where id = '10000000-0000-0000-0000-000000000031';

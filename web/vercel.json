@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "trailingSlash": true,
+  "rewrites": [
+    { "source": "/celulas/:nome/", "destination": "/celulas/_/index.html" },
+    { "source": "/c/:codigo/", "destination": "/c/_/index.html" }
+  ]
+}

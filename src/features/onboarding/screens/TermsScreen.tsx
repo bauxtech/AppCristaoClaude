@@ -10,6 +10,7 @@ import { OnboardingScaffold } from '../OnboardingScaffold'
 import { missingConsents, type TermsState } from '../validation'
 import { pushConsents } from '../../../lib/account'
 import { useSettings } from '../../settings/SettingsContext'
+import { openLegal } from '../../../lib/legal'
 
 /** Termos, consentimento separado para dados de fé (LGPD art. 11) e confirmação de 18 anos. */
 export function TermsScreen() {
@@ -54,7 +55,10 @@ export function TermsScreen() {
       <View style={{ gap: 12 }}>
         <View style={{ gap: 4 }}>
           <SelectCard kind="checkbox" label="Termos de Uso" description="Li e aceito os Termos de Uso do aplicativo." selected={state.terms} onPress={() => toggle('terms')} />
-          <Button label="Ler os Termos completos" variant="text" size="sm" onPress={() => router.push('/termos-completos')} style={{ alignSelf: 'flex-start' }} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+            <Button label="Ler os Termos" variant="text" size="sm" onPress={() => router.push('/termos-completos')} />
+            <Button label="Política de privacidade" variant="text" size="sm" onPress={() => openLegal('privacy')} />
+          </View>
         </View>
         <View style={{ gap: 4 }}>
           <SelectCard
