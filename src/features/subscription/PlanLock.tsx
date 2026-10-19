@@ -19,10 +19,25 @@ const FEATURE_NAME: Record<Feature, string> = {
   course_photo: 'Curso pela foto do cronograma',
 }
 
-/** Abre a tela de planos já no plano que libera a função. */
+/** O que a pessoa tentou fazer, para a frase do topo da tela de planos: "Para gravar e transcrever o culto, ..." */
+export const FEATURE_ACTION: Record<Feature, string> = {
+  reading_plans: 'usar os planos de leitura',
+  prayer: 'usar a oração guiada, o diário e os pedidos',
+  church: 'usar igreja, ministérios e cursos',
+  music: 'ouvir as sugestões de música',
+  chat: 'perguntar no chat bíblico',
+  sermon: 'gravar e transcrever o culto',
+  cell: 'participar da célula',
+  cell_lead: 'criar e conduzir uma célula',
+  course_photo: 'cadastrar o curso pela foto do cronograma',
+}
+
+export const isFeature = (f: unknown): f is Feature => typeof f === 'string' && f in FEATURE_ACTION
+
+/** Abre a tela de planos já no plano que libera a função, dizendo qual função foi. */
 export function openPlans(feature?: Feature, minPlan?: string) {
-  router.push(minPlan ? (`/assinatura?plano=${minPlan}` as '/assinatura') : '/assinatura')
-  void feature
+  const q = [minPlan ? `plano=${minPlan}` : '', feature ? `funcao=${feature}&origem=cadeado` : ''].filter(Boolean).join('&')
+  router.push((q ? `/assinatura?${q}` : '/assinatura') as '/assinatura')
 }
 
 /** "No plano Completo": a linha que acompanha o cadeado. */

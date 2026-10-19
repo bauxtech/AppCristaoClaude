@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { Linking, Pressable, View } from 'react-native'
-import { AppText, Button, Card, Chip, ErrorState, Icon, IconButton, Page, SectionLabel, SkeletonCard, Switch, useToast } from '../../../components'
+import { AppText, Button, Card, Chip, ErrorState, Icon, IconButton, Page, SectionLabel, SkeletonCard, Switch, TextField, useToast } from '../../../components'
 import { useRemoteState } from '../../../state/connection'
 import { isInternalRoute } from '../../../lib/links'
 import type { IconName } from '../../../components/Icon'
@@ -13,6 +13,8 @@ import { useCell } from '../../cell/CellContext'
 import { can } from '../../cell/permissions'
 import { hourLabel, inQuietHours, NOTIFICATION_TYPES } from '../prefs'
 import { useSettings } from '../SettingsContext'
+import { useSession } from '../../../state/session'
+import { isValidEmail } from '../../onboarding/validation'
 
 const TYPE_ICON: Record<Notice['type'], IconName> = { cell: 'users', bible: 'book', prayer: 'hand', church: 'church', system: 'info' }
 
@@ -224,6 +226,8 @@ export function NotificationSettingsScreen() {
         </View>
       </Card>
 
+      <OffersCard perm={perm} ask={ask} />
+
       <Card style={{ gap: 8 }}>
         <AppText variant="bodyStrong">Horário de silêncio</AppText>
         <AppText variant="small" tone="secondary">
@@ -235,6 +239,71 @@ export function NotificationSettingsScreen() {
         </View>
       </Card>
     </Page>
+  )
+}
+
+/**
+ * Ofertas e novidades do acasa. Desligadas até a pessoa ligar (regra da Apple para notificação de propaganda
+ * e LGPD para e-mail). No máximo uma por semana, só para quem está sem plano.
+ */
+function OffersCard({ perm, ask }: { perm: ReminderPermission; ask: () => Promise<void> }) {
+  const { colors } = useTheme()
+  const toast = useToast()
+  const s = useSettings()
+  const { profile, updateProfile } = useSession()
+  const [email, setEmail] = useState(profile.email ?? '')
+  const [error, setError] = useState<string | null>(null)
+  const hasEmail = !!profile.email
+
+  function saveEmail() {
+    if (!isValidEmail(email)) return setError('Digite um e-mail válido, como nome@exemplo.com.')
+    setError(null)
+    updateProfile({ email: email.trim() })
+    s.setOffers({ email: true })
+    toast('Ofertas por e-mail ligadas')
+  }
+
+  return (
+    <Card style={{ gap: 8 }}>
+      <AppText variant="bodyStrong" accessibilityRole="header">
+        Ofertas e novidades do acasa
+      </AppText>
+      <AppText variant="small" tone="secondary">
+        Lembretes dos planos e ofertas, no máximo um por semana. Só chegam se você ligar aqui, e você desliga quando quiser.
+      </AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.line }}>
+        <View style={{ flex: 1 }}>
+          <AppText variant="body" style={{ fontFamily: fonts.medium }}>
+            No celular
+          </AppText>
+        </View>
+        <Switch
+          label="Ofertas no celular"
+          value={s.offers.push}
+          onChange={async (v) => {
+            s.setOffers({ push: v })
+            if (v && perm === 'undetermined') await ask()
+          }}
+        />
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 }}>
+        <View style={{ flex: 1 }}>
+          <AppText variant="body" style={{ fontFamily: fonts.medium }}>
+            Por e-mail
+          </AppText>
+          <AppText variant="small" tone="secondary">
+            {hasEmail ? profile.email : 'Informe seu e-mail abaixo para ligar'}
+          </AppText>
+        </View>
+        <Switch label="Ofertas por e-mail" value={s.offers.email && hasEmail} disabled={!hasEmail} onChange={(v) => s.setOffers({ email: v })} />
+      </View>
+      {hasEmail ? null : (
+        <View style={{ gap: 8 }}>
+          <TextField label="Seu e-mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" error={error ?? undefined} />
+          <Button label="Salvar e receber por e-mail" variant="soft" size="sm" onPress={saveEmail} />
+        </View>
+      )}
+    </Card>
   )
 }
 

@@ -12,6 +12,8 @@
 --   purge         07:13 UTC = 04:13 em São Paulo: apaga contas marcadas há 30 dias e áudios de culto vencidos.
 --   push          a cada minuto: envia para o celular os avisos novos (célula, "Orei por você").
 --   trial         13:03 UTC = 10:03 em São Paulo: avisos do teste grátis (dia 5 e dia 7). Roda direto no banco.
+--   régua         13:11 UTC = 10:11 em São Paulo: ofertas depois do teste, só para quem autorizou. Roda direto no banco.
+--   send-email    a cada hora, no minuto 23: envia os e-mails da régua (precisa de RESEND_API_KEY e EMAIL_FROM).
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
@@ -32,7 +34,7 @@ begin
 end $$;
 revoke all on function public.call_routine from public, anon, authenticated;
 
-select cron.unschedule(jobname) from cron.job where jobname in ('conteudo-do-dia', 'limpeza-diaria', 'enviar-avisos', 'avisos-do-teste', 'promover-visitantes', 'liberar-enderecos', 'limpar-registros');
+select cron.unschedule(jobname) from cron.job where jobname in ('conteudo-do-dia', 'limpeza-diaria', 'enviar-avisos', 'avisos-do-teste', 'promover-visitantes', 'liberar-enderecos', 'limpar-registros', 'regua-de-assinatura', 'enviar-emails');
 select cron.schedule('conteudo-do-dia', '7 6 * * *', $$select public.call_routine('daily-content')$$);
 select cron.schedule('limpeza-diaria', '13 7 * * *', $$select public.call_routine('purge')$$);
 select cron.schedule('enviar-avisos', '* * * * *', $$select public.call_routine('push')$$);
@@ -43,3 +45,7 @@ select cron.schedule('promover-visitantes', '9 3 * * *', $$select public.promote
 select cron.schedule('liberar-enderecos', '17 3 * * *', $$select public.release_cell_slugs()$$);
 -- Registros de acesso com mais de 6 meses; contatos da página da célula com mais de 12 meses ou de célula encerrada. 00h21 em Brasília.
 select cron.schedule('limpar-registros', '21 3 * * *', $$select public.purge_logs_and_web_contacts()$$);
+-- Régua de assinatura: ofertas dos dias 10, 17, 24, 31, 60 e 90 para quem autorizou. 10h11 em Brasília.
+select cron.schedule('regua-de-assinatura', '11 13 * * *', $$select public.offer_cadence()$$);
+-- E-mails da régua na fila. Sem RESEND_API_KEY, a função não envia nada e a fila espera.
+select cron.schedule('enviar-emails', '23 * * * *', $$select public.call_routine('send-email')$$);

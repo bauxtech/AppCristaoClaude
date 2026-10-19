@@ -59,7 +59,7 @@ function CellPlanNotice({ cellId, leader }: { cellId: string; leader: boolean })
             ? 'Sem o plano Líder, a célula fica só para leitura: nada de reunião, escala, presença, avisos ou página web. Nada foi apagado. Assine de novo ou passe a liderança para alguém com o plano Líder.'
             : 'O líder está sem o plano Líder. A célula fica só para leitura até ele voltar a assinar. Nada foi apagado.'}
         </AppText>
-        {leader ? <Button label="Ver plano Líder" size="sm" onPress={() => router.push('/assinatura?plano=lider' as '/assinatura')} style={{ alignSelf: 'flex-start' }} /> : null}
+        {leader ? <Button label="Ver plano Líder" size="sm" onPress={() => router.push('/assinatura?plano=lider&origem=celula-lider' as '/assinatura')} style={{ alignSelf: 'flex-start' }} /> : null}
       </Card>
     )
   }
@@ -70,7 +70,7 @@ function CellPlanNotice({ cellId, leader }: { cellId: string; leader: boolean })
         <AppText variant="small" tone="secondary">
           Você vê a reunião, o horário, o endereço e o roteiro e confirma presença. O resto da célula aparece quando o líder te der uma vaga ou com o plano Essencial.
         </AppText>
-        <Button label="Ver plano Essencial" size="sm" onPress={() => router.push('/assinatura?plano=essencial' as '/assinatura')} style={{ alignSelf: 'flex-start' }} />
+        <Button label="Ver plano Essencial" size="sm" onPress={() => router.push('/assinatura?plano=essencial&origem=celula-vaga' as '/assinatura')} style={{ alignSelf: 'flex-start' }} />
       </Card>
     )
   }
@@ -121,6 +121,7 @@ function Empty() {
 function Awaiting() {
   const { colors } = useTheme()
   const { simulateApproval } = useCell()
+  const sub = useSubscription()
   return (
     <>
       <Header title="Célula" />
@@ -131,6 +132,16 @@ function Awaiting() {
           {IS_REMOTE ? 'Seu pedido foi enviado para o líder da célula. Avisamos quando o líder aprovar.' : 'Seu pedido para entrar em Jovens da Central foi enviado para o líder. Avisamos quando o líder aprovar.'}
         </AppText>
       </Card>
+      {/* Quem chega pelo código da página da célula costuma estar no começo do teste: mostrar o que ele libera. */}
+      {sub.status === 'trial' ? (
+        <Card style={{ gap: 8 }}>
+          <AppText variant="bodyStrong">{sub.daysLeft <= 1 ? 'Seu teste grátis termina hoje' : `Seu teste grátis está valendo: faltam ${sub.daysLeft} dias`}</AppText>
+          <AppText variant="body" tone="secondary">
+            Enquanto o líder aprova, use tudo do acasa: planos de leitura, oração guiada, diário, chat bíblico e gravação do culto.
+          </AppText>
+          <Button label="Ver os planos" variant="soft" size="sm" onPress={() => router.push('/assinatura?origem=entrada-celula' as '/assinatura')} style={{ alignSelf: 'flex-start' }} />
+        </Card>
+      ) : null}
       {IS_PREVIEW && !IS_REMOTE ? (
         <Card style={{ gap: 8 }}>
           <AppText variant="small" tone="secondary">
@@ -357,7 +368,7 @@ function MemberView({ cell }: { cell: Cell }) {
   const sub = useSubscription()
   const seatless = sub.cellSeatless(cell.id)
   const lock = seatless ? SEATLESS_LINE : undefined
-  const toPlans = () => router.push('/assinatura?plano=essencial' as '/assinatura')
+  const toPlans = () => router.push('/assinatura?plano=essencial&origem=celula-vaga' as '/assinatura')
   const toast = useToast()
   const { update } = useCell()
   const leader = cell.members.find((m) => m.role === 'lider')

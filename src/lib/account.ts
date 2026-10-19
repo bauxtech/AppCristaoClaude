@@ -38,6 +38,22 @@ export function pushConsents(c: { terms: boolean; adult: boolean; faith: boolean
   })
 }
 
+/** Ofertas e novidades do acasa: no celular e por e-mail, cada uma com a própria autorização. A data do aceite é do servidor. */
+export function pushOffers(o: { push?: boolean; email?: boolean }) {
+  const values: Record<string, boolean> = {}
+  if (o.push !== undefined) values.offers_push = o.push
+  if (o.email !== undefined) values.offers_email = o.email
+  if (Object.keys(values).length) enqueue({ kind: 'update', table: 'profiles', values, match: { id: '$uid' } })
+}
+
+/** Autorizações de ofertas guardadas no banco. Null quando não dá para saber. */
+export async function fetchOffersRemote(uid: string): Promise<{ push: boolean; email: boolean } | null> {
+  if (!IS_REMOTE || !supabase) return null
+  const { data, error } = await supabase.from('profiles').select('offers_push, offers_email').eq('id', uid).maybeSingle()
+  if (error || !data) return null
+  return { push: !!data.offers_push, email: !!data.offers_email }
+}
+
 export function pushFaithConsent(faith: boolean, now = new Date()) {
   enqueue({ kind: 'update', table: 'profiles', values: { faith_consent: faith, faith_consent_at: faith ? now.toISOString() : null }, match: { id: '$uid' } })
 }

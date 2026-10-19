@@ -10,6 +10,8 @@ import { fonts } from '../../../theme/typography'
 import { longDate } from '../../settings/screens/AccountScreens'
 import { PLAN_NAME, PLANS, planInfo, TRIAL_DAYS, type Billing, type PlanId, type PreviewSub } from '../plan'
 import { useSubscription } from '../SubscriptionContext'
+import { FEATURE_ACTION, isFeature } from '../PlanLock'
+import { logPaywall, paywallSource } from '../paywallLog'
 import { openLegal } from '../../../lib/legal'
 
 function Check({ text }: { text: string }) {
@@ -136,7 +138,7 @@ export function StoreSheet({ plan, billing, visible, onCancel, onConfirm }: { pl
  * Assinar: com a loja ligada, abre a folha de compra da própria Apple ou Google e pede ao servidor para conferir.
  * Sem a loja, abre a folha de exemplo. Cancelar volta para a tela, sem mensagem de erro.
  */
-function useBuy(onSample: () => void) {
+function useBuy(onSample: () => void, from?: { source: string; feature?: string }) {
   const toast = useToast()
   const sub = useSubscription()
   return async (plan: PlanId, billing: Billing) => {
@@ -144,6 +146,7 @@ function useBuy(onSample: () => void) {
     try {
       const r = await purchase(plan, billing)
       if (r === 'ok') {
+        if (from) logPaywall('purchase', from.source, from.feature)
         await syncSubscription()
         await sub.refresh()
         router.replace('/assinatura/confirmada')
@@ -183,14 +186,19 @@ const isPlanId = (p: unknown): p is PlanId => p === 'essencial' || p === 'comple
  */
 export function PlansScreen() {
   const sub = useSubscription()
-  const params = useLocalSearchParams<{ plano?: string; fim?: string }>()
+  const params = useLocalSearchParams<{ plano?: string; fim?: string; funcao?: string; origem?: string }>()
   const endOfTrial = params.fim === '1'
+  const feature = isFeature(params.funcao) ? params.funcao : null
+  const source = paywallSource(params)
   const current = sub.status !== 'free' && sub.status !== 'trial' ? (sub.plan as PlanId) : null
   const currentBilling = sub.access.billing
   const [plan, setPlan] = useState<PlanId>(isPlanId(params.plano) ? params.plano : (current ?? 'completo'))
   const [billing, setBilling] = useState<Billing>('annual')
   const [sheet, setSheet] = useState(false)
-  const buy = useBuy(() => setSheet(true))
+  const buy = useBuy(() => setSheet(true), { source, feature: feature ?? undefined })
+  useEffect(() => {
+    logPaywall('view', source, feature)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   // A tela do fim do teste conta como vista assim que aparece.
   useEffect(() => {
     if (endOfTrial && sub.showEndOfTrial) sub.markPaywallSeen()
@@ -208,6 +216,10 @@ export function PlansScreen() {
             A Bíblia continua grátis: ler, ouvir, buscar, grifar e anotar. Para o resto, escolha um plano. Nada do que você criou foi apagado.
           </AppText>
         </View>
+      ) : feature && isPlanId(params.plano) ? (
+        <AppText variant="bodyStrong" accessibilityRole="header">
+          {`Para ${FEATURE_ACTION[feature]}, escolha o plano ${PLAN_NAME[params.plano]}.`}
+        </AppText>
       ) : sub.status === 'trial' ? (
         <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
           {sub.daysLeft <= 1 ? 'Seu teste termina hoje à meia-noite.' : `Faltam ${sub.daysLeft} dias do seu teste.`}

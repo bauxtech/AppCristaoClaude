@@ -140,7 +140,7 @@ describe('bloqueio por função', () => {
   test('cadeado diz em que plano está e abre a tela de planos nesse plano', async () => {
     await renderApp(<PlanLockRow feature="sermon" label="Gravar culto" />, { onboarded: true, subscription: previewState('essencial') })
     await fireEvent.press(screen.getByRole('button', { name: 'Gravar culto. Bloqueado. No plano Completo' }))
-    expect(router.push).toHaveBeenCalledWith('/assinatura?plano=completo')
+    expect(router.push).toHaveBeenCalledWith('/assinatura?plano=completo&funcao=sermon&origem=cadeado')
   })
 
   test('tela de função fora do plano mostra o bloqueio', async () => {

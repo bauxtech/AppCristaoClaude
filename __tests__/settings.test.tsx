@@ -80,7 +80,7 @@ describe('central de avisos', () => {
 describe('configurar avisos', () => {
   test('11 tipos com chave e lembrete dentro do silêncio avisado', async () => {
     await renderApp(<NotificationSettingsScreen />, { onboarded: true, settings: {} })
-    expect(screen.getAllByRole('switch')).toHaveLength(13)
+    expect(screen.getAllByRole('switch')).toHaveLength(15)
     const culto = screen.getByRole('switch', { name: 'Culto' })
     expect(culto.props.accessibilityState.checked).toBe(false)
     await fireEvent.press(culto)

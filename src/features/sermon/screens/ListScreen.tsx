@@ -31,7 +31,7 @@ export function UsageCard() {
           <AppText variant="small" tone="secondary">
             {`Seu plano permite ${q.limit} cultos por período. ${q.resetsAt ? `Renova em ${longDate(q.resetsAt)}.` : 'Renova no começo do próximo período.'}`}
           </AppText>
-          {q.limit < 8 ? <Button label="Mais cultos no plano Líder" variant="text" size="sm" onPress={() => router.push('/assinatura?plano=lider' as '/assinatura')} /> : null}
+          {q.limit < 8 ? <Button label="Mais cultos no plano Líder" variant="text" size="sm" onPress={() => router.push('/assinatura?plano=lider&origem=culto-limite' as '/assinatura')} /> : null}
         </>
       ) : null}
     </Card>

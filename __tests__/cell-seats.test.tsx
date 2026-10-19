@@ -50,7 +50,7 @@ describe('membro sem vaga', () => {
       expect(screen.getByRole('button', { name: `${label}. Bloqueado. Peça uma vaga ao líder ou assine o plano Essencial` })).toBeTruthy()
     }
     await fireEvent.press(screen.getByRole('button', { name: 'Pedidos. Bloqueado. Peça uma vaga ao líder ou assine o plano Essencial' }))
-    expect(router.push).toHaveBeenCalledWith('/assinatura?plano=essencial')
+    expect(router.push).toHaveBeenCalledWith('/assinatura?plano=essencial&origem=celula-vaga')
   })
 
   test.each([

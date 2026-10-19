@@ -82,7 +82,7 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
       return
     }
     // Sem o chat no plano: abre a tela de planos (o servidor também recusaria).
-    if (!sub.can('chat')) return router.push(`/assinatura?plano=${sub.minPlan('chat')}` as '/assinatura')
+    if (!sub.can('chat')) return router.push(`/assinatura?plano=${sub.minPlan('chat')}&funcao=chat&origem=cadeado` as '/assinatura')
     // A verificação de crise vem antes: o campo fica aberto mesmo sem internet ou no limite do dia.
     if ((limit || !online) && !existing) return
     let c = existing?.conv ?? conv
@@ -226,7 +226,7 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
             <AppText variant="small" tone="secondary">
               O contador zera à meia-noite, no horário de Brasília. O histórico continua aberto.
             </AppText>
-            {sub.plan !== 'lider' && sub.plan !== 'completo' && sub.plan !== 'trial' ? <Button label="Mais perguntas no plano Completo" variant="text" size="sm" onPress={() => router.push('/assinatura?plano=completo' as '/assinatura')} /> : null}
+            {sub.plan !== 'lider' && sub.plan !== 'completo' && sub.plan !== 'trial' ? <Button label="Mais perguntas no plano Completo" variant="text" size="sm" onPress={() => router.push('/assinatura?plano=completo&origem=chat-limite' as '/assinatura')} /> : null}
           </View>
         ) : null}
         {sub.can('chat') && (!online || limit) ? (

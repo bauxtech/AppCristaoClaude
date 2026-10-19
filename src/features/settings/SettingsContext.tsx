@@ -6,7 +6,7 @@ import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { sampleNotices, type Notice } from './notices'
 import { defaultNotificationPrefs, type NotificationPrefs } from './prefs'
-import { fetchFaithConsentRemote, pushFaithConsent, setFaithConsentFlag } from '../../lib/account'
+import { fetchFaithConsentRemote, fetchOffersRemote, pushFaithConsent, pushOffers, setFaithConsentFlag } from '../../lib/account'
 import { IS_REMOTE } from '../../lib/supabase'
 import { enqueue, useUserId } from '../../lib/sync'
 import { dismissOps, markReadOps, pullNotices, serverPrefs } from './notices-sync'
@@ -42,6 +42,8 @@ export interface SettingsState {
   blocked: { id: string; name: string }[]
   reports: Report[]
   faithConsent: boolean
+  /** Ofertas e novidades do acasa: só com autorização, separada para o celular e para o e-mail. */
+  offers: { push: boolean; email: boolean }
   /** Quando a conta será apagada. Vazio quando não há exclusão marcada. */
   deletionAt: string | null
 }
@@ -60,6 +62,8 @@ interface SettingsValue extends SettingsState {
   setType: (k: keyof NotificationPrefs['types'], v: boolean) => void
   /** Com fromServer, o valor veio do banco e não é enviado de volta (não muda a data do consentimento). */
   update: (p: Partial<Pick<SettingsState, 'recordingDefault' | 'captions' | 'libras' | 'simple' | 'notesLock' | 'bibleFont' | 'voice' | 'faithConsent'>>, opts?: { fromServer?: boolean }) => void
+  /** Liga ou desliga as ofertas. Vai para o banco, que guarda a data do aceite. */
+  setOffers: (p: Partial<SettingsState['offers']>) => void
   block: (id: string, name: string) => void
   unblock: (id: string) => void
   isBlocked: (name: string) => boolean
@@ -84,6 +88,7 @@ export function settingsInitial(sample: boolean, timeChoice: string | null = nul
     blocked: [],
     reports: [],
     faithConsent: true,
+    offers: { push: false, email: false },
     deletionAt: null,
   }
 }
@@ -120,6 +125,9 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
     let alive = true
     fetchFaithConsentRemote(uid).then((v) => {
       if (alive && v !== null) setState((s) => (s.faithConsent === v ? s : { ...s, faithConsent: v }))
+    })
+    fetchOffersRemote(uid).then((v) => {
+      if (alive && v) setState((s) => ({ ...s, offers: v }))
     })
     return () => {
       alive = false
@@ -160,6 +168,10 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
       update: (p, opts) => {
         if (!opts?.fromServer && p.faithConsent !== undefined && p.faithConsent !== state.faithConsent) pushFaithConsent(p.faithConsent)
         setState((s) => ({ ...s, ...p }))
+      },
+      setOffers: (p) => {
+        if (remote) pushOffers(p)
+        setState((s) => ({ ...s, offers: { ...s.offers, ...p } }))
       },
       block: (id, name) => setState((s) => (s.blocked.some((b) => b.id === id) ? s : { ...s, blocked: [...s.blocked, { id, name }] })),
       unblock: (id) => setState((s) => ({ ...s, blocked: s.blocked.filter((b) => b.id !== id) })),

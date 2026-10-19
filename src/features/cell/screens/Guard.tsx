@@ -51,7 +51,7 @@ function SeatLocked({ title }: { title: string }) {
           {`${SEATLESS_LINE}.`}
         </AppText>
       </View>
-      <Button label="Ver plano Essencial" onPress={() => router.push('/assinatura?plano=essencial' as '/assinatura')} />
+      <Button label="Ver plano Essencial" onPress={() => router.push('/assinatura?plano=essencial&origem=celula-vaga' as '/assinatura')} />
       <Button label="Voltar" variant="outline" onPress={() => (router.canGoBack() ? router.back() : router.replace('/celula'))} />
     </Page>
   )

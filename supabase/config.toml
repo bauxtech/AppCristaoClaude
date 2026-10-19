@@ -32,3 +32,9 @@ verify_jwt = true
 
 [functions.course-photo]
 verify_jwt = true
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.descadastrar]
+verify_jwt = false

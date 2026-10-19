@@ -284,3 +284,44 @@ describe('assinatura pela loja', () => {
     expect(affectedUsers({ type: 'RENEWAL', app_user_id: user })).toEqual([user])
   })
 })
+
+import { emailText, outboxAction, resendPayload, unsubscribeUrl, validToken } from '../_shared/email.ts'
+
+describe('e-mails da régua', () => {
+  const token = '6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b'
+  const row = (over: Partial<{ email: string | null; offers_email: boolean }> = {}) => ({
+    id: 1,
+    subject: 'Plano anual do acasa',
+    body: 'No plano anual, o mês sai mais barato.',
+    attempts: 0,
+    profiles: { email: 'lia@exemplo.com', offers_email: true, offers_token: token, name: 'Lia Souza', ...over },
+  })
+
+  test('todo e-mail diz por que chegou e traz o link para não receber mais', () => {
+    const url = unsubscribeUrl('https://x.supabase.co/', token)
+    expect(url).toBe(`https://x.supabase.co/functions/v1/descadastrar?t=${token}`)
+    const text = emailText(row(), 'Lia Souza', url)
+    expect(text.startsWith('Olá, Lia.')).toBe(true)
+    expect(text).toContain('autorizou ofertas do acasa por e-mail')
+    expect(text).toContain(url)
+  })
+
+  test('quem saiu das ofertas ou apagou o e-mail depois de entrar na fila não recebe', () => {
+    expect(outboxAction(row())).toBe('send')
+    expect(outboxAction(row({ offers_email: false }))).toBe('drop')
+    expect(outboxAction(row({ email: null }))).toBe('drop')
+    expect(outboxAction({ ...row(), profiles: null })).toBe('drop')
+  })
+
+  test('descadastro em um clique para Gmail e Yahoo', () => {
+    const p = resendPayload('acasa <ofertas@acasa.app.br>', 'lia@exemplo.com', 'Assunto', 'texto', 'https://u')
+    expect(p.headers).toEqual({ 'List-Unsubscribe': '<https://u>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' })
+    expect(p.to).toEqual(['lia@exemplo.com'])
+  })
+
+  test('o link só aceita o código no formato certo', () => {
+    expect(validToken(token)).toBe(true)
+    expect(validToken("1' or '1'='1")).toBe(false)
+    expect(validToken(null)).toBe(false)
+  })
+})

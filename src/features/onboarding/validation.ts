@@ -52,3 +52,8 @@ export function missingConsents(s: TermsState): string[] {
   if (!s.adult) missing.push('confirmar que tem 18 anos ou mais')
   return missing
 }
+
+/** Mesmo formato que o banco aceita para o e-mail. */
+export function isValidEmail(v: string) {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v.trim())
+}

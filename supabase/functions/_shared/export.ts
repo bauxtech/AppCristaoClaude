@@ -51,6 +51,10 @@ export const ADMIN_EXPORT_TABLES: [table: string, owner: string][] = [
   ['cell_rides', 'driver_id'],
   ['ride_requests', 'user_id'],
   ['cell_schedule', 'member_id'],
+  // Régua de assinatura: o que foi enviado, os e-mails e de onde a pessoa chegou à tela de planos.
+  ['offer_sends', 'user_id'],
+  ['email_outbox', 'user_id'],
+  ['paywall_events', 'user_id'],
 ]
 
 /** Campos que não fazem sentido para a pessoa nem devem sair (endereço técnico do aparelho). */

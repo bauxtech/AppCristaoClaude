@@ -165,6 +165,18 @@ O código já está no app. Para funcionar, faltam estes passos, todos depois de
 
 Sem o passo 4, o botão do Google não aparece no iPhone e o build não quebra.
 
+## 11. E-mails da régua de assinatura (Resend)
+
+Os e-mails de oferta (dias 17 e 31) só saem para quem autorizou e só depois destes passos. Até lá, ficam na fila e nada é enviado.
+
+1. Crie uma conta em resend.com. Há plano grátis para começar.
+2. Em Domains, adicione `acasa.app.br`. O Resend mostra alguns registros (TXT e MX). Copie cada um para o DNS do domínio, no mesmo lugar onde você configurou o site. Espere o Resend marcar o domínio como verificado.
+3. Em API Keys, crie uma chave com permissão só de envio. Não cole essa chave em nenhum arquivo nem em conversa.
+4. No Supabase, em Edge Functions > Secrets, crie:
+   - `RESEND_API_KEY` com a chave do passo 3;
+   - `EMAIL_FROM` com `acasa <ofertas@acasa.app.br>`.
+5. Pronto. A rotina envia uma vez por hora. Todo e-mail tem o link para não receber mais, que desliga só as ofertas por e-mail.
+
 ## O que ainda depende de decisão
 
 - **Texto bíblico completo:** Bíblia Livre (CC BY 3.0 BR), decidida pelo Thiago. O texto está em supabase/seed/bible_biblia-livre.sql. O advogado confere a licença e o crédito antes do lançamento.
