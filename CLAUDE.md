@@ -54,9 +54,9 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Logo da célula: só o líder envia, imagem até 1 MB, público na página. Quem abre a página pode denunciar (web_reports, vai para a equipe); o logo denunciado some na hora para quem denunciou. A equipe tira do ar com cells.logo_hidden.
 - Idade: só maiores de 18 no lançamento.
 - Bíblia: Bíblia Livre no lançamento (licença Creative Commons Atribuição, uso comercial permitido, crédito obrigatório no app). Não é domínio público. As licenciadas entram depois. Origem e licença registradas em src/features/bible/translations.ts e na tabela bible_translations.
-- Planos (decididos em 12/10, preços do Completo anual e do Líder revistos em 19/10), cada um mensal ou anual, com os mesmos limites:
-  - Essencial (R$ 14,90/mês ou R$ 109,90/ano): Bíblia completa, planos de leitura, oração guiada, diário, pedidos, campanhas, igreja, ministérios, cursos (cadastro à mão; aulas, presença, material e notas), música, participar de célula, chat com 5 perguntas por dia. Sem culto. Sem curso pela foto do cronograma (botão com cadeado e "No plano Completo").
-  - Completo (R$ 24,90/mês ou R$ 199,90/ano): tudo do Essencial, chat com 10 perguntas por dia, 4 cultos por período, curso pela foto ou PDF do cronograma.
+- Planos (decididos em 12/10, preços revistos em 19/10), cada um mensal ou anual, com os mesmos limites:
+  - Essencial (R$ 19,90/mês ou R$ 159,90/ano): Bíblia completa, planos de leitura, oração guiada, diário, pedidos, campanhas, igreja, ministérios, cursos (cadastro à mão; aulas, presença, material e notas), música, participar de célula, chat com 5 perguntas por dia. Sem culto. Sem curso pela foto do cronograma (botão com cadeado e "No plano Completo").
+  - Completo (R$ 29,90/mês ou R$ 239,90/ano): tudo do Essencial, chat com 10 perguntas por dia, 4 cultos por período, curso pela foto ou PDF do cronograma.
   - Líder (R$ 49,90/mês ou R$ 399,90/ano): tudo do Completo, 8 cultos por período, criar e conduzir célula, página da célula na internet. Até 20 vagas para membros sem plano próprio, só para as funções da célula. Quem tem plano próprio e visitante não ocupam vaga. Quem o líder aprova como membro (ou o visitante que vira membro) pega uma vaga livre na hora. Quando uma vaga abre, ela fica livre até o líder dar para alguém. O líder vê na tela de membros quem está sem vaga e pode trocar (tira de um e dá para outro).
   - Funções e limites ficam na tabela plan_config do banco, editável no painel do Supabase sem versão nova do app.
 - Teste grátis: 7 dias corridos com acesso total, contados do primeiro login, controlados pelo servidor, sem forma de pagamento. Limites do teste: 10 perguntas por dia e 2 cultos. Um teste por número de celular (o hash do número fica guardado mesmo depois de excluir a conta). Quem entra pelo Google confirma o celular para começar o teste. Se a Apple recusar o teste pelo servidor, trocar app_settings.trial_mode para "store" e usar o teste da loja.
@@ -85,7 +85,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 
 ## EM ABERTO, PERGUNTAR ANTES DE CODAR
 - Pagamento por Pix: fora do escopo agora.
-- Preços em real: confirmar na tabela de preços da App Store (R$ 14,90, 24,90, 49,90, 109,90, 199,90 e 399,90 não foram confirmados). No Google Play qualquer valor vale.
+- Preços em real: confirmar na tabela de preços da App Store (R$ 19,90, 29,90, 49,90, 159,90, 239,90 e 399,90 não foram confirmados). No Google Play qualquer valor vale.
 
 ## DADOS E PRIVACIDADE
 - Fé e pedido de oração são dado sensível pela LGPD. Consentimento separado no cadastro, exportar e apagar dados.

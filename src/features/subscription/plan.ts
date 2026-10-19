@@ -26,14 +26,14 @@ export const PLANS: PlanInfo[] = [
   {
     id: 'essencial',
     name: 'Essencial',
-    prices: { monthly: { amount: 'R$ 14,90', per: 'por mês' }, annual: { amount: 'R$ 109,90', per: 'por ano' } },
-    annualSaving: '38%',
+    prices: { monthly: { amount: 'R$ 19,90', per: 'por mês' }, annual: { amount: 'R$ 159,90', per: 'por ano' } },
+    annualSaving: '33%',
     items: ['Bíblia completa, planos de leitura, grifos, notas e busca', 'Oração guiada, diário, pedidos e campanhas', 'Igreja, ministérios, cursos e música', 'Participar de célula', 'Chat bíblico: 5 perguntas por dia'],
   },
   {
     id: 'completo',
     name: 'Completo',
-    prices: { monthly: { amount: 'R$ 24,90', per: 'por mês' }, annual: { amount: 'R$ 199,90', per: 'por ano' } },
+    prices: { monthly: { amount: 'R$ 29,90', per: 'por mês' }, annual: { amount: 'R$ 239,90', per: 'por ano' } },
     annualSaving: '33%',
     items: ['Tudo do Essencial', 'Chat bíblico: 10 perguntas por dia', 'Gravar e transcrever culto: 4 por mês, até 90 minutos cada'],
   },

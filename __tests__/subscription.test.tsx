@@ -98,11 +98,11 @@ describe('tela de planos', () => {
   test('três planos, o anual vem marcado e com a economia', async () => {
     await renderApp(<PlansScreen />, { onboarded: true })
     expect(screen.getByRole('tab', { name: 'Anual, mais barato' }).props.accessibilityState.selected).toBe(true)
-    expect(screen.getByLabelText('Plano Essencial, R$ 109,90 por ano. Economize 38% no anual')).toBeTruthy()
-    expect(screen.getByLabelText('Plano Completo, R$ 199,90 por ano. Economize 33% no anual')).toBeTruthy()
+    expect(screen.getByLabelText('Plano Essencial, R$ 159,90 por ano. Economize 33% no anual')).toBeTruthy()
+    expect(screen.getByLabelText('Plano Completo, R$ 239,90 por ano. Economize 33% no anual')).toBeTruthy()
     expect(screen.getByLabelText('Plano Líder, R$ 399,90 por ano. Economize 33% no anual')).toBeTruthy()
     await fireEvent.press(screen.getByRole('tab', { name: 'Mensal' }))
-    expect(screen.getByLabelText('Plano Essencial, R$ 14,90 por mês')).toBeTruthy()
+    expect(screen.getByLabelText('Plano Essencial, R$ 19,90 por mês')).toBeTruthy()
     for (const l of ['Restaurar compra', 'Termos de Uso', 'Privacidade']) expect(screen.getByRole('button', { name: l })).toBeTruthy()
   })
 
