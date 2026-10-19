@@ -6,7 +6,7 @@ import { AppText, Button, Card, Icon, Page, SectionLabel, TextField, useToast } 
 import { useTheme } from '../../../theme/ThemeProvider'
 import { useCell } from '../CellContext'
 import type { Cell } from '../data'
-import { checkSlugRemote, cleanSlugInput, publicUrl, removeLogoRemote, setSlugRemote, SLUG_MESSAGE, slugFormatOk, uploadLogoRemote, WEB_BASE, type SlugStatus } from '../webPage'
+import { checkSlugRemote, cleanSlugInput, publicUrl, removePageImageRemote, setSlugRemote, SLUG_MESSAGE, slugFormatOk, uploadPageImageRemote, WEB_BASE, type PageImage, type SlugStatus } from '../webPage'
 import { CellGuard } from './Guard'
 
 /** Campo do endereço da página, com a conferência de que está livre enquanto o líder digita. */
@@ -102,26 +102,32 @@ function WebPage({ cell }: { cell: Cell }) {
     toast('Endereço da página salvo')
   }
 
-  async function pickLogo() {
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.6 })
+  // Capa larga (3 por 1, como LinkedIn e Dribbble) e logo quadrado.
+  const IMAGE = {
+    logo: { aspect: [1, 1] as [number, number], name: 'logo', changed: 'Logo da célula trocado', removed: 'Logo removido' },
+    capa: { aspect: [3, 1] as [number, number], name: 'capa', changed: 'Capa da página trocada', removed: 'Capa removida' },
+  }
+
+  async function pickImage(kind: PageImage) {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: IMAGE[kind].aspect, quality: 0.6 })
     const a = !res.canceled ? res.assets[0] : null
     if (!a) return
     setLogoBusy(true)
     setError(null)
-    const r = await uploadLogoRemote(cell.id, a.uri, a.mimeType ?? 'image/jpeg', cell.logoPath)
+    const r = await uploadPageImageRemote(kind, cell.id, a.uri, a.mimeType ?? 'image/jpeg', kind === 'logo' ? cell.logoPath : cell.webCoverPath)
     setLogoBusy(false)
     if (!r.ok) return setError(LOGO_ERROR[r.reason])
-    update((c) => ({ ...c, logoUrl: r.url, logoPath: r.path, logoHidden: false }))
-    toast('Logo da célula trocado')
+    update((c) => (kind === 'logo' ? { ...c, logoUrl: r.url, logoPath: r.path, logoHidden: false } : { ...c, webCoverUrl: r.url, webCoverPath: r.path, webCoverHidden: false }))
+    toast(IMAGE[kind].changed)
   }
 
-  async function removeLogo() {
+  async function removeImage(kind: PageImage) {
     setLogoBusy(true)
-    const r = await removeLogoRemote(cell.id, cell.logoPath)
+    const r = await removePageImageRemote(kind, cell.id, kind === 'logo' ? cell.logoPath : cell.webCoverPath)
     setLogoBusy(false)
     if (r !== 'ok') return setError(LOGO_ERROR[r])
-    update((c) => ({ ...c, logoUrl: null, logoPath: null }))
-    toast('Logo removido')
+    update((c) => (kind === 'logo' ? { ...c, logoUrl: null, logoPath: null } : { ...c, webCoverUrl: null, webCoverPath: null }))
+    toast(IMAGE[kind].removed)
   }
 
   return (
@@ -167,30 +173,36 @@ function WebPage({ cell }: { cell: Cell }) {
       </Card>
 
       <Card style={{ gap: 12 }}>
-        <SectionLabel>Logo da célula</SectionLabel>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          <View style={{ width: 72, height: 72, borderRadius: 16, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: colors.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-            {cell.logoUrl ? (
-              <Image source={{ uri: cell.logoUrl }} style={{ width: '100%', height: '100%' }} resizeMode="contain" accessibilityLabel={`Logo da célula ${cell.name}`} />
-            ) : (
-              <Icon name="image" size={24} color={colors.textSecondary} />
-            )}
+        <SectionLabel>Capa e logo</SectionLabel>
+        {/* Prévia de como fica o topo da página: capa larga e o logo por cima, no canto. */}
+        <View accessible accessibilityLabel={`Prévia do topo da página: ${cell.webCoverUrl ? 'com capa' : 'sem capa'} e ${cell.logoUrl ? 'com logo' : 'sem logo'}`} style={{ paddingBottom: 28 }}>
+          <View style={{ aspectRatio: 3, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+            {cell.webCoverUrl ? <Image source={{ uri: cell.webCoverUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="image" size={24} color={colors.primary} />}
           </View>
-          <AppText variant="small" tone="secondary" style={{ flex: 1 }}>
-            {cell.logoUrl ? 'Aparece no topo da página.' : 'Sem logo, a página mostra só o nome da célula. Imagem quadrada, até 1 MB.'}
-          </AppText>
+          <View style={{ position: 'absolute', left: 16, bottom: 0, width: 64, height: 64, borderRadius: 16, borderWidth: 3, borderColor: colors.card, backgroundColor: colors.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+            {cell.logoUrl ? <Image source={{ uri: cell.logoUrl }} style={{ width: '100%', height: '100%' }} resizeMode="contain" /> : <Icon name="people" size={22} color={colors.textSecondary} />}
+          </View>
         </View>
+        {cell.webCoverHidden ? (
+          <AppText variant="small" tone="danger">
+            A equipe do acasa tirou a capa da página depois de uma denúncia. Você pode enviar outra.
+          </AppText>
+        ) : null}
         {cell.logoHidden ? (
           <AppText variant="small" tone="danger">
             A equipe do acasa tirou o logo da página depois de uma denúncia. Você pode enviar outro.
           </AppText>
         ) : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label={logoBusy ? 'Enviando' : cell.logoUrl ? 'Trocar logo' : 'Escolher logo'} icon="upload" variant="soft" size="sm" onPress={pickLogo} disabled={logoBusy} />
-          {cell.logoUrl ? <Button label="Remover logo" variant="text" size="sm" onPress={removeLogo} disabled={logoBusy} /> : null}
+          <Button label={logoBusy ? 'Enviando' : cell.webCoverUrl ? 'Trocar capa' : 'Escolher capa'} icon="upload" variant="soft" size="sm" onPress={() => pickImage('capa')} disabled={logoBusy} />
+          {cell.webCoverUrl ? <Button label="Remover capa" variant="text" size="sm" onPress={() => removeImage('capa')} disabled={logoBusy} /> : null}
+        </View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <Button label={logoBusy ? 'Enviando' : cell.logoUrl ? 'Trocar logo' : 'Escolher logo'} icon="upload" variant="soft" size="sm" onPress={() => pickImage('logo')} disabled={logoBusy} />
+          {cell.logoUrl ? <Button label="Remover logo" variant="text" size="sm" onPress={() => removeImage('logo')} disabled={logoBusy} /> : null}
         </View>
         <AppText variant="small" tone="secondary">
-          O logo fica público na internet. Quem abre a página pode denunciar, e a equipe do acasa pode tirar do ar.
+          Capa larga e logo quadrado, até 1 MB cada. Ficam públicos na internet: quem abre a página pode denunciar, e a equipe do acasa pode tirar do ar.
         </AppText>
       </Card>
 

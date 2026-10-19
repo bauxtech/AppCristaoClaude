@@ -335,7 +335,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   const asMe = (id: string | null) => (id === uid ? 'me' : id)
   const today = now.toISOString().slice(0, 10)
   const [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden, polls, votes, counts, playlist, materials] = await Promise.all([
-    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, reading_plan_id, created_at, web_slug, logo_path, logo_hidden').eq('id', cellId).single(),
+    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, reading_plan_id, created_at, web_slug, logo_path, logo_hidden, web_cover_path, web_cover_hidden').eq('id', cellId).single(),
     db.rpc('cell_member_cards', { p_cell: cellId }),
     db.from('cell_schedule').select('id, role_name, member_id').eq('cell_id', cellId).is('meeting_date', null),
     db.from('cell_meetings').select('id, date, time, extra, cancelled').eq('cell_id', cellId).order('date', { ascending: true }),
@@ -432,6 +432,9 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
     logoUrl: c.logo_hidden ? null : logoPublicUrl(c.logo_path),
     logoHidden: !!c.logo_hidden,
     logoPath: c.logo_path ?? null,
+    webCoverUrl: c.web_cover_hidden ? null : logoPublicUrl(c.web_cover_path),
+    webCoverPath: c.web_cover_path ?? null,
+    webCoverHidden: !!c.web_cover_hidden,
     code: c.invite_code,
     maxSize: c.max_size ?? 10,
     archived: c.archived,

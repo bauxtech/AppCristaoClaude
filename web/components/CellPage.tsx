@@ -39,7 +39,7 @@ export function CellPage({ code }: { code: string }) {
 
   if (load.state === 'loading') {
     return (
-      <main id="conteudo" className="wrap" aria-busy="true">
+      <main id="conteudo" className="page narrow" aria-busy="true">
         <p className="muted" role="status" style={{ paddingTop: 48 }}>
           Carregando a célula
         </p>
@@ -56,17 +56,20 @@ export function CellPage({ code }: { code: string }) {
 
 function Unavailable({ title, text }: { title: string; text: string }) {
   return (
-    <main id="conteudo" className="wrap">
-      <header className="hero">
-        <h1>{title}</h1>
-        <p className="sub">{text}</p>
-      </header>
-      <GetApp />
-    </main>
+    <>
+      <SiteBar />
+      <main id="conteudo" className="page narrow">
+        <header className="hero">
+          <h1>{title}</h1>
+          <p className="sub">{text}</p>
+        </header>
+        <GetApp />
+      </main>
+    </>
   )
 }
 
-/** Quem denunciou o logo não vê mais o logo neste navegador. */
+/** Quem denunciou o logo ou a capa não vê mais a imagem neste navegador. */
 const HIDDEN_LOGO_KEY = 'acasa-logo-denunciado'
 
 function logoHiddenHere(url: string) {
@@ -86,111 +89,168 @@ function hideLogoHere(url: string) {
   }
 }
 
+/** Computador (duas colunas) ou celular (uma). A ordem do conteúdo muda de verdade, não só na tela, para o leitor de tela ler na mesma ordem. */
+function useWide() {
+  const [wide, setWide] = useState(false)
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const mq = window.matchMedia('(min-width: 900px)')
+    const update = () => setWide(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+  return wide
+}
+
 function ActiveCell({ cell }: { cell: PublicCell }) {
+  const wide = useWide()
   const [address, setAddress] = useState<PrivateAddress | null>(null)
   const [logo, setLogo] = useState<string | null>(null)
+  const [cover, setCover] = useState<string | null>(null)
   useEffect(() => setLogo(cell.logoUrl && !logoHiddenHere(cell.logoUrl) ? cell.logoUrl : null), [cell.logoUrl])
+  useEffect(() => setCover(cell.coverUrl && !logoHiddenHere(cell.coverUrl) ? cell.coverUrl : null), [cell.coverUrl])
+  const place = [cell.neighborhood, cell.city].filter(Boolean).join(', ')
+  const subtitle = [cell.churchName, place].filter(Boolean).join(' · ')
   return (
-    <main id="conteudo" className="wrap">
-      <header className="hero">
-        {cell.coverUrl ? <img className="cover" src={cell.coverUrl} alt="" /> : null}
-        {logo ? <img className="logo" src={logo} alt={`Logo da célula ${cell.name}`} width={72} height={72} /> : null}
-        <p className="label">Convite para a célula</p>
-        <h1>{cell.name}</h1>
-        {/* Bairro e cidade só quando o líder preencheu: sem eles, a linha some em vez de mostrar uma vírgula solta. */}
-        {[cell.churchName, [cell.neighborhood, cell.city].filter(Boolean).join(', ')].filter(Boolean).length ? (
-          <p className="sub">{[cell.churchName, [cell.neighborhood, cell.city].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}</p>
-        ) : null}
-        <ul className="tags" aria-label="Sobre a célula">
-          <li className="tag">{weekly(cell.day, cell.time)}</li>
-          {cell.type ? <li className="tag">{cell.type}</li> : null}
-          <li className="tag">{`Líder: ${cell.leaderFirstName}`}</li>
-        </ul>
-      </header>
-
-      <section className="card featured" aria-labelledby="proxima">
-        <h2 id="proxima" className="label">
-          Próxima reunião
-        </h2>
-        <p style={{ fontWeight: 700, fontSize: '1.0625rem', margin: '0 0 4px' }}>{cell.nextMeeting ? formatMeeting(cell.nextMeeting.date, cell.nextMeeting.time) : 'Sem reunião marcada'}</p>
-        {address ? (
-          <>
-            <p style={{ margin: 0 }}>{address.address}</p>
-            {address.reference ? <p className="muted" style={{ margin: 0 }}>{address.reference}</p> : null}
-          </>
-        ) : (
-          <p className="muted" style={{ margin: 0 }}>
-            {cell.neighborhood ? `Bairro ${cell.neighborhood}. O endereço aparece quando você deixa seu nome e telefone.` : 'O endereço aparece quando você deixa seu nome e telefone.'}
-          </p>
-        )}
-      </section>
-
-      {address ? null : <ContactForm code={cell.code} leader={cell.leaderFirstName} onDone={setAddress} />}
-
-      <section className="card" aria-labelledby="roteiro">
-        <h2 id="roteiro">Roteiro da semana</h2>
-        {cell.plan ? (
-          <div className="stack">
-            <p className="muted" style={{ margin: 0 }}>{[cell.plan.title, cell.plan.ref].filter(Boolean).join(' · ')}</p>
-            {cell.plan.sections.map((s) => (
-              <div key={s.title}>
-                <div className="section-head">
-                  <h3 className="label" style={{ margin: 0 }}>
-                    {s.title}
-                  </h3>
-                  <span className="pill">{`${s.minutes} min`}</span>
-                </div>
-                <p className="pre" style={{ margin: '4px 0 0' }}>
-                  {s.content}
-                </p>
-              </div>
-            ))}
+    <>
+      <SiteBar />
+      <main id="conteudo" className="page">
+        {/* Topo como um perfil (LinkedIn, Dribbble): capa larga e o logo por cima, no canto. */}
+        <header className="profile">
+          <div className={cover ? 'cover' : 'cover cover-empty'}>{cover ? <img src={cover} alt={`Capa da célula ${cell.name}`} /> : null}</div>
+          <div className="profile-body">
+            <div className="avatar" aria-hidden={logo ? undefined : true}>
+              {logo ? <img src={logo} alt={`Logo da célula ${cell.name}`} /> : <span>{cell.name.trim().charAt(0).toUpperCase()}</span>}
+            </div>
+            <p className="eyebrow">Célula{cell.type ? ` · ${cell.type}` : ''}</p>
+            <h1>{cell.name}</h1>
+            {subtitle ? <p className="sub">{subtitle}</p> : null}
+            <ul className="facts" aria-label="Sobre a célula">
+              <li>{weekly(cell.day, cell.time)}</li>
+              <li>{`Líder: ${cell.leaderFirstName}`}</li>
+            </ul>
           </div>
-        ) : (
-          <p className="muted" style={{ margin: 0 }}>
-            O líder ainda não publicou o roteiro desta semana.
-          </p>
-        )}
-      </section>
+        </header>
 
-      <section className="card" aria-labelledby="materiais">
-        <h2 id="materiais">Materiais</h2>
-        {cell.materials.length ? (
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {cell.materials.map((m) => (
-              <li key={m.name} className="material">
-                <span>
-                  {m.name}
-                  <span className="hint">{` · ${m.kind}, ${m.size}`}</span>
-                </span>
-                <a className="btn outline" href={m.url} download aria-label={`Baixar ${m.name}`}>
-                  Baixar
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted" style={{ margin: 0 }}>
-            Nenhum material publicado.
-          </p>
-        )}
-      </section>
+        <div className="layout">
+          <div className="main-col">
+            <section className="panel featured" aria-labelledby="proxima">
+              <h2 id="proxima" className="eyebrow">
+                Próxima reunião
+              </h2>
+              <p className="meeting">{cell.nextMeeting ? formatMeeting(cell.nextMeeting.date, cell.nextMeeting.time) : 'Sem reunião marcada'}</p>
+              {address ? (
+                <>
+                  <p style={{ margin: 0 }}>{address.address}</p>
+                  {address.reference ? <p className="muted" style={{ margin: 0 }}>{address.reference}</p> : null}
+                </>
+              ) : (
+                <p className="muted" style={{ margin: 0 }}>
+                  {cell.neighborhood ? `Bairro ${cell.neighborhood}. O endereço aparece quando você deixa seu nome e telefone.` : 'O endereço aparece quando você deixa seu nome e telefone.'}
+                </p>
+              )}
+            </section>
 
-      <PrayerForm code={cell.code} leader={cell.leaderFirstName} />
-      <GetApp />
-      <footer>
-        <p>Esta página mostra só o que o líder publicou. Os pedidos de oração vão só para o líder.</p>
-        <ReportForm
-          code={cell.code}
-          onReported={(reason) => {
-            if (reason === 'logo' && cell.logoUrl) {
-              hideLogoHere(cell.logoUrl)
-              setLogo(null)
-            }
-          }}
-        />
-      </footer>
-    </main>
+            {/* No celular, o contato vem logo depois da reunião. No computador, fica na coluna da direita. */}
+            {!wide && !address ? <ContactForm code={cell.code} leader={cell.leaderFirstName} onDone={setAddress} /> : null}
+
+            <section className="panel" aria-labelledby="roteiro">
+              <h2 id="roteiro">Roteiro da semana</h2>
+              {cell.plan ? (
+                <div className="stack">
+                  <p className="muted" style={{ margin: 0 }}>{[cell.plan.title, cell.plan.ref].filter(Boolean).join(' · ')}</p>
+                  {cell.plan.sections.map((s) => (
+                    <div key={s.title}>
+                      <div className="section-head">
+                        <h3 className="eyebrow" style={{ margin: 0 }}>
+                          {s.title}
+                        </h3>
+                        <span className="pill">{`${s.minutes} min`}</span>
+                      </div>
+                      <p className="pre" style={{ margin: '4px 0 0' }}>
+                        {s.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted" style={{ margin: 0 }}>
+                  O líder ainda não publicou o roteiro desta semana.
+                </p>
+              )}
+            </section>
+
+            <section className="panel" aria-labelledby="materiais">
+              <h2 id="materiais">Materiais</h2>
+              {cell.materials.length ? (
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  {cell.materials.map((m) => (
+                    <li key={m.name} className="material">
+                      <span>
+                        {m.name}
+                        <span className="hint">{` · ${m.kind}, ${m.size}`}</span>
+                      </span>
+                      <a className="btn outline" href={m.url} download aria-label={`Baixar ${m.name}`}>
+                        Baixar
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted" style={{ margin: 0 }}>
+                  Nenhum material publicado.
+                </p>
+              )}
+            </section>
+
+            <PrayerForm code={cell.code} leader={cell.leaderFirstName} />
+            {wide ? null : <GetApp />}
+          </div>
+
+          {wide ? (
+            <aside className="side-col">
+              {address ? null : <ContactForm code={cell.code} leader={cell.leaderFirstName} onDone={setAddress} />}
+              <GetApp />
+            </aside>
+          ) : null}
+        </div>
+
+        <footer>
+          <p>Esta página mostra só o que o líder publicou. Os pedidos de oração vão só para o líder.</p>
+          <ReportForm
+            code={cell.code}
+            onReported={(reason) => {
+              if (reason === 'logo' && cell.logoUrl) {
+                hideLogoHere(cell.logoUrl)
+                setLogo(null)
+              }
+              if (reason === 'capa' && cell.coverUrl) {
+                hideLogoHere(cell.coverUrl)
+                setCover(null)
+              }
+            }}
+          />
+          <p className="legal">
+            <a href="https://www.acasa.app.br/termos">Termos de uso</a> · <a href="https://www.acasa.app.br/privacidade">Política de privacidade</a>
+          </p>
+        </footer>
+      </main>
+    </>
+  )
+}
+
+/** Barra do topo igual à do site: a marca acasa e o link para conhecer o app. */
+function SiteBar() {
+  return (
+    <div className="sitebar">
+      <a className="brand" href="https://www.acasa.app.br" aria-label="acasa, ir para o site">
+        acasa
+      </a>
+      <a className="btn small" href="https://www.acasa.app.br">
+        Conheça o app
+      </a>
+    </div>
   )
 }
 
@@ -218,7 +278,7 @@ function ContactForm({ code, leader, onDone }: { code: string; leader: string; o
   }
 
   return (
-    <section className="card" aria-labelledby="contato">
+    <section className="panel" aria-labelledby="contato">
       <h2 id="contato">Quero participar</h2>
       <p className="muted" style={{ marginTop: 0 }}>{`Deixe seu nome e telefone para ${leader}. Depois disso, o endereço completo aparece aqui.`}</p>
       <form onSubmit={submit} noValidate>
@@ -257,7 +317,7 @@ function PrayerForm({ code, leader }: { code: string; leader: string }) {
 
   if (sent) {
     return (
-      <section className="card" aria-live="polite">
+      <section className="panel" aria-live="polite">
         <div className="success">
           <CheckIcon />
           <div>
@@ -273,7 +333,7 @@ function PrayerForm({ code, leader }: { code: string; leader: string }) {
   }
 
   return (
-    <section className="card" aria-labelledby="pedido">
+    <section className="panel" aria-labelledby="pedido">
       <h2 id="pedido">Deixar um pedido de oração</h2>
       <p className="muted" style={{ marginTop: 0 }}>{`Vai só para ${leader}. Não aparece na página.`}</p>
       <form
@@ -317,6 +377,7 @@ function PrayerForm({ code, leader }: { code: string; leader: string }) {
 }
 
 const REASONS: { value: ReportReason; label: string }[] = [
+  { value: 'capa', label: 'A capa é imprópria' },
   { value: 'logo', label: 'O logo é impróprio' },
   { value: 'nome', label: 'O nome ou o endereço da página é impróprio' },
   { value: 'outro', label: 'Outro motivo' },
@@ -387,7 +448,7 @@ function ReportForm({ code, onReported }: { code: string; onReported: (reason: R
 
 function GetApp() {
   return (
-    <section className="card" aria-labelledby="app">
+    <section className="panel" aria-labelledby="app">
       <h2 id="app">Acompanhe pelo app</h2>
       <p className="muted" style={{ marginTop: 0 }}>
         No acasa você confirma presença, vê a escala, pede carona e lê a Bíblia com a célula. 7 dias grátis.

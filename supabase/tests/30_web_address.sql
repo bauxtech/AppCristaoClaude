@@ -200,3 +200,42 @@ select tests.ok('com vaga, a pessoa está na escala', exists (select 1 from publ
 delete from public.cell_seats where cell_id = '10000000-0000-0000-0000-000000000031' and user_id = '00000000-0000-0000-0000-000000000033';
 select tests.ok('ao perder a vaga, a pessoa sai da escala e a função continua lá',
   exists (select 1 from public.cell_schedule where cell_id = '10000000-0000-0000-0000-000000000031' and role_name = 'Lanche' and member_id is null));
+
+-- ─── Capa da página e limite por aparelho (19/10) ────────────────────────────
+
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+select tests.ok('o líder envia a capa na pasta da célula',
+  tests.allowed($$insert into storage.objects (bucket_id, name) values ('cell-logos', '10000000-0000-0000-0000-000000000031/capa-a1.jpg')$$));
+insert into storage.objects (bucket_id, name) values ('cell-logos', '10000000-0000-0000-0000-000000000031/capa-a1.jpg');
+select tests.ok('o líder põe a capa na página', public.set_cell_cover('10000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000031/capa-a1.jpg') = 'ok');
+select tests.ok('arquivo de logo não vale como capa', public.set_cell_cover('10000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000031/logo-a1.png') = 'invalid');
+select tests.ok('o líder não muda a capa direto na tabela', tests.denied($$update public.cells set web_cover_path = 'x' where id = '10000000-0000-0000-0000-000000000031'$$));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000033');
+select tests.ok('quem não é líder não troca a capa', public.set_cell_cover('10000000-0000-0000-0000-000000000031', null) = 'no_access');
+reset role;
+select tests.as_anon();
+select tests.ok('a página mostra a capa', (select cover_path from public.public_cell_page('celula-viva')) = '10000000-0000-0000-0000-000000000031/capa-a1.jpg');
+select public.report_cell_page('celula-viva', 'capa');
+reset role;
+select tests.ok('dá para denunciar a capa', exists (select 1 from public.web_reports where reason = 'capa'));
+update public.cells set web_cover_hidden = true where id = '10000000-0000-0000-0000-000000000031';
+select tests.as_anon();
+select tests.ok('capa tirada do ar pela equipe some da página', (select cover_path from public.public_cell_page('celula-viva')) is null);
+reset role;
+
+-- Limite por aparelho: 5 contatos por dia, mesmo com telefones diferentes.
+select set_config('request.headers', '{"cf-connecting-ip": "201.5.5.5"}', false);
+select tests.as_anon();
+select public.leave_contact('celula-viva', 'Robô', '1198000000' || g) from generate_series(1, 5) g;
+select tests.ok('o 6º contato do mesmo aparelho no dia é recusado', tests.denied($$select * from public.leave_contact('celula-viva', 'Robô', '11980000099')$$));
+reset role;
+select set_config('request.headers', '{"cf-connecting-ip": "201.5.5.6"}', false);
+select tests.as_anon();
+select tests.ok('outro aparelho continua deixando contato', (select address from public.leave_contact('celula-viva', 'Pessoa', '11980000077')) = 'Rua Secreta, 10');
+reset role;
+select set_config('request.headers', '', false);
+select tests.ok('o endereço de internet não fica guardado, só um código', not exists (select 1 from public.web_attempts where ip_hash like '%201.5%'));
+select tests.as_anon();
+select tests.ok('ninguém lê as tentativas', tests.denied($$select * from public.web_attempts$$));
+reset role;

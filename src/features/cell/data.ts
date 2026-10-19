@@ -92,6 +92,11 @@ export interface Cell {
   logoUrl?: string | null
   /** Caminho do logo no balde cell-logos, para apagar o arquivo antigo ao trocar. */
   logoPath?: string | null
+  /** Capa pública da página (balde cell-logos). Diferente da capa interna do app (coverUri). */
+  webCoverUrl?: string | null
+  webCoverPath?: string | null
+  /** A equipe tirou a capa do ar depois de uma denúncia. */
+  webCoverHidden?: boolean
   /** A equipe tirou o logo do ar depois de uma denúncia. */
   logoHidden?: boolean
   code: string

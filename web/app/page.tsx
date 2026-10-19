@@ -9,7 +9,7 @@ import { REMOTE } from '../lib/api'
 export default function Home() {
   if (REMOTE) {
     return (
-      <main id="conteudo" className="wrap">
+      <main id="conteudo" className="page narrow">
         <header className="hero">
           <h1>Página da célula</h1>
           <p className="sub">Abra o link que você recebeu de quem te convidou. Ele termina com o nome da célula ou com o código do convite.</p>
@@ -21,25 +21,25 @@ export default function Home() {
     )
   }
   return (
-    <main id="conteudo" className="wrap">
+    <main id="conteudo" className="page narrow">
       <header className="hero">
         <h1>Página web da célula</h1>
         <p className="sub">Prévia sem banco. Quem recebe um convite abre o link da própria célula.</p>
       </header>
       <ul className="stack" style={{ listStyle: 'none', padding: 0 }}>
-        <li className="card">
+        <li className="panel">
           <Link href="/celulas/jovens-da-central/">Célula com roteiro e materiais</Link>
         </li>
-        <li className="card">
+        <li className="panel">
           <Link href="/celulas/celula-do-bairro/">Célula sem roteiro e sem materiais</Link>
         </li>
-        <li className="card">
+        <li className="panel">
           <Link href="/celulas/celula-parada/">Célula parada</Link>
         </li>
-        <li className="card">
+        <li className="panel">
           <Link href="/c/ARQ001/">Célula arquivada (link antigo, pelo código)</Link>
         </li>
-        <li className="card">
+        <li className="panel">
           <Link href="/celulas/invalido/">Link inválido</Link>
         </li>
       </ul>

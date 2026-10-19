@@ -105,6 +105,19 @@ describe('página na internet', () => {
     expect(screen.getByRole('button', { name: 'Copiar link' })).toBeTruthy()
   })
 
+  test('o líder escolhe capa e logo, com prévia do topo da página', async () => {
+    await renderApp(<WebPageScreen />, asLeader({ webSlug: 'celula-viva' }))
+    expect(screen.getByText('Capa e logo')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Escolher capa' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Escolher logo' })).toBeTruthy()
+    expect(screen.getByLabelText('Prévia do topo da página: sem capa e sem logo')).toBeTruthy()
+  })
+
+  test('capa tirada pela equipe: o líder é avisado', async () => {
+    await renderApp(<WebPageScreen />, asLeader({ webCoverHidden: true }))
+    expect(screen.getByText(/A equipe do acasa tirou a capa/)).toBeTruthy()
+  })
+
   test('logo tirado pela equipe: o líder é avisado', async () => {
     await renderApp(<WebPageScreen />, asLeader({ logoHidden: true }))
     expect(screen.getByText(/A equipe do acasa tirou o logo/)).toBeTruthy()

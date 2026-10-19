@@ -93,36 +93,43 @@ export type LogoResult = { ok: true; path: string | null; url: string | null } |
 
 const EXT: Record<string, 'jpg' | 'png' | 'webp'> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
 
-/** O banco não apaga arquivo: o app apaga o logo antigo pela API do Storage. Se falhar, sobra só um arquivo sem uso. */
-async function removeOldLogo(oldPath: string | null | undefined, keep: string | null) {
+/** Imagens da página pública: o logo e a capa, no balde público cell-logos. */
+export type PageImage = 'logo' | 'capa'
+const SETTER: Record<PageImage, string> = { logo: 'set_cell_logo', capa: 'set_cell_cover' }
+
+/** O banco não apaga arquivo: o app apaga a imagem antiga pela API do Storage. Se falhar, sobra só um arquivo sem uso. */
+async function removeOld(oldPath: string | null | undefined, keep: string | null) {
   if (!supabase || !oldPath || oldPath === keep) return
   await supabase.storage.from('cell-logos').remove([oldPath])
 }
 
-/** Envia o logo para a pasta da célula e põe na página. */
-export async function uploadLogoRemote(cellId: string, uri: string, mimeType: string, oldPath?: string | null): Promise<LogoResult> {
+/** Envia o logo ou a capa para a pasta da célula e põe na página. */
+export async function uploadPageImageRemote(kind: PageImage, cellId: string, uri: string, mimeType: string, oldPath?: string | null): Promise<LogoResult> {
   if (!supabase) return { ok: true, path: null, url: uri }
   const ext = EXT[mimeType] ?? 'jpg'
   const bytes = await readBytes(uri)
   if (!bytes) return { ok: false, reason: 'failed' }
   if (bytes.byteLength > LOGO_MAX_BYTES) return { ok: false, reason: 'too_big' }
-  // Nome novo a cada envio: a página não mostra o logo antigo guardado pelo navegador.
-  const path = `${cellId}/logo-${Date.now().toString(36)}.${ext}`
+  // Nome novo a cada envio: a página não mostra a imagem antiga guardada pelo navegador.
+  const path = `${cellId}/${kind}-${Date.now().toString(36)}.${ext}`
   const up = await supabase.storage.from('cell-logos').upload(path, bytes, { contentType: ext === 'jpg' ? 'image/jpeg' : `image/${ext}` })
   if (up.error) return { ok: false, reason: 'failed' }
-  const { data, error } = await supabase.rpc('set_cell_logo', { p_cell: cellId, p_path: path })
+  const { data, error } = await supabase.rpc(SETTER[kind], { p_cell: cellId, p_path: path })
   if (error || data !== 'ok') {
     await supabase.storage.from('cell-logos').remove([path])
     return { ok: false, reason: data === 'no_access' ? 'no_access' : 'failed' }
   }
-  await removeOldLogo(oldPath, path)
+  await removeOld(oldPath, path)
   return { ok: true, path, url: logoPublicUrl(path) }
 }
 
-export async function removeLogoRemote(cellId: string, oldPath?: string | null): Promise<'ok' | 'no_access' | 'failed'> {
+export async function removePageImageRemote(kind: PageImage, cellId: string, oldPath?: string | null): Promise<'ok' | 'no_access' | 'failed'> {
   if (!supabase) return 'ok'
-  const { data, error } = await supabase.rpc('set_cell_logo', { p_cell: cellId, p_path: null })
+  const { data, error } = await supabase.rpc(SETTER[kind], { p_cell: cellId, p_path: null })
   if (error) return 'failed'
-  if (data === 'ok') await removeOldLogo(oldPath, null)
+  if (data === 'ok') await removeOld(oldPath, null)
   return data === 'ok' ? 'ok' : data === 'no_access' ? 'no_access' : 'failed'
 }
+
+export const uploadLogoRemote = (cellId: string, uri: string, mimeType: string, oldPath?: string | null) => uploadPageImageRemote('logo', cellId, uri, mimeType, oldPath)
+export const removeLogoRemote = (cellId: string, oldPath?: string | null) => removePageImageRemote('logo', cellId, oldPath)

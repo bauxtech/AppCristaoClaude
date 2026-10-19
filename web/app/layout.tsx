@@ -15,7 +15,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="pt-BR">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* As mesmas fontes do site acasa.app.br: Literata nos títulos, Roboto no texto e Nunito na marca. */}
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&family=Nunito:wght@800&family=Roboto:wght@400;500;700&display=swap" />
       </head>
       <body>
         <a className="skip" href="#conteudo">

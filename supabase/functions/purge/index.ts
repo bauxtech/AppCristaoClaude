@@ -21,11 +21,16 @@ Deno.serve(async (req) => {
   const paths = (expired ?? []).map((s) => s.audio_path as string)
   if (paths.length) await db.storage.from('sermon-audio').remove(paths)
 
-  // 3. Logos que a equipe tirou do ar: o arquivo sai do balde público. O aviso para o líder continua (logo_hidden).
+  // 3. Logos e capas que a equipe tirou do ar: o arquivo sai do balde público. O aviso para o líder continua.
   const { data: hidden } = await db.from('cells').select('id, logo_path').eq('logo_hidden', true).not('logo_path', 'is', null)
   for (const c of hidden ?? []) {
     const { error: rmError } = await db.storage.from('cell-logos').remove([c.logo_path as string])
     if (!rmError) await db.from('cells').update({ logo_path: null }).eq('id', c.id)
+  }
+  const { data: hiddenCovers } = await db.from('cells').select('id, web_cover_path').eq('web_cover_hidden', true).not('web_cover_path', 'is', null)
+  for (const c of hiddenCovers ?? []) {
+    const { error: rmError } = await db.storage.from('cell-logos').remove([c.web_cover_path as string])
+    if (!rmError) await db.from('cells').update({ web_cover_path: null }).eq('id', c.id)
   }
 
   // 4. Linhas do banco.

@@ -153,7 +153,7 @@ export function keyFromPath(path: string): string | null {
   return null
 }
 
-/** Endereço público do logo no balde cell-logos. */
+/** Endereço público do logo ou da capa no balde cell-logos. */
 function logoUrl(path: string | null) {
   return path && SUPABASE_URL ? `${SUPABASE_URL}/storage/v1/object/public/cell-logos/${path.split('/').map(encodeURIComponent).join('/')}` : null
 }
@@ -161,14 +161,14 @@ function logoUrl(path: string | null) {
 /** Dados públicos. Nunca inclui endereço completo, membros, telefones ou pedidos. */
 export async function getPublicCell(key: string, now = new Date()): Promise<PublicCell | null> {
   if (REMOTE) {
-    const rows = await rpc<{ name: string; type: string | null; weekday: number | null; time: string | null; neighborhood: string | null; leader_first_name: string | null; archived: boolean; paused: boolean; slug: string | null; logo_path: string | null }[]>('public_cell_page', { p_code: key })
+    const rows = await rpc<{ name: string; type: string | null; weekday: number | null; time: string | null; neighborhood: string | null; leader_first_name: string | null; archived: boolean; paused: boolean; slug: string | null; logo_path: string | null; cover_path?: string | null }[]>('public_cell_page', { p_code: key })
     const r = rows[0]
     if (!r) return null
     const day = r.weekday ?? 0
     const time = r.time ?? '20:00'
     const status = r.archived ? 'archived' : r.paused ? 'paused' : 'active'
     // Roteiro e materiais não aparecem na página pública até isso ser decidido.
-    return { code: key, slug: r.slug, logoUrl: logoUrl(r.logo_path), name: r.name, type: r.type, churchName: null, neighborhood: r.neighborhood ?? '', city: '', coverUrl: null, leaderFirstName: r.leader_first_name ?? '', day, time, status, nextMeeting: status === 'active' ? nextOf(day, time, now) : null, plan: null, materials: [] }
+    return { code: key, slug: r.slug, logoUrl: logoUrl(r.logo_path), name: r.name, type: r.type, churchName: null, neighborhood: r.neighborhood ?? '', city: '', coverUrl: logoUrl(r.cover_path ?? null), leaderFirstName: r.leader_first_name ?? '', day, time, status, nextMeeting: status === 'active' ? nextOf(day, time, now) : null, plan: null, materials: [] }
   }
   const c = demoCell(key)
   if (!c) return null
@@ -204,7 +204,7 @@ export async function leavePrayer(key: string, text: string, name?: string): Pro
   if (!c || c.status !== 'active') throw new Error('Célula indisponível')
 }
 
-export type ReportReason = 'logo' | 'nome' | 'outro'
+export type ReportReason = 'logo' | 'capa' | 'nome' | 'outro'
 
 /** Denúncia da página: vai para a equipe do acasa, sem login. */
 export async function reportPage(key: string, reason: ReportReason, detail?: string): Promise<void> {
