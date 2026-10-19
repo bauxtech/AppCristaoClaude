@@ -121,8 +121,9 @@ revoke all on public.web_attempt_salt from anon, authenticated;
 insert into public.web_attempt_salt (salt) values (encode(gen_random_bytes(32), 'hex')) on conflict do nothing;
 
 -- Conta a tentativa e diz se ainda cabe no limite do dia. Sem endereço conhecido, não limita.
+-- search_path com extensions: no Supabase o pgcrypto (digest) fica nesse schema.
 create or replace function public.web_attempt_ok(p_kind text, p_max int) returns boolean
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare v_ip text := public.request_ip(); v_hash text;
 begin
   if v_ip is null then return true; end if;
