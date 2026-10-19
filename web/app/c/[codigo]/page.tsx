@@ -3,6 +3,7 @@ import { DEMO_CODES } from '../../../lib/api'
 
 // Na exportação estática, só os códigos de exemplo viram páginas. Com o banco, a página lê o código da URL no navegador.
 // "_" é a página usada para qualquer código real: o Netlify entrega /c/_/ para /c/<código>/ (web/public/_redirects).
+// Na Vercel, qualquer outro valor é montado na hora (é o padrão do Next.js, sem exportação estática).
 export function generateStaticParams() {
   return [...DEMO_CODES, 'INVALIDO', '_'].map((codigo) => ({ codigo }))
 }

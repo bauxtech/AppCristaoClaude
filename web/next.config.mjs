@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
+
+// Na Vercel, a página roda como Next.js normal: qualquer /celulas/<nome> e /c/<código> é montado na hora.
+// STATIC_EXPORT=1 gera só arquivos prontos (prévia sem banco e Netlify, com web/public/_redirects).
+const staticExport = process.env.STATIC_EXPORT === '1'
+
 const nextConfig = {
-  // Exportação estática: a página lê os dados públicos direto do banco, pelo navegador.
-  output: 'export',
-  // O site acasa.app.br repassa /celulas e /c para este projeto. Com o endereço deste projeto aqui
-  // (variável ASSET_PREFIX na Vercel), os arquivos da página vêm daqui e não do site principal.
-  assetPrefix: process.env.ASSET_PREFIX || undefined,
-  trailingSlash: true,
+  ...(staticExport ? { output: 'export', trailingSlash: true } : {}),
   images: { unoptimized: true },
 }
 

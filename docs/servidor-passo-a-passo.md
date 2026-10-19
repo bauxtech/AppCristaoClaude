@@ -128,7 +128,19 @@ Se ela for publicada em algum serviço (por exemplo Netlify ou Vercel), coloque 
 
 Os valores são os mesmos do passo 1.
 
-O endereço público é `acasa.app.br/celulas/<nome>`. O arquivo `web/public/_redirects` já faz o Netlify entregar a página certa para qualquer nome. Na Vercel, isso precisa de uma regra parecida.
+O endereço público é `acasa.app.br/celulas/<nome>` (ou `/c/<código>` enquanto a célula não tem endereço próprio). Na Vercel, o projeto da página (pasta `web`) roda como Next.js normal e monta qualquer endereço na hora, sem regra extra. O site principal repassa os endereços para esse projeto com um `vercel.json`:
+
+```json
+{
+  "rewrites": [
+    { "source": "/celulas/:nome", "destination": "https://appcristaoclaude-web.vercel.app/celulas/:nome" },
+    { "source": "/c/:codigo", "destination": "https://appcristaoclaude-web.vercel.app/c/:codigo" },
+    { "source": "/_next/:path*", "destination": "https://appcristaoclaude-web.vercel.app/_next/:path*" }
+  ]
+}
+```
+
+Para gerar só arquivos prontos (prévia sem banco ou Netlify, com `web/public/_redirects`), use `STATIC_EXPORT=1`.
 
 A rotina `liberar-enderecos` (em `supabase/setup/rotinas.sql`) libera, todo dia, o endereço de célula parada há 90 dias e apaga os endereços antigos com mais de 30 dias. Rode o arquivo de novo no SQL Editor depois de aplicar a migração `20261016002600_cell_web_address.sql`.
 
