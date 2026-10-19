@@ -60,8 +60,8 @@ No Supabase, em **Edge Functions > Secrets**, crie `CRON_SECRET` com uma senha l
    | Plano | Mensal | Anual |
    | --- | --- | --- |
    | Essencial | `acasa_essencial_mensal` (R$ 14,90) | `acasa_essencial_anual` (R$ 109,90) |
-   | Completo | `acasa_completo_mensal` (R$ 24,90) | `acasa_completo_anual` (R$ 179,90) |
-   | Líder | `acasa_lider_mensal` (R$ 39,90) | `acasa_lider_anual` (R$ 299,90) |
+   | Completo | `acasa_completo_mensal` (R$ 24,90) | `acasa_completo_anual` (R$ 199,90) |
+   | Líder | `acasa_lider_mensal` (R$ 49,90) | `acasa_lider_anual` (R$ 399,90) |
 
    - **App Store Connect**: um único grupo de assinaturas com os 6 produtos, nesta ordem de nível: Líder no topo, depois Completo, depois Essencial. Assim a Apple cuida da troca de plano (subir vale na hora, descer vale na renovação). Ao escolher o preço, confira se o valor em real existe na tabela da Apple. Se não existir, me avise o valor mais próximo.
    - **Google Play Console**: 3 assinaturas com os IDs `acasa_essencial`, `acasa_completo` e `acasa_lider`. Cada uma com dois planos-base, de IDs `mensal` e `anual` (o Google não aceita sublinhado no ID do plano-base). O RevenueCat junta os dois, por exemplo `acasa_essencial:anual`, e o servidor lê o plano e o período desse nome.

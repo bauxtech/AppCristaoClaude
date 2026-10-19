@@ -1,10 +1,10 @@
 // POST /functions/v1/sermon-process  { sermonId, keepAudio }
 // O app sobe o áudio em sermon-audio/<id da pessoa>/... e chama esta função.
-// Confere login, assinatura e o limite de 5 cultos por mês. Responde na hora e processa em segundo plano.
+// Confere login, assinatura e o limite de cultos do plano. Transcreve até 90 minutos. Responde na hora e processa em segundo plano.
 import { askJsonFor, SUMMARY_MODEL } from '../_shared/claude.ts'
 import { audioExpiry, MAX_AUDIO_BYTES, MAX_PART_BYTES, processSermon, transcribeParts } from '../_shared/sermon.ts'
 import { useLimit } from '../_shared/usage.ts'
-import { splitAudio, type AudioPart } from '../_shared/audio-split.ts'
+import { firstParts, splitAudio, type AudioPart } from '../_shared/audio-split.ts'
 import { admin, asUser, cors, json, userId } from '../_shared/http.ts'
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void }
@@ -62,7 +62,8 @@ Deno.serve(async (req) => {
       if (error || !file) throw new Error('Áudio não encontrado')
       if (file.size > MAX_AUDIO_BYTES) throw new Error('Áudio maior que 50 MB')
       // A transcrição recusa áudio longo (mais de uns 23 minutos): vai em partes de até 10 minutos.
-      const parts = splitAudio(new Uint8Array(await file.arrayBuffer()))
+      // Só os primeiros 90 minutos vão para a transcrição e o resumo.
+      const parts = firstParts(splitAudio(new Uint8Array(await file.arrayBuffer())))
       if (parts.length === 1 && parts[0].bytes.length > MAX_PART_BYTES) throw new Error('Formato de áudio sem divisão e maior que 25 MB')
 
       started = true

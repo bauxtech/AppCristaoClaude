@@ -39,6 +39,8 @@ export interface Sermon {
 }
 
 export const AUDIO_DAYS = 30
+/** Duração máxima de um culto (decidido em 19/10, pelo custo da transcrição e do resumo). A gravação para sozinha. */
+export const MAX_SERMON_MINUTES = 90
 
 export function verseLabel(v: VerseRef) {
   return `${v.book} ${v.chapter}${v.verse ? `:${v.verse}` : ''}`

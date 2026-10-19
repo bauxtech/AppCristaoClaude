@@ -23,6 +23,17 @@ export function detectKind(b: Uint8Array): AudioKind {
   return 'other'
 }
 
+/** Culto com no máximo 90 minutos (decidido em 19/10): só as primeiras partes vão para a transcrição. */
+export const MAX_SERMON_SECONDS = 90 * 60
+
+/**
+ * Fica com as partes até o limite de duração. As partes têm até PART_SECONDS cada; quando o arquivo é dividido
+ * pelo tamanho antes do tempo, o corte fica um pouco antes dos 90 minutos, nunca depois.
+ */
+export function firstParts<T>(parts: T[], maxSeconds = MAX_SERMON_SECONDS, partSeconds = PART_SECONDS): T[] {
+  return parts.slice(0, Math.max(1, Math.ceil(maxSeconds / partSeconds)))
+}
+
 /** Divide o áudio. Se o formato não for reconhecido ou o arquivo estiver fora do padrão, devolve o arquivo inteiro. */
 export function splitAudio(b: Uint8Array, maxSeconds = PART_SECONDS, maxBytes = PART_BYTES): AudioPart[] {
   const kind = detectKind(b)

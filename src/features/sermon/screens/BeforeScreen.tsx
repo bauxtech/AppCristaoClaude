@@ -6,7 +6,7 @@ import { AppText, Button, Card, Page, Switch, TextField } from '../../../compone
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { useChurch } from '../../church/ChurchContext'
-import { AUDIO_DAYS } from '../data'
+import { AUDIO_DAYS, MAX_SERMON_MINUTES } from '../data'
 import { useSermonQuota } from '../quota'
 import { useSermons } from '../SermonContext'
 import { UsageCard } from './ListScreen'
@@ -21,7 +21,8 @@ export function BeforeScreen() {
   const { recordingDefault } = useSettings()
   const [keepAudio, setKeepAudio] = useState(recordingDefault === 'audio')
   const [perm, setPerm] = useState<'ask' | 'explain' | 'denied'>('ask')
-  const full = useSermonQuota(sermons).full
+  const quota = useSermonQuota(sermons)
+  const full = quota.full
 
   async function start() {
     const current = await getRecordingPermissionsAsync()
@@ -59,7 +60,7 @@ export function BeforeScreen() {
       <Card style={{ flexDirection: 'row', gap: 10, backgroundColor: colors.primarySoft, borderColor: colors.primary }}>
         <Icon name="info" size={18} color={colors.primary} />
         <AppText variant="body" style={{ flex: 1 }}>
-          A gravação é para uso pessoal. Respeite as orientações da sua igreja sobre gravar o culto.
+          {`A gravação é para uso pessoal. Respeite as orientações da sua igreja sobre gravar o culto. Cada culto pode ter até ${MAX_SERMON_MINUTES} minutos.`}
         </AppText>
       </Card>
       <UsageCard />
@@ -74,7 +75,7 @@ export function BeforeScreen() {
         <Switch label="Guardar o áudio por 30 dias" value={keepAudio} onChange={setKeepAudio} />
       </Card>
       <Button label="Começar a gravar" icon="mic" disabled={full} onPress={start} />
-      {full ? <AppText variant="small" tone="danger">Você já usou os 5 cultos deste mês.</AppText> : null}
+      {full ? <AppText variant="small" tone="danger">{`Você já usou os ${quota.limit} cultos deste período.`}</AppText> : null}
     </Page>
   )
 }

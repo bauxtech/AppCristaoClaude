@@ -6,6 +6,7 @@ import { formatDuration } from '../../../lib/date'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { useSermons } from '../SermonContext'
+import { MAX_SERMON_MINUTES } from '../data'
 
 const BARS = Array.from({ length: 40 }, (_, i) => 25 + ((i * 37) % 60))
 
@@ -26,7 +27,7 @@ export function TrimScreen() {
   if (!total) {
     return (
       <Page title="Transcrever áudio" onBack={() => router.back()}>
-        <AppText variant="body">O áudio importado vai ser transcrito inteiro.</AppText>
+        <AppText variant="body">{`O áudio importado é transcrito até ${MAX_SERMON_MINUTES} minutos. O que passar disso fica de fora.`}</AppText>
         <Button label="Transcrever" onPress={transcribe} />
       </Page>
     )

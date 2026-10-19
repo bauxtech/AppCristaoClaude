@@ -33,16 +33,16 @@ export const PLANS: PlanInfo[] = [
   {
     id: 'completo',
     name: 'Completo',
-    prices: { monthly: { amount: 'R$ 24,90', per: 'por mês' }, annual: { amount: 'R$ 179,90', per: 'por ano' } },
-    annualSaving: '40%',
-    items: ['Tudo do Essencial', 'Chat bíblico: 10 perguntas por dia', 'Gravar e transcrever culto: 4 por mês'],
+    prices: { monthly: { amount: 'R$ 24,90', per: 'por mês' }, annual: { amount: 'R$ 199,90', per: 'por ano' } },
+    annualSaving: '33%',
+    items: ['Tudo do Essencial', 'Chat bíblico: 10 perguntas por dia', 'Gravar e transcrever culto: 4 por mês, até 90 minutos cada'],
   },
   {
     id: 'lider',
     name: 'Líder',
-    prices: { monthly: { amount: 'R$ 39,90', per: 'por mês' }, annual: { amount: 'R$ 299,90', per: 'por ano' } },
-    annualSaving: '37%',
-    items: ['Tudo do Completo', 'Gravar e transcrever culto: 8 por mês', 'Criar e conduzir célula: escala, roteiro, presença, membros, avisos e página web', 'Até 20 membros da célula entram sem plano, só para as funções da célula'],
+    prices: { monthly: { amount: 'R$ 49,90', per: 'por mês' }, annual: { amount: 'R$ 399,90', per: 'por ano' } },
+    annualSaving: '33%',
+    items: ['Tudo do Completo', 'Gravar e transcrever culto: 8 por mês, até 90 minutos cada', 'Criar e conduzir célula: escala, roteiro, presença, membros, avisos e página web', 'Até 20 membros da célula entram sem plano, só para as funções da célula'],
   },
 ]
 

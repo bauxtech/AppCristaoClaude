@@ -11,6 +11,7 @@ import { palettes } from '../../../theme/colors'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts, size } from '../../../theme/typography'
 import { useSermons } from '../SermonContext'
+import { MAX_SERMON_MINUTES } from '../data'
 
 const ON_DARK = '#FFFFFF'
 const SOFT = 'rgba(255,255,255,0.78)'
@@ -32,6 +33,13 @@ export function LiveScreen() {
   const [error, setError] = useState<string | null>(null)
   const finishing = useRef(false)
   const secs = Math.floor((state.durationMillis ?? 0) / 1000)
+  const maxSecs = MAX_SERMON_MINUTES * 60
+  const minutesLeft = Math.ceil((maxSecs - secs) / 60)
+
+  // Chegou a 90 minutos: encerra sozinha e segue para o ajuste, sem perder o que foi gravado.
+  useEffect(() => {
+    if (secs >= maxSecs && !finishing.current) void finish()
+  }, [secs]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     ;(async () => {
@@ -107,6 +115,11 @@ export function LiveScreen() {
           <ConfirmCard title="Descartar gravação?" message="O áudio gravado até agora será perdido." confirmLabel="Descartar" onCancel={() => setConfirm(false)} onConfirm={discard} />
         ) : null}
         {error ? <AppText style={{ color: colors.danger }}>{error}</AppText> : null}
+        {secs >= maxSecs - 10 * 60 ? (
+          <AppText accessibilityLiveRegion="polite" style={{ color: ON_DARK, fontFamily: fonts.semibold }}>
+            {`A gravação para sozinha aos ${MAX_SERMON_MINUTES} minutos. ${minutesLeft <= 1 ? 'Falta menos de 1 minuto.' : `Faltam ${minutesLeft} minutos.`}`}
+          </AppText>
+        ) : null}
         <View style={{ borderRadius: 16, padding: 16, backgroundColor: 'rgba(255,255,255,0.08)', gap: 6 }}>
           <AppText style={{ color: SOFT, fontSize: size.small }}>Legenda ao vivo</AppText>
           <AppText style={{ color: ON_DARK }}>A legenda ao vivo e os versículos citados aparecem aqui quando a transcrição estiver ligada ao servidor. O áudio está sendo gravado.</AppText>

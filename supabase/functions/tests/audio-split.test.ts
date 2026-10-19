@@ -89,3 +89,12 @@ describe('transcrição em partes', () => {
     await expect(transcribeParts([0, 1], async (i) => { if (i === 1) throw new Error('400'); return 'ok' })).rejects.toThrow('400')
   })
 })
+
+describe('culto de até 90 minutos', () => {
+  test('só as primeiras 9 partes de 10 minutos vão para a transcrição', async () => {
+    const { firstParts } = await import('../_shared/audio-split.ts')
+    const parts = Array.from({ length: 18 }, (_, i) => i)
+    expect(firstParts(parts)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8])
+    expect(firstParts([0, 1])).toEqual([0, 1])
+  })
+})

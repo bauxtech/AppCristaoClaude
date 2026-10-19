@@ -54,10 +54,10 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Logo da célula: só o líder envia, imagem até 1 MB, público na página. Quem abre a página pode denunciar (web_reports, vai para a equipe); o logo denunciado some na hora para quem denunciou. A equipe tira do ar com cells.logo_hidden.
 - Idade: só maiores de 18 no lançamento.
 - Bíblia: Bíblia Livre no lançamento (licença Creative Commons Atribuição, uso comercial permitido, crédito obrigatório no app). Não é domínio público. As licenciadas entram depois. Origem e licença registradas em src/features/bible/translations.ts e na tabela bible_translations.
-- Planos (decididos em 12/10), cada um mensal ou anual, com os mesmos limites:
+- Planos (decididos em 12/10, preços do Completo anual e do Líder revistos em 19/10), cada um mensal ou anual, com os mesmos limites:
   - Essencial (R$ 14,90/mês ou R$ 109,90/ano): Bíblia completa, planos de leitura, oração guiada, diário, pedidos, campanhas, igreja, ministérios, cursos (cadastro à mão; aulas, presença, material e notas), música, participar de célula, chat com 5 perguntas por dia. Sem culto. Sem curso pela foto do cronograma (botão com cadeado e "No plano Completo").
-  - Completo (R$ 24,90/mês ou R$ 179,90/ano): tudo do Essencial, chat com 10 perguntas por dia, 4 cultos por período, curso pela foto ou PDF do cronograma.
-  - Líder (R$ 39,90/mês ou R$ 299,90/ano): tudo do Completo, 8 cultos por período, criar e conduzir célula. Até 20 vagas para membros sem plano próprio, só para as funções da célula. Quem tem plano próprio e visitante não ocupam vaga. Quem o líder aprova como membro (ou o visitante que vira membro) pega uma vaga livre na hora. Quando uma vaga abre, ela fica livre até o líder dar para alguém. O líder vê na tela de membros quem está sem vaga e pode trocar (tira de um e dá para outro).
+  - Completo (R$ 24,90/mês ou R$ 199,90/ano): tudo do Essencial, chat com 10 perguntas por dia, 4 cultos por período, curso pela foto ou PDF do cronograma.
+  - Líder (R$ 49,90/mês ou R$ 399,90/ano): tudo do Completo, 8 cultos por período, criar e conduzir célula, página da célula na internet. Até 20 vagas para membros sem plano próprio, só para as funções da célula. Quem tem plano próprio e visitante não ocupam vaga. Quem o líder aprova como membro (ou o visitante que vira membro) pega uma vaga livre na hora. Quando uma vaga abre, ela fica livre até o líder dar para alguém. O líder vê na tela de membros quem está sem vaga e pode trocar (tira de um e dá para outro).
   - Funções e limites ficam na tabela plan_config do banco, editável no painel do Supabase sem versão nova do app.
 - Teste grátis: 7 dias corridos com acesso total, contados do primeiro login, controlados pelo servidor, sem forma de pagamento. Limites do teste: 10 perguntas por dia e 2 cultos. Um teste por número de celular (o hash do número fica guardado mesmo depois de excluir a conta). Quem entra pelo Google confirma o celular para começar o teste. Se a Apple recusar o teste pelo servidor, trocar app_settings.trial_mode para "store" e usar o teste da loja.
 - Depois do teste sem plano: grátis para sempre ler a Bíblia, trocar de tradução, ouvir capítulos (voz do celular), buscar, grifar, anotar, favoritar, marcar como lido, passagem e reflexão do dia na Home e participar da célula de um líder com o plano Líder. O resto fica bloqueado. O que a pessoa criou nunca é apagado: fica só para leitura e ela pode apagar. Mesma regra quando a assinatura vence ou é cancelada.
@@ -80,12 +80,12 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Conteúdo diário: escrito pela IA e publicado direto, sem revisão. Gerado uma vez por dia, igual para todos, nunca por pessoa. A reflexão do dia é livre para todos, inclusive sem plano. O versículo vem sempre do texto bíblico do app, nunca da IA.
 - Igreja: busca só pelo CNPJ (Receita) e cadastro à mão. Sem Google Places, por custo. Nome e endereço vêm do CNPJ. Horários de culto e acessibilidade: cada pessoa edita os da própria igreja e só ela vê. Na igreja cadastrada à mão, o que quem cadastrou informa vale para todos até a pessoa guardar os dela.
 - Música: só sugestões, sem conexão com Spotify. Só músicas brasileiras. A lista é escolhida pela IA e pode ser trocada pela equipe.
-- Culto longo: o servidor divide o áudio em partes de até 10 minutos antes da transcrição.
+- Culto longo: o servidor divide o áudio em partes de até 10 minutos antes da transcrição. Cada culto tem até 90 minutos (19/10): a gravação para sozinha aos 90 minutos e o servidor transcreve só os primeiros 90 minutos do áudio importado.
 - Chat: só fala de Bíblia e fé cristã, cita só o texto bíblico do app e mostra a fonte. Se a pessoa falar em se machucar, mostra o CVV, telefone 188.
 
 ## EM ABERTO, PERGUNTAR ANTES DE CODAR
 - Pagamento por Pix: fora do escopo agora.
-- Preços em real: confirmar na tabela de preços da App Store (R$ 14,90, 39,90, 109,90 e 179,90 não foram confirmados). No Google Play qualquer valor vale.
+- Preços em real: confirmar na tabela de preços da App Store (R$ 14,90, 24,90, 49,90, 109,90, 199,90 e 399,90 não foram confirmados). No Google Play qualquer valor vale.
 
 ## DADOS E PRIVACIDADE
 - Fé e pedido de oração são dado sensível pela LGPD. Consentimento separado no cadastro, exportar e apagar dados.
