@@ -598,7 +598,7 @@ CÉLULA
 6. Na carona, quando o pedido é aceito, aparece o botão "Falar no WhatsApp". O telefone não é mostrado para a célula.
 
 PÁGINA WEB DA CÉLULA
-7. A página mostra só o bairro. O endereço completo aparece depois que a pessoa deixa nome e telefone.
+7. A página é um cartão de visita (19/10): nome, tipo, texto do líder, bairro e, se o líder quiser, dia e horário. O endereço nunca aparece na página. Quem deixa nome e telefone recebe o código para entrar pelo app.
 
 CADASTRO
 8. Na tela de Termos, acrescente a caixa "Tenho 18 anos ou mais", obrigatória. Quem não marca vê o aviso de que o app é só para maiores de 18.
@@ -626,7 +626,7 @@ Esta parte não vai para o Make. São as regras que nenhuma tela mostra e que o 
 | Papéis | O auxiliar marca presença e edita a escala. O anfitrião não tem permissão a mais. |
 | Telefone dos membros | Aparece só para o líder. |
 | Visitante | Vê reunião, endereço e roteiro. Não vê os pedidos de oração. |
-| Endereço na página web | Só o bairro. O endereço completo aparece depois de deixar nome e telefone. |
+| Endereço na página web | Nunca aparece. Só o bairro. O endereço fica no app, depois da aprovação do líder (19/10). |
 | Menores de idade | Só maiores de 18 no lançamento. |
 | Tradução da Bíblia | Tradução de domínio público no lançamento. As licenciadas entram depois. |
 | Teste grátis | 7 dias controlados pelo app, sem forma de pagamento. |

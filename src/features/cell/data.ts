@@ -97,6 +97,10 @@ export interface Cell {
   webCoverPath?: string | null
   /** A equipe tirou a capa do ar depois de uma denúncia. */
   webCoverHidden?: boolean
+  /** Texto "Sobre a célula" da página na internet, até 300 letras. */
+  webBio?: string
+  /** A página mostra o dia e o horário da reunião. */
+  webShowSchedule?: boolean
   /** A equipe tirou o logo do ar depois de uma denúncia. */
   logoHidden?: boolean
   code: string

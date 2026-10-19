@@ -1,34 +1,29 @@
-// O que a página pública da célula pode mostrar. Regras decididas:
-// - Só o bairro. O endereço completo aparece depois de a pessoa deixar nome e telefone.
-// - Nada de lista de membros, telefones ou pedidos de oração da célula na página.
-// No banco, isto vira uma função pública que devolve só estes campos. O resto fica protegido pelas regras de acesso.
+// O que a página pública da célula mostra (decisão de 19/10: um cartão de visita).
+// Só nome, tipo, o texto do líder, bairro, logo, capa e, se o líder quiser, dia e horário.
+// Nada interno: sem endereço, roteiro, materiais, pedidos de oração, membros, telefones ou nome do líder.
+// Quem quer participar deixa nome e telefone e recebe o código para entrar pelo app, onde vê o resto depois da aprovação.
 
 export interface PublicCell {
-  /** Como a página acha a célula: o endereço (/celulas/<nome>) ou 'c:<código>' nos links antigos. */
+  /** Como a página acha a célula: o endereço (/celulas/<nome>) ou 'c:<código>' nos links pelo código. */
   code: string
   /** Endereço próprio, quando o líder escolheu. */
   slug: string | null
   /** Logo da célula, quando o líder enviou e a equipe não tirou do ar. */
   logoUrl: string | null
+  coverUrl: string | null
   name: string
   type: string | null
-  churchName: string | null
+  /** Texto "Sobre a célula", escrito pelo líder. */
+  bio: string | null
   neighborhood: string
   city: string
-  coverUrl: string | null
-  leaderFirstName: string
-  /** 0 = domingo */
-  day: number
-  time: string
+  /** Dia (0 = domingo) e horário. null quando o líder escolheu não mostrar. */
+  schedule: { day: number; time: string } | null
   /** paused: o líder está sem o plano Líder; a célula volta quando ele assinar de novo. */
   status: 'active' | 'archived' | 'paused'
-  nextMeeting: { date: string; time: string } | null
-  plan: { title: string; ref: string; sections: { title: string; content: string; minutes: number }[] } | null
-  materials: { name: string; kind: 'PDF' | 'Imagem'; size: string; url: string }[]
 }
 
-/** Só devolvido depois de deixar contato. */
-export interface PrivateAddress {
-  address: string
-  reference: string
+/** Devolvido depois de deixar nome e telefone: o código para entrar na célula pelo app. */
+export interface JoinCode {
+  inviteCode: string
 }

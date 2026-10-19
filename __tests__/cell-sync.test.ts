@@ -36,6 +36,14 @@ test('líder muda dados, roteiro e tamanho máximo numa chamada só', () => {
   ])
 })
 
+test('texto e horário da página vão para o banco', () => {
+  const a = base()
+  expect(cellDiffOps(a, { ...a, webBio: '  Somos jovens  ', webShowSchedule: false })).toEqual([
+    { kind: 'update', table: 'cells', values: { web_bio: 'Somos jovens', web_show_schedule: false }, match: { id: a.id } },
+  ])
+  expect(cellDiffOps({ ...a, webBio: 'x' }, { ...a, webBio: '' })).toEqual([{ kind: 'update', table: 'cells', values: { web_bio: null }, match: { id: a.id } }])
+})
+
 test('aprovar entrada vira membro aprovado; recusar marca como recusado', () => {
   const a = base()
   const approved = { ...a, pendingJoins: [], members: [...a.members, { id: FABI, name: 'Fabi', role: 'membro' as const, phone: '', since: '', active: true, lastAttendance: [] }] }

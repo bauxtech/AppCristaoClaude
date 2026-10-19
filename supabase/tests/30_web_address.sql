@@ -64,12 +64,14 @@ select tests.ok('o link antigo /c/<código> continua abrindo a página',
   (select name from public.public_cell_page('c:' || :'rui_code')) = 'Célula Viva');
 select tests.ok('um endereço com cara de código não abre a célula de outro código',
   not exists (select 1 from public.public_cell_page(lower(:'sara_code'))));
-select tests.ok('pelo endereço novo, deixar nome e telefone devolve o endereço completo',
-  (select address from public.leave_contact('celula-viva', 'Visitante', '11987654321')) = 'Rua Secreta, 10');
-select public.leave_web_prayer('celula-viva', null, 'Pedido pela página');
+select tests.ok('pelo endereço novo, deixar nome e telefone devolve só o código de convite',
+  (select invite_code from public.leave_contact('celula-viva', 'Visitante', '11987654321')) = :'rui_code');
+select tests.ok('a página não recebe mais pedido de oração', tests.denied($$select public.leave_web_prayer('celula-viva', null, 'Pedido')$$));
+reset role;
+insert into public.cell_web_prayers (cell_id, text) values ('10000000-0000-0000-0000-000000000031', 'Pedido pela página');
+select tests.as_anon();
 select public.report_cell_page('celula-viva', 'logo', 'Imagem imprópria');
 reset role;
-select tests.ok('pelo endereço novo, o pedido de oração chega ao líder', exists (select 1 from public.cell_web_prayers where text = 'Pedido pela página' and cell_id = '10000000-0000-0000-0000-000000000031'));
 select tests.ok('quem abre a página denuncia sem login', (select count(*) from public.web_reports where cell_id = '10000000-0000-0000-0000-000000000031') = 1);
 select tests.as_anon();
 select tests.ok('denúncia com motivo fora da lista não entra', tests.denied($$select public.report_cell_page('celula-viva', 'qualquer')$$));
@@ -232,10 +234,33 @@ select tests.ok('o 6º contato do mesmo aparelho no dia é recusado', tests.deni
 reset role;
 select set_config('request.headers', '{"cf-connecting-ip": "201.5.5.6"}', false);
 select tests.as_anon();
-select tests.ok('outro aparelho continua deixando contato', (select address from public.leave_contact('celula-viva', 'Pessoa', '11980000077')) = 'Rua Secreta, 10');
+select tests.ok('outro aparelho continua deixando contato', (select invite_code from public.leave_contact('celula-viva', 'Pessoa', '11980000077')) is not null);
 reset role;
 select set_config('request.headers', '', false);
 select tests.ok('o endereço de internet não fica guardado, só um código', not exists (select 1 from public.web_attempts where ip_hash like '%201.5%'));
 select tests.as_anon();
 select tests.ok('ninguém lê as tentativas', tests.denied($$select * from public.web_attempts$$));
+reset role;
+
+-- ─── Cartão de visita (19/10) ────────────────────────────────────────────────
+select tests.as_user('00000000-0000-0000-0000-000000000032');
+update public.cells set web_bio = 'Invadido' where id = '10000000-0000-0000-0000-000000000031';
+reset role;
+select tests.ok('quem não é líder não muda o texto da página', (select web_bio from public.cells where id = '10000000-0000-0000-0000-000000000031') is null);
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+select tests.ok('texto da página com mais de 300 letras não vale',
+  tests.denied($$update public.cells set web_bio = repeat('a', 301) where id = '10000000-0000-0000-0000-000000000031'$$));
+update public.cells set web_bio = 'Jovens que se reúnem para ler a Bíblia.', web_show_schedule = false where id = '10000000-0000-0000-0000-000000000031';
+reset role;
+select tests.ok('o líder escreve o texto e esconde o horário', (select web_bio is not null and not web_show_schedule from public.cells where id = '10000000-0000-0000-0000-000000000031'));
+select tests.as_anon();
+select tests.ok('a página mostra a biografia', (select bio from public.public_cell_page('celula-viva')) = 'Jovens que se reúnem para ler a Bíblia.');
+select tests.ok('com o horário escondido, a página não mostra dia nem hora', (select weekday is null and "time" is null from public.public_cell_page('celula-viva')));
+select tests.ok('a página não tem endereço nem nome do líder',
+  pg_get_function_result('public.public_cell_page(text)'::regprocedure) !~ '(address|reference|leader)');
+select tests.ok('sem login, ninguém usa a prévia do convite do app', tests.denied($$select * from public.invite_preview('ABC123')$$));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000033');
+select tests.ok('no app, quem tem o código vê nome, líder e dia', (select name from public.invite_preview(lower(:'rui_code'))) = 'Célula Viva'
+  and (select leader_first_name from public.invite_preview(:'rui_code')) is not null);
 reset role;

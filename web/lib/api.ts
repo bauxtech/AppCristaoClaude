@@ -1,9 +1,9 @@
 // Acesso aos dados da página.
 // Com NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY definidos, chama as funções públicas do banco
-// (public_cell_page, leave_contact, leave_web_prayer, report_cell_page). A chave anon é pública por desenho: as regras ficam no banco.
-// Sem elas, usa os dados de exemplo abaixo. O endereço NUNCA fica no código da página: só chega depois do contato.
+// (public_cell_page, leave_contact, report_cell_page). A chave anon é pública por desenho: as regras ficam no banco.
+// Sem elas, usa os dados de exemplo abaixo. O endereço da reunião nunca chega à página: só no app, depois da aprovação do líder.
 
-import type { PrivateAddress, PublicCell } from './data'
+import type { JoinCode, PublicCell } from './data'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -19,94 +19,59 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
   return res.json() as Promise<T>
 }
 
-// Exemplo para a prévia: só dados públicos. O endereço de exemplo é genérico de propósito.
-const DEMO_ADDRESS: PrivateAddress = { address: 'Endereço de exemplo (na versão real, vem do servidor)', reference: '' }
-
+// Exemplo para a prévia: só dados públicos.
 const DEMO: Record<string, PublicCell> = {
   ABC123: {
     code: 'ABC123',
     slug: 'jovens-da-central',
     logoUrl: null,
+    coverUrl: null,
     name: 'Jovens da Central',
     type: 'Jovens',
-    churchName: 'Igreja Batista Central de São Paulo',
+    bio: 'Jovens de 18 a 30 anos que se encontram em casa para ler a Bíblia, orar e comer juntos.',
     neighborhood: 'Pinheiros',
     city: 'São Paulo, SP',
-    coverUrl: null,
-    leaderFirstName: 'João',
-    day: 3,
-    time: '20:00',
+    schedule: { day: 3, time: '20:00' },
     status: 'active',
-    nextMeeting: null,
-    plan: {
-      title: 'Vivendo com propósito',
-      ref: 'João 15:1-17',
-      sections: [
-        { title: 'Quebra-gelo', content: 'Pergunta: Qual foi o melhor momento da sua semana?', minutes: 10 },
-        { title: 'Louvor', content: 'Ousado Amor, Isaias Saad\nLugar Secreto, Gabriela Rocha', minutes: 15 },
-        { title: 'Palavra', content: 'Tema: Vivendo com propósito (baseado no culto de domingo)\nTexto base: João 15:1-17', minutes: 20 },
-        { title: 'Perguntas para reflexão', content: '1. Como você tem buscado viver com propósito?\n2. O que significa "permanecer em Cristo" no seu dia a dia?', minutes: 10 },
-        { title: 'Oração', content: 'Pedidos do grupo. Oração pelos ausentes.', minutes: 10 },
-      ],
-    },
-    materials: [
-      { name: 'Estudo: Vivendo com propósito.pdf', kind: 'PDF', size: '1,2 MB', url: '#' },
-      { name: 'Louvor outubro.pdf', kind: 'PDF', size: '0,8 MB', url: '#' },
-    ],
   },
   NOVA01: {
     code: 'NOVA01',
     slug: 'celula-do-bairro',
     logoUrl: null,
+    coverUrl: null,
     name: 'Célula do Bairro',
     type: 'Mista',
-    churchName: null,
+    bio: null,
     neighborhood: 'Centro',
     city: 'Recife, PE',
-    coverUrl: null,
-    leaderFirstName: 'Ana',
-    day: 5,
-    time: '19:30',
+    schedule: null,
     status: 'active',
-    nextMeeting: null,
-    plan: null,
-    materials: [],
   },
   PAU001: {
     code: 'PAU001',
     slug: 'celula-parada',
     logoUrl: null,
+    coverUrl: null,
     name: 'Célula Parada',
     type: 'Mista',
-    churchName: null,
+    bio: null,
     neighborhood: 'Centro',
     city: 'Salvador, BA',
-    coverUrl: null,
-    leaderFirstName: 'Lia',
-    day: 2,
-    time: '20:00',
+    schedule: { day: 2, time: '20:00' },
     status: 'paused',
-    nextMeeting: null,
-    plan: null,
-    materials: [],
   },
   ARQ001: {
     code: 'ARQ001',
     slug: null,
     logoUrl: null,
+    coverUrl: null,
     name: 'Casais em Missão',
     type: 'Casais',
-    churchName: null,
+    bio: null,
     neighborhood: 'Boa Viagem',
     city: 'Recife, PE',
-    coverUrl: null,
-    leaderFirstName: 'Pedro',
-    day: 6,
-    time: '19:00',
+    schedule: { day: 6, time: '19:00' },
     status: 'archived',
-    nextMeeting: null,
-    plan: null,
-    materials: [],
   },
 }
 
@@ -116,14 +81,6 @@ export const DEMO_SLUGS = Object.values(DEMO).flatMap((c) => (c.slug ? [c.slug] 
 function demoCell(key: string) {
   if (key.startsWith('c:')) return DEMO[normalizeCode(key.slice(2))]
   return Object.values(DEMO).find((c) => c.slug === key.toLowerCase()) ?? DEMO[normalizeCode(key)]
-}
-
-function nextOf(day: number, time: string, now: Date) {
-  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + ((day - now.getDay() + 7) % 7))
-  const [h, m] = time.split(':').map(Number)
-  if (d.toDateString() === now.toDateString() && (now.getHours() > h || (now.getHours() === h && now.getMinutes() > m))) d.setDate(d.getDate() + 7)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, time }
 }
 
 export function normalizeCode(raw: string) {
@@ -158,50 +115,46 @@ function logoUrl(path: string | null) {
   return path && SUPABASE_URL ? `${SUPABASE_URL}/storage/v1/object/public/cell-logos/${path.split('/').map(encodeURIComponent).join('/')}` : null
 }
 
-/** Dados públicos. Nunca inclui endereço completo, membros, telefones ou pedidos. */
-export async function getPublicCell(key: string, now = new Date()): Promise<PublicCell | null> {
+/** Dados públicos. Nunca inclui endereço, membros, telefones, pedidos ou nome do líder. */
+export async function getPublicCell(key: string): Promise<PublicCell | null> {
   if (REMOTE) {
-    const rows = await rpc<{ name: string; type: string | null; weekday: number | null; time: string | null; neighborhood: string | null; leader_first_name: string | null; archived: boolean; paused: boolean; slug: string | null; logo_path: string | null; cover_path?: string | null }[]>('public_cell_page', { p_code: key })
+    const rows = await rpc<{ name: string; type: string | null; bio: string | null; weekday: number | null; time: string | null; neighborhood: string | null; archived: boolean; paused: boolean; slug: string | null; logo_path: string | null; cover_path: string | null }[]>('public_cell_page', { p_code: key })
     const r = rows[0]
     if (!r) return null
-    const day = r.weekday ?? 0
-    const time = r.time ?? '20:00'
     const status = r.archived ? 'archived' : r.paused ? 'paused' : 'active'
-    // Roteiro e materiais não aparecem na página pública até isso ser decidido.
-    return { code: key, slug: r.slug, logoUrl: logoUrl(r.logo_path), name: r.name, type: r.type, churchName: null, neighborhood: r.neighborhood ?? '', city: '', coverUrl: logoUrl(r.cover_path ?? null), leaderFirstName: r.leader_first_name ?? '', day, time, status, nextMeeting: status === 'active' ? nextOf(day, time, now) : null, plan: null, materials: [] }
+    return {
+      code: key,
+      slug: r.slug,
+      logoUrl: logoUrl(r.logo_path),
+      coverUrl: logoUrl(r.cover_path),
+      name: r.name,
+      type: r.type,
+      bio: r.bio,
+      neighborhood: r.neighborhood ?? '',
+      city: '',
+      schedule: r.weekday != null && r.time ? { day: r.weekday, time: r.time } : null,
+      status,
+    }
   }
-  const c = demoCell(key)
-  if (!c) return null
-  return { ...c, nextMeeting: c.status === 'active' ? nextOf(c.day, c.time, now) : null }
+  return demoCell(key) ?? null
 }
 
 export function isValidPhone(digits: string) {
   return /^\d{10,11}$/.test(digits) && digits.slice(2, 3) !== '0'
 }
 
-/** Deixa nome e telefone para o líder. Devolve o endereço completo. */
-export async function leaveContact(key: string, name: string, phoneDigits: string): Promise<PrivateAddress> {
+/** Deixa nome e telefone para o líder. Devolve o código para entrar na célula pelo app. */
+export async function leaveContact(key: string, name: string, phoneDigits: string): Promise<JoinCode> {
   if (name.trim().length < 2) throw new Error('Nome inválido')
   if (!isValidPhone(phoneDigits)) throw new Error('Telefone inválido')
   if (REMOTE) {
-    const rows = await rpc<PrivateAddress[]>('leave_contact', { p_code: key, p_name: name.trim(), p_phone: phoneDigits })
-    if (!rows[0]) throw new Error('Célula indisponível')
-    return { address: rows[0].address ?? '', reference: rows[0].reference ?? '' }
+    const rows = await rpc<{ invite_code: string }[]>('leave_contact', { p_code: key, p_name: name.trim(), p_phone: phoneDigits })
+    if (!rows[0]?.invite_code) throw new Error('Célula indisponível')
+    return { inviteCode: rows[0].invite_code }
   }
   const c = demoCell(key)
   if (!c || c.status !== 'active') throw new Error('Célula indisponível')
-  return DEMO_ADDRESS
-}
-
-/** Pedido de oração para o líder. Vai só para o líder, não aparece na página. */
-export async function leavePrayer(key: string, text: string, name?: string): Promise<void> {
-  if (!text.trim()) throw new Error('Pedido vazio')
-  if (REMOTE) {
-    await rpc('leave_web_prayer', { p_code: key, p_name: name ?? null, p_text: text.trim() })
-    return
-  }
-  const c = demoCell(key)
-  if (!c || c.status !== 'active') throw new Error('Célula indisponível')
+  return { inviteCode: c.code }
 }
 
 export type ReportReason = 'logo' | 'capa' | 'nome' | 'outro'

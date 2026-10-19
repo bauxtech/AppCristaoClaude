@@ -1,14 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getPublicCell, isValidPhone, keyFromPath, leaveContact, leavePrayer, REMOTE, reportPage, type ReportReason } from '../lib/api'
-import type { PrivateAddress, PublicCell } from '../lib/data'
-import { formatMeeting, maskPhone, weekly } from '../lib/format'
+import { getPublicCell, isValidPhone, keyFromPath, leaveContact, REMOTE, reportPage, type ReportReason } from '../lib/api'
+import type { PublicCell } from '../lib/data'
+import { maskPhone, weekly } from '../lib/format'
 import { AlertIcon, CheckIcon } from './Icons'
 
 type Load = { state: 'loading' } | { state: 'missing' } | { state: 'error' } | { state: 'ok'; cell: PublicCell }
 
-/** Página pública da célula. Mostra só o bairro até a pessoa deixar nome e telefone. */
+/** Página pública da célula: um cartão de visita. O que é interno da célula fica só no app. */
 export function CellPage({ code }: { code: string }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
 
@@ -105,13 +105,13 @@ function useWide() {
 
 function ActiveCell({ cell }: { cell: PublicCell }) {
   const wide = useWide()
-  const [address, setAddress] = useState<PrivateAddress | null>(null)
+  const [joinCode, setJoinCode] = useState<string | null>(null)
   const [logo, setLogo] = useState<string | null>(null)
   const [cover, setCover] = useState<string | null>(null)
   useEffect(() => setLogo(cell.logoUrl && !logoHiddenHere(cell.logoUrl) ? cell.logoUrl : null), [cell.logoUrl])
   useEffect(() => setCover(cell.coverUrl && !logoHiddenHere(cell.coverUrl) ? cell.coverUrl : null), [cell.coverUrl])
   const place = [cell.neighborhood, cell.city].filter(Boolean).join(', ')
-  const subtitle = [cell.churchName, place].filter(Boolean).join(' · ')
+  const join = joinCode ? <JoinNext code={joinCode} /> : <ContactForm code={cell.code} onDone={setJoinCode} />
   return (
     <>
       <SiteBar />
@@ -125,99 +125,34 @@ function ActiveCell({ cell }: { cell: PublicCell }) {
             </div>
             <p className="eyebrow">Célula{cell.type ? ` · ${cell.type}` : ''}</p>
             <h1>{cell.name}</h1>
-            {subtitle ? <p className="sub">{subtitle}</p> : null}
-            <ul className="facts" aria-label="Sobre a célula">
-              <li>{weekly(cell.day, cell.time)}</li>
-              <li>{`Líder: ${cell.leaderFirstName}`}</li>
-            </ul>
+            {place ? <p className="sub">{place}</p> : null}
+            {cell.schedule ? (
+              <ul className="facts" aria-label="Quando se encontra">
+                <li>{weekly(cell.schedule.day, cell.schedule.time)}</li>
+              </ul>
+            ) : null}
           </div>
         </header>
 
         <div className="layout">
           <div className="main-col">
-            <section className="panel featured" aria-labelledby="proxima">
-              <h2 id="proxima" className="eyebrow">
-                Próxima reunião
-              </h2>
-              <p className="meeting">{cell.nextMeeting ? formatMeeting(cell.nextMeeting.date, cell.nextMeeting.time) : 'Sem reunião marcada'}</p>
-              {address ? (
-                <>
-                  <p style={{ margin: 0 }}>{address.address}</p>
-                  {address.reference ? <p className="muted" style={{ margin: 0 }}>{address.reference}</p> : null}
-                </>
-              ) : (
-                <p className="muted" style={{ margin: 0 }}>
-                  {cell.neighborhood ? `Bairro ${cell.neighborhood}. O endereço aparece quando você deixa seu nome e telefone.` : 'O endereço aparece quando você deixa seu nome e telefone.'}
+            {cell.bio ? (
+              <section className="panel" aria-labelledby="sobre">
+                <h2 id="sobre">Sobre a célula</h2>
+                <p className="pre" style={{ margin: 0 }}>
+                  {cell.bio}
                 </p>
-              )}
-            </section>
-
-            {/* No celular, o contato vem logo depois da reunião. No computador, fica na coluna da direita. */}
-            {!wide && !address ? <ContactForm code={cell.code} leader={cell.leaderFirstName} onDone={setAddress} /> : null}
-
-            <section className="panel" aria-labelledby="roteiro">
-              <h2 id="roteiro">Roteiro da semana</h2>
-              {cell.plan ? (
-                <div className="stack">
-                  <p className="muted" style={{ margin: 0 }}>{[cell.plan.title, cell.plan.ref].filter(Boolean).join(' · ')}</p>
-                  {cell.plan.sections.map((s) => (
-                    <div key={s.title}>
-                      <div className="section-head">
-                        <h3 className="eyebrow" style={{ margin: 0 }}>
-                          {s.title}
-                        </h3>
-                        <span className="pill">{`${s.minutes} min`}</span>
-                      </div>
-                      <p className="pre" style={{ margin: '4px 0 0' }}>
-                        {s.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="muted" style={{ margin: 0 }}>
-                  O líder ainda não publicou o roteiro desta semana.
-                </p>
-              )}
-            </section>
-
-            <section className="panel" aria-labelledby="materiais">
-              <h2 id="materiais">Materiais</h2>
-              {cell.materials.length ? (
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                  {cell.materials.map((m) => (
-                    <li key={m.name} className="material">
-                      <span>
-                        {m.name}
-                        <span className="hint">{` · ${m.kind}, ${m.size}`}</span>
-                      </span>
-                      <a className="btn outline" href={m.url} download aria-label={`Baixar ${m.name}`}>
-                        Baixar
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted" style={{ margin: 0 }}>
-                  Nenhum material publicado.
-                </p>
-              )}
-            </section>
-
-            <PrayerForm code={cell.code} leader={cell.leaderFirstName} />
-            {wide ? null : <GetApp />}
+              </section>
+            ) : null}
+            {/* No celular, o formulário vem logo depois do texto. No computador, fica na coluna da direita. */}
+            {wide ? null : join}
+            <HowToJoin />
           </div>
-
-          {wide ? (
-            <aside className="side-col">
-              {address ? null : <ContactForm code={cell.code} leader={cell.leaderFirstName} onDone={setAddress} />}
-              <GetApp />
-            </aside>
-          ) : null}
+          {wide ? <aside className="side-col">{join}</aside> : null}
         </div>
 
         <footer>
-          <p>Esta página mostra só o que o líder publicou. Os pedidos de oração vão só para o líder.</p>
+          <p>Esta página mostra só o que o líder publicou. Endereço, roteiro e pedidos de oração ficam no app, para quem entra na célula.</p>
           <ReportForm
             code={cell.code}
             onReported={(reason) => {
@@ -254,7 +189,7 @@ function SiteBar() {
   )
 }
 
-function ContactForm({ code, leader, onDone }: { code: string; leader: string; onDone: (a: PrivateAddress) => void }) {
+function ContactForm({ code, onDone }: { code: string; onDone: (inviteCode: string) => void }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [consent, setConsent] = useState(false)
@@ -266,12 +201,12 @@ function ContactForm({ code, leader, onDone }: { code: string; leader: string; o
     e.preventDefault()
     if (name.trim().length < 2) return setError('Digite seu nome.')
     if (!isValidPhone(digits)) return setError('Digite o telefone com DDD, só números.')
-    if (!consent) return setError(`Marque que aceita que ${leader} fale com você.`)
+    if (!consent) return setError('Marque que aceita que o líder fale com você.')
     setSending(true)
     try {
-      onDone(await leaveContact(code, name, digits))
-    } catch {
-      setError('Não foi possível enviar. Tente de novo.')
+      onDone((await leaveContact(code, name, digits)).inviteCode)
+    } catch (err) {
+      setError(err instanceof Error && /tentativas/i.test(err.message) ? 'Muitas tentativas hoje. Tente de novo amanhã.' : 'Não foi possível enviar. Tente de novo.')
     } finally {
       setSending(false)
     }
@@ -280,7 +215,9 @@ function ContactForm({ code, leader, onDone }: { code: string; leader: string; o
   return (
     <section className="panel" aria-labelledby="contato">
       <h2 id="contato">Quero participar</h2>
-      <p className="muted" style={{ marginTop: 0 }}>{`Deixe seu nome e telefone para ${leader}. Depois disso, o endereço completo aparece aqui.`}</p>
+      <p className="muted" style={{ marginTop: 0 }}>
+        Deixe seu nome e telefone para o líder. Em seguida você recebe o código para entrar na célula pelo app.
+      </p>
       <form onSubmit={submit} noValidate>
         <label>
           Nome
@@ -293,7 +230,7 @@ function ContactForm({ code, leader, onDone }: { code: string; leader: string; o
         </label>
         <label className="check">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span>{`Aceito que ${leader} use meu nome e telefone para falar comigo sobre a célula.`}</span>
+          <span>Aceito que o líder da célula use meu nome e telefone para falar comigo sobre a célula.</span>
         </label>
         {error ? (
           <p className="error" role="alert">
@@ -301,77 +238,48 @@ function ContactForm({ code, leader, onDone }: { code: string; leader: string; o
           </p>
         ) : null}
         <button className="btn primary block" type="submit" disabled={sending}>
-          {sending ? 'Enviando' : 'Enviar e ver o endereço'}
+          {sending ? 'Enviando' : 'Enviar e receber o código'}
         </button>
       </form>
     </section>
   )
 }
 
-function PrayerForm({ code, leader }: { code: string; leader: string }) {
-  const [text, setText] = useState('')
-  const [name, setName] = useState('')
-  const [sent, setSent] = useState(false)
-  const [consent, setConsent] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  if (sent) {
-    return (
-      <section className="panel" aria-live="polite">
-        <div className="success">
-          <CheckIcon />
-          <div>
-            <h2 style={{ marginBottom: 4 }}>Pedido enviado</h2>
-            <p className="muted" style={{ margin: 0 }}>{`${leader} recebeu seu pedido e vai orar por você. Ele não aparece nesta página.`}</p>
-          </div>
-        </div>
-        <button className="btn outline" type="button" style={{ marginTop: 16 }} onClick={() => (setSent(false), setText(''))}>
-          Enviar outro pedido
-        </button>
-      </section>
-    )
-  }
-
+/** Depois do contato: o código para entrar pelo app. O resto da célula só aparece lá. */
+function JoinNext({ code }: { code: string }) {
+  const [copied, setCopied] = useState<'yes' | 'no' | null>(null)
   return (
-    <section className="panel" aria-labelledby="pedido">
-      <h2 id="pedido">Deixar um pedido de oração</h2>
-      <p className="muted" style={{ marginTop: 0 }}>{`Vai só para ${leader}. Não aparece na página.`}</p>
-      <form
-        noValidate
-        onSubmit={async (e) => {
-          e.preventDefault()
-          if (!text.trim()) return setError('Escreva o seu pedido.')
-          if (!consent) return setError(`Marque que autoriza enviar o pedido para ${leader}.`)
-          try {
-            await leavePrayer(code, text, name || undefined)
-            setSent(true)
-            setError(null)
-          } catch {
-            setError('Não foi possível enviar. Tente de novo.')
-          }
+    <section className="panel featured" aria-labelledby="enviado" aria-live="polite">
+      <div className="success">
+        <CheckIcon />
+        <h2 id="enviado" style={{ margin: 0 }}>
+          Contato enviado
+        </h2>
+      </div>
+      <p style={{ marginTop: 12 }}>O líder recebeu seu nome e telefone. Para entrar na célula, baixe o acasa e use este código:</p>
+      <p className="joincode" aria-label={`Código ${code.split('').join(' ')}`}>
+        {code}
+      </p>
+      <button
+        type="button"
+        className="btn outline"
+        onClick={() => {
+          navigator.clipboard?.writeText(code).then(
+            () => setCopied('yes'),
+            () => setCopied('no'),
+          ) ?? setCopied('no')
         }}
       >
-        <label>
-          Seu pedido
-          <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} />
-        </label>
-        <label>
-          Seu nome (opcional)
-          <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={80} />
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span>{`Autorizo enviar este pedido de oração para ${leader}. Pedido de oração é dado sensível e só o líder recebe.`}</span>
-        </label>
-        {error ? (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        ) : null}
-        <button className="btn primary block" type="submit">
-          Enviar pedido
-        </button>
-      </form>
+        Copiar código
+      </button>
+      {copied ? (
+        <p className="hint" role="status">
+          {copied === 'yes' ? 'Código copiado.' : 'Não deu para copiar. Anote o código acima.'}
+        </p>
+      ) : null}
+      <p className="muted" style={{ marginBottom: 0 }}>
+        O endereço e o roteiro da reunião aparecem no app depois que o líder aprovar a sua entrada.
+      </p>
     </section>
   )
 }
@@ -446,13 +354,9 @@ function ReportForm({ code, onReported }: { code: string; onReported: (reason: R
   )
 }
 
-function GetApp() {
+function StoreButtons() {
   return (
-    <section className="panel" aria-labelledby="app">
-      <h2 id="app">Acompanhe pelo app</h2>
-      <p className="muted" style={{ marginTop: 0 }}>
-        No acasa você confirma presença, vê a escala, pede carona e lê a Bíblia com a célula. 7 dias grátis.
-      </p>
+    <>
       <div className="row">
         <span className="btn outline" aria-disabled="true">
           App Store: em breve
@@ -464,6 +368,34 @@ function GetApp() {
       <p className="hint" style={{ marginBottom: 0 }}>
         <AlertIcon /> O app ainda não está nas lojas.
       </p>
+    </>
+  )
+}
+
+/** Como entrar na célula: pela página, depois pelo app. */
+function HowToJoin() {
+  return (
+    <section className="panel" aria-labelledby="como">
+      <h2 id="como">Como participar</h2>
+      <ol className="steps">
+        <li>Deixe seu nome e telefone nesta página. O líder recebe o seu contato.</li>
+        <li>Baixe o acasa e entre na célula com o código que aparece depois do envio.</li>
+        <li>O líder aprova a sua entrada. Aí você vê no app o endereço e o roteiro da reunião.</li>
+      </ol>
+      <p className="muted">No acasa você também confirma presença e lê a Bíblia com a célula. 7 dias grátis.</p>
+      <StoreButtons />
+    </section>
+  )
+}
+
+function GetApp() {
+  return (
+    <section className="panel" aria-labelledby="app">
+      <h2 id="app">Conheça o acasa</h2>
+      <p className="muted" style={{ marginTop: 0 }}>
+        Bíblia, oração e a sua célula no mesmo app. 7 dias grátis.
+      </p>
+      <StoreButtons />
     </section>
   )
 }

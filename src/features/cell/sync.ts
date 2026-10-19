@@ -77,6 +77,8 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
   if (prev.address !== next.address) info.address = next.address
   if (prev.reference !== next.reference) info.reference = next.reference
   if (prev.neighborhood !== next.neighborhood) info.neighborhood = next.neighborhood
+  if ((prev.webBio ?? '') !== (next.webBio ?? '')) info.web_bio = next.webBio?.trim() || null
+  if ((prev.webShowSchedule ?? true) !== (next.webShowSchedule ?? true)) info.web_show_schedule = next.webShowSchedule ?? true
   if (prev.archived !== next.archived) info.archived = next.archived
   if (prev.maxSize !== next.maxSize) info.max_size = next.maxSize
   if (JSON.stringify(planOf(prev)) !== JSON.stringify(planOf(next))) info.plan = planOf(next)
@@ -335,7 +337,7 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   const asMe = (id: string | null) => (id === uid ? 'me' : id)
   const today = now.toISOString().slice(0, 10)
   const [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden, polls, votes, counts, playlist, materials] = await Promise.all([
-    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, reading_plan_id, created_at, web_slug, logo_path, logo_hidden, web_cover_path, web_cover_hidden').eq('id', cellId).single(),
+    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, reading_plan_id, created_at, web_slug, logo_path, logo_hidden, web_cover_path, web_cover_hidden, web_bio, web_show_schedule').eq('id', cellId).single(),
     db.rpc('cell_member_cards', { p_cell: cellId }),
     db.from('cell_schedule').select('id, role_name, member_id').eq('cell_id', cellId).is('meeting_date', null),
     db.from('cell_meetings').select('id, date, time, extra, cancelled').eq('cell_id', cellId).order('date', { ascending: true }),
@@ -435,6 +437,8 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
     webCoverUrl: c.web_cover_hidden ? null : logoPublicUrl(c.web_cover_path),
     webCoverPath: c.web_cover_path ?? null,
     webCoverHidden: !!c.web_cover_hidden,
+    webBio: c.web_bio ?? '',
+    webShowSchedule: c.web_show_schedule ?? true,
     code: c.invite_code,
     maxSize: c.max_size ?? 10,
     archived: c.archived,
@@ -502,7 +506,7 @@ export interface FoundCell {
 /** Procura a célula pelo código. Mostra só nome, líder, dia e bairro: o endereço aparece depois da aprovação. */
 export async function findCellByCode(code: string): Promise<FoundCell | 'invalid' | 'failed'> {
   if (!supabase) return 'failed'
-  const { data, error } = await supabase.rpc('public_cell_page', { p_code: code })
+  const { data, error } = await supabase.rpc('invite_preview', { p_code: code })
   if (error) return 'failed'
   const c = (data ?? [])[0] as { name: string; weekday: number | null; time: string | null; neighborhood: string | null; leader_first_name: string | null; archived: boolean } | undefined
   if (!c || c.archived) return 'invalid'

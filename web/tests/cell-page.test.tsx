@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, test } from 'vitest'
 import { CellPage } from '../components/CellPage'
@@ -16,10 +16,15 @@ describe('dados públicos', () => {
     expect(cell).not.toHaveProperty('_address')
   })
 
-  test('endereço só depois de nome e telefone válidos', async () => {
+  test('contato só com nome e telefone válidos, e devolve o código do app', async () => {
     await expect(leaveContact('ABC123', 'A', '11999999999')).rejects.toThrow()
     await expect(leaveContact('ABC123', 'Maria', '123')).rejects.toThrow()
-    await expect(leaveContact('ABC123', 'Maria', '11987654321')).resolves.toMatchObject({ address: expect.stringContaining('exemplo') })
+    await expect(leaveContact('ABC123', 'Maria', '11987654321')).resolves.toEqual({ inviteCode: 'ABC123' })
+  })
+
+  test('cartão de visita: sem endereço, roteiro, materiais nem nome do líder', async () => {
+    const cell = await getPublicCell('jovens-da-central')
+    for (const k of ['address', 'reference', 'plan', 'materials', 'leaderFirstName', 'nextMeeting']) expect(cell).not.toHaveProperty(k)
   })
 
   test('célula arquivada não recebe contato', async () => {
@@ -32,44 +37,39 @@ describe('dados públicos', () => {
 })
 
 describe('página da célula', () => {
-  test('mostra o bairro e esconde o endereço até deixar contato', async () => {
+  test('mostra nome, tipo, texto, bairro e horário; depois do contato, o código para o app', async () => {
     const user = userEvent.setup()
     render(<CellPage code="ABC123" />)
     expect(await screen.findByRole('heading', { level: 1, name: 'Jovens da Central' })).toBeInTheDocument()
-    expect(screen.queryByText(/Rua das Flores/)).not.toBeInTheDocument()
-    expect(screen.getByText(/Bairro Pinheiros/)).toBeInTheDocument()
+    expect(screen.getByText('Célula · Jovens')).toBeInTheDocument()
+    expect(screen.getByText(/se encontram em casa para ler a Bíblia/)).toBeInTheDocument()
+    expect(screen.getByText('Pinheiros, São Paulo, SP')).toBeInTheDocument()
+    expect(screen.getByText('Quartas, 20h')).toBeInTheDocument()
+    expect(screen.queryByText(/Líder:/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Roteiro|Materiais|pedido de oração/i })).not.toBeInTheDocument()
+    expect(screen.queryByText(/whatsapp/i)).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Enviar e ver o endereço' }))
+    await user.click(screen.getByRole('button', { name: 'Enviar e receber o código' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Digite seu nome.')
 
     await user.type(screen.getByLabelText('Nome'), 'Maria Teste')
     await user.type(screen.getByLabelText(/Telefone com DDD/), '11987654321')
-    await user.click(screen.getByRole('button', { name: 'Enviar e ver o endereço' }))
+    await user.click(screen.getByRole('button', { name: 'Enviar e receber o código' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Marque que aceita')
 
     await user.click(screen.getByRole('checkbox', { name: /Aceito que/ }))
-    await user.click(screen.getByRole('button', { name: 'Enviar e ver o endereço' }))
-    expect(await screen.findByText(/Endereço de exemplo/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Enviar e receber o código' }))
+    expect(await screen.findByRole('heading', { name: 'Contato enviado' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Código A B C 1 2 3')).toHaveTextContent('ABC123')
     expect(screen.queryByRole('heading', { name: 'Quero participar' })).not.toBeInTheDocument()
   })
 
-  test('pedido de oração vai para o líder e mostra confirmação', async () => {
-    const user = userEvent.setup()
-    render(<CellPage code="ABC123" />)
-    const section = (await screen.findByRole('heading', { name: 'Deixar um pedido de oração' })).closest('section')!
-    await user.type(within(section).getByLabelText('Seu pedido'), 'Pela minha família')
-    await user.click(within(section).getByRole('button', { name: 'Enviar pedido' }))
-    expect(within(section).getByRole('alert')).toHaveTextContent('Marque que autoriza enviar o pedido para João.')
-    await user.click(within(section).getByRole('checkbox'))
-    await user.click(within(section).getByRole('button', { name: 'Enviar pedido' }))
-    expect(await screen.findByRole('heading', { name: 'Pedido enviado' })).toBeInTheDocument()
-    expect(screen.queryByText('Pela minha família')).not.toBeInTheDocument()
-  })
-
-  test('sem roteiro e sem materiais', async () => {
+  test('sem texto e com o horário escondido pelo líder', async () => {
     render(<CellPage code="NOVA01" />)
-    expect(await screen.findByText('O líder ainda não publicou o roteiro desta semana.')).toBeInTheDocument()
-    expect(screen.getByText('Nenhum material publicado.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Célula do Bairro' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Sobre a célula' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Quando se encontra' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Quero participar' })).toBeInTheDocument()
   })
 
   test('link inválido', async () => {
@@ -146,14 +146,12 @@ describe('revisão de 18/10', () => {
 })
 
 describe('célula sem bairro', () => {
-  test('não mostra "Bairro" vazio nem vírgula solta', async () => {
+  test('não mostra vírgula solta', async () => {
     const { getPublicCell } = await import('../lib/api')
     const base = await getPublicCell('jovens-da-central')
     const { ActiveCellForTest } = await import('../components/CellPage')
-    render(<ActiveCellForTest cell={{ ...base!, neighborhood: '', city: '', churchName: null }} />)
-    expect(screen.getByText('O endereço aparece quando você deixa seu nome e telefone.')).toBeInTheDocument()
-    expect(screen.queryByText(/^Bairro/)).not.toBeInTheDocument()
+    render(<ActiveCellForTest cell={{ ...base!, neighborhood: '', city: '' }} />)
     expect(screen.queryByText(/^,/)).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Jovens da Central' })).toBeInTheDocument()
   })
 })
-

@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard'
 import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
 import { Image, Share, View } from 'react-native'
-import { AppText, Button, Card, Icon, Page, SectionLabel, TextField, useToast } from '../../../components'
+import { AppText, Button, Card, Icon, ListRow, Page, SectionLabel, Switch, TextField, useToast } from '../../../components'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { useCell } from '../CellContext'
 import type { Cell } from '../data'
@@ -89,6 +89,8 @@ function WebPage({ cell }: { cell: Cell }) {
   const [saving, setSaving] = useState(false)
   const [logoBusy, setLogoBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [bio, setBio] = useState(cell.webBio ?? '')
+  const showSchedule = cell.webShowSchedule ?? true
   // Sem endereço próprio, vale o link pelo código de convite.
   const link = publicUrl(cell)
 
@@ -133,8 +135,33 @@ function WebPage({ cell }: { cell: Cell }) {
   return (
     <Page title="Página na internet">
       <AppText variant="body" tone="secondary">
-        Quem não tem o app vê a página da célula: nome, dia, horário e bairro. O endereço completo aparece só para quem deixa nome e telefone.
+        A página mostra nome, tipo, o texto sobre a célula, bairro e, se você quiser, dia e horário. Endereço, roteiro e pedidos de oração ficam só no app. Quem quer participar deixa nome e telefone e recebe o código para entrar pelo app.
       </AppText>
+
+      <Card style={{ gap: 12 }}>
+        <SectionLabel>Sobre a célula</SectionLabel>
+        <TextField
+          label="Texto da página"
+          value={bio}
+          onChangeText={setBio}
+          multiline
+          maxLength={300}
+          placeholder="Quem somos, como é o encontro"
+          hint={`${bio.length} de 300 letras. Não coloque endereço nem telefone: a página é pública.`}
+        />
+        <Button
+          label="Salvar texto"
+          onPress={() => {
+            update((c) => ({ ...c, webBio: bio.trim() }))
+            toast('Texto da página salvo')
+          }}
+          disabled={bio.trim() === (cell.webBio ?? '').trim()}
+        />
+        <ListRow
+          label="Mostrar dia e horário na página"
+          right={<Switch label="Mostrar dia e horário na página" value={showSchedule} onChange={(v) => update((c) => ({ ...c, webShowSchedule: v }))} />}
+        />
+      </Card>
 
       <Card style={{ gap: 12 }}>
         <SectionLabel>Link da página</SectionLabel>

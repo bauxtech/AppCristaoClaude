@@ -123,6 +123,19 @@ describe('página na internet', () => {
     expect(screen.getByText(/A equipe do acasa tirou o logo/)).toBeTruthy()
   })
 
+  test('o líder escreve o texto sobre a célula e esconde o horário', async () => {
+    await renderApp(<WebPageScreen />, asLeader({ webSlug: 'celula-viva' }))
+    expect(screen.getByRole('button', { name: 'Salvar texto' }).props.accessibilityState?.disabled).toBe(true)
+    await fireEvent.changeText(screen.getByLabelText('Texto da página'), 'Jovens que se encontram em casa')
+    expect(screen.getByText(/31 de 300 letras/)).toBeTruthy()
+    await fireEvent.press(screen.getByRole('button', { name: 'Salvar texto' }))
+    expect(await screen.findByText('Texto da página salvo')).toBeTruthy()
+    const sw = screen.getByRole('switch', { name: 'Mostrar dia e horário na página' })
+    expect(sw.props.accessibilityState?.checked).toBe(true)
+    await fireEvent.press(sw)
+    expect(screen.getByRole('switch', { name: 'Mostrar dia e horário na página' }).props.accessibilityState?.checked).toBe(false)
+  })
+
   test('só o líder abre a página na internet', async () => {
     const c = sampleCell('membro', 'Teste')
     await renderApp(<WebPageScreen />, { onboarded: true, cellStatus: 'member', cells: { cells: [c], currentId: c.id } })
