@@ -11,7 +11,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useState } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { ConnectionFrame, ToastProvider } from '../components'
+import { ConnectionFrame, ToastProvider, UpdateBanner } from '../components'
 import { ConnectionProvider } from '../state/connection'
 import { watchSession } from '../lib/supabase'
 import { startSync } from '../lib/sync'
@@ -68,7 +68,7 @@ function RootStack() {
           <Stack.Screen name="teste-gravacao" />
         </Stack>
       </ConnectionFrame>
-      {splash ? <Splash onDone={endSplash} /> : null}
+      {splash ? <Splash onDone={endSplash} /> : <UpdateBanner />}
     </>
   )
 }

@@ -6,6 +6,8 @@ import { Platform, Pressable, View } from 'react-native'
 import { AppText, Button, Card, Chip, Icon, ListRow, Page, SectionLabel, Segmented, SelectCard, Switch, Tag, TextField, useToast } from '../../../components'
 import { MIN_TOUCH } from '../../../components/Button'
 import { IS_PREVIEW } from '../../../lib/preview'
+import { currentVersionLabel } from '../../../lib/appUpdate'
+import Constants from 'expo-constants'
 import { useSession } from '../../../state/session'
 import { useTheme, type AppearancePreference } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -19,6 +21,9 @@ import { useSettings } from '../SettingsContext'
 import { isValidEmail } from './AccountScreens'
 import { verseText } from '../../bible/text'
 import { openLegal } from '../../../lib/legal'
+
+/** Versão do app (app.json), para conferir no teste qual está no celular. */
+const APP_VERSION = Constants.expoConfig?.version ?? ''
 
 function SwitchRow({ label, sub, value, onChange, divider }: { label: string; sub?: string; value: boolean; onChange: (v: boolean) => void; divider?: boolean }) {
   const { colors } = useTheme()
@@ -55,6 +60,8 @@ export function SettingsHome() {
         <ListRow label="Bloquear ou denunciar" onPress={() => router.push('/configuracoes/bloquear')} divider />
         <ListRow label="Ajuda e termos" onPress={() => router.push('/configuracoes/ajuda')} />
       </Card>
+      {/* Para saber, no teste, se o celular já está na versão nova. */}
+      <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>{`acasa ${APP_VERSION} · ${currentVersionLabel()}`}</AppText>
     </Page>
   )
 }
