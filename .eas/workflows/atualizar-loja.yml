@@ -1,0 +1,14 @@
+# Publica uma atualização para quem instalou pelo Google Play (canal production).
+# Só para correções em código do app. Mudança nativa (biblioteca nova, permissão, ícone) pede arquivo novo na loja.
+name: Atualizar o app da loja
+on:
+  workflow_dispatch: {}
+jobs:
+  atualizar:
+    name: Publicar atualização no canal production
+    type: update
+    environment: production
+    params:
+      branch: production
+      platform: android
+      message: Atualização do app da loja
