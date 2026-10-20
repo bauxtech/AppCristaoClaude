@@ -130,7 +130,8 @@ export function CourseDetailScreen() {
           </View>
         ))}
       </View>
-      <Button label="Começar revisão" icon="book" variant="soft" onPress={() => router.push({ pathname: '/igreja/curso/[id]/revisao', params: { id: c.id } })} />
+      {/* Cartões de revisão só existem nos dados de exemplo: o app ainda não cria cartões a partir das aulas (QA de 20/10). */}
+      {c.cards.length ? <Button label="Começar revisão" icon="book" variant="soft" onPress={() => router.push({ pathname: '/igreja/curso/[id]/revisao', params: { id: c.id } })} /> : null}
       <SectionLabel>Aulas</SectionLabel>
       {c.lessons.map((l, i) => {
         const past = l.date <= today
@@ -280,7 +281,7 @@ export function LessonScreen() {
           />
         </>
       )}
-      <Button label="Revisar o curso" icon="book" variant="soft" onPress={() => router.push({ pathname: '/igreja/curso/[id]/revisao', params: { id: c.id } })} />
+      {c.cards.length ? <Button label="Revisar o curso" icon="book" variant="soft" onPress={() => router.push({ pathname: '/igreja/curso/[id]/revisao', params: { id: c.id } })} /> : null}
     </Page>
   )
 }
