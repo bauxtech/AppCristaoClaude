@@ -710,3 +710,33 @@ select tests.as_user('00000000-0000-0000-0000-00000000000b'); -- Beto, que cadas
 select tests.ok('igreja cadastrada à mão não ganha CNPJ depois',
   tests.denied($$update public.churches set cnpj = '11444777000161', name = 'Igreja Falsa' where id = '90000000-0000-0000-0000-000000000002'$$));
 reset role;
+
+-- ─── Revisão de segurança de 20/10 ──────────────────────────────────────────
+-- Célula 7: Lia líder, Mel membro com foto, Nina membro que esconde a foto. Ozzy está fora da célula.
+insert into auth.users (id, phone, phone_confirmed_at) values
+  ('00000000-0000-0000-0000-000000000071', '5511990007001', now()),
+  ('00000000-0000-0000-0000-000000000072', '5511990007002', now()),
+  ('00000000-0000-0000-0000-000000000073', '5511990007003', now()),
+  ('00000000-0000-0000-0000-000000000074', '5511990007004', now());
+update public.profiles set show_photo = false where id = '00000000-0000-0000-0000-000000000073';
+insert into public.cells (id, name, invite_code, created_by) values ('10000000-0000-0000-0000-000000000007', 'Célula 7', 'SETE07', '00000000-0000-0000-0000-000000000071');
+insert into public.cell_members (cell_id, user_id, role, status) values
+  ('10000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000071', 'lider', 'approved'),
+  ('10000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000072', 'membro', 'approved'),
+  ('10000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000073', 'membro', 'approved');
+insert into storage.objects (bucket_id, name) values
+  ('avatars', '00000000-0000-0000-0000-000000000072/foto.jpg'),
+  ('avatars', '00000000-0000-0000-0000-000000000073/foto.jpg');
+
+select tests.as_user('00000000-0000-0000-0000-000000000071');
+select tests.ok('quem está na célula vê a foto do colega', tests.rows($$select * from storage.objects where name = '00000000-0000-0000-0000-000000000072/foto.jpg'$$) = 1);
+select tests.ok('a foto de quem escondeu não aparece nem para o líder', tests.rows($$select * from storage.objects where name = '00000000-0000-0000-0000-000000000073/foto.jpg'$$) = 0);
+select tests.ok('o líder não troca a pessoa de uma linha de membro',
+  tests.denied($$update public.cell_members set user_id = '00000000-0000-0000-0000-000000000074' where cell_id = '10000000-0000-0000-0000-000000000007' and user_id = '00000000-0000-0000-0000-000000000072'$$));
+select tests.ok('o líder não leva um membro para outra célula',
+  tests.denied($$update public.cell_members set cell_id = '10000000-0000-0000-0000-000000000002' where cell_id = '10000000-0000-0000-0000-000000000007' and user_id = '00000000-0000-0000-0000-000000000072'$$));
+select tests.ok('o líder continua mudando o papel', tests.allowed($$update public.cell_members set role = 'auxiliar' where cell_id = '10000000-0000-0000-0000-000000000007' and user_id = '00000000-0000-0000-0000-000000000072'$$));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000074');
+select tests.ok('quem está fora da célula não vê a foto', tests.rows($$select * from storage.objects where name = '00000000-0000-0000-0000-000000000072/foto.jpg'$$) = 0);
+reset role;
