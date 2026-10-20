@@ -1,7 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { AccessibilityInfo, View } from 'react-native'
-import { AppText, Button, Page, SectionLabel } from '../../../components'
+import { AppText, Button, Page, SectionLabel, TextField } from '../../../components'
+import { useChurch } from '../../church/ChurchContext'
+import { useProfile } from '../../profile/ProfileContext'
+import { brToISO, maskDate } from '../../prayer/dates'
 import { IS_REMOTE } from '../../../lib/supabase'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { demoCell } from '../../onboarding/data'
@@ -19,6 +22,11 @@ export function ConfirmJoinScreen() {
   const already = cells.some((c) => c.id === 'c-central' || (!!codigo && c.code === codigo))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // O que ajuda o líder a reconhecer quem pede (QA de 20/10). A igreja vem da aba Igreja, se a pessoa cadastrou.
+  const { main } = useChurch()
+  const profile = useProfile()
+  const [message, setMessage] = useState('')
+  const [birthday, setBirthday] = useState('')
 
   useEffect(() => {
     if (!IS_REMOTE || !codigo) return
@@ -57,6 +65,10 @@ export function ConfirmJoinScreen() {
       <AppText variant="body" tone="secondary">
         O líder recebe o seu pedido e aprova a entrada. O endereço aparece depois da aprovação.
       </AppText>
+      <TextField label="Mensagem para o líder (opcional)" value={message} onChangeText={setMessage} maxLength={200} multiline placeholder="Ex.: sou amiga da Maria, conheci a célula no culto" hint={main ? `Sua igreja vai junto no pedido: ${main.name}.` : undefined} />
+      {profile.birthday ? null : (
+        <TextField label="Data de nascimento (opcional)" value={birthday} onChangeText={(v) => setBirthday(maskDate(v))} placeholder="DD/MM/AAAA" keyboardType="number-pad" hint="A célula vê só o dia e o mês, se você deixar." />
+      )}
       {already ? (
         <AppText variant="bodyStrong" accessibilityLiveRegion="polite">
           Você já participa desta célula.
@@ -72,8 +84,14 @@ export function ConfirmJoinScreen() {
         busy={busy}
         label={busy ? 'Enviando pedido' : 'Pedir para entrar'}
         onPress={async () => {
+          // Data de nascimento: opcional, pedida aqui porque é na célula que ela é usada (aniversários).
+          if (birthday) {
+            const iso = brToISO(birthday)
+            if (!iso) return setError('Digite a data de nascimento no formato DD/MM/AAAA, ou deixe em branco.')
+            profile.setBirthday(iso)
+          }
           setBusy(true)
-          const r = await requestJoin(codigo)
+          const r = await requestJoin(codigo, { message, church: main?.name })
           setBusy(false)
           if (r === 'invalid') return setError('Este código não vale mais. Peça um novo ao líder.')
           if (r === 'failed') return setError('Não foi possível enviar o pedido. Confira a internet e tente de novo.')

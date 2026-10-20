@@ -264,3 +264,22 @@ select tests.as_user('00000000-0000-0000-0000-000000000033');
 select tests.ok('no app, quem tem o código vê nome, líder e dia', (select name from public.invite_preview(lower(:'rui_code'))) = 'Célula Viva'
   and (select leader_first_name from public.invite_preview(:'rui_code')) is not null);
 reset role;
+
+-- ─── Pedido de entrada com mensagem e igreja (20/10) ─────────────────────────
+-- Lia (41) ainda não existe aqui: usa um usuário novo.
+insert into auth.users (id, phone, phone_confirmed_at) values ('00000000-0000-0000-0000-000000000039', '5511980000039', now());
+select tests.as_user('00000000-0000-0000-0000-000000000039');
+select public.request_join(:'rui_code', 'Sou amigo do Téo', 'Igreja Batista Central');
+select tests.ok('quem pede vê a própria mensagem', (select message from public.join_request_notes where user_id = auth.uid()) = 'Sou amigo do Téo');
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000033');
+select tests.ok('membro da célula não lê a mensagem do pedido de outra pessoa',
+  not exists (select 1 from public.join_request_notes where user_id = '00000000-0000-0000-0000-000000000039'));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+select tests.ok('o líder lê a mensagem e a igreja do pedido',
+  (select church from public.join_request_notes where user_id = '00000000-0000-0000-0000-000000000039') = 'Igreja Batista Central');
+select tests.ok('ninguém escreve direto na tabela', tests.denied($$insert into public.join_request_notes (cell_id, user_id, message) values ('10000000-0000-0000-0000-000000000031', auth.uid(), 'x')$$));
+update public.cell_members set status = 'approved' where cell_id = '10000000-0000-0000-0000-000000000031' and user_id = '00000000-0000-0000-0000-000000000039';
+reset role;
+select tests.ok('pedido aprovado: a mensagem sai', not exists (select 1 from public.join_request_notes where user_id = '00000000-0000-0000-0000-000000000039'));

@@ -358,6 +358,16 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   const all = [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden, polls, votes, counts, playlist, materials]
   const hist = myRole === 'lider' ? await db.rpc('cell_history', { p_cell: cellId }) : null
   const seats = myRole === 'lider' ? await db.rpc('cell_seat_summary', { p_cell: cellId }) : null
+  // Pedidos de entrada: data, mensagem e igreja de quem pediu. Só o líder lê (regra do banco).
+  const [joinNotes, joinDates] =
+    myRole === 'lider'
+      ? await Promise.all([
+          db.from('join_request_notes').select('user_id, message, church').eq('cell_id', cellId),
+          db.from('cell_members').select('user_id, requested_at').eq('cell_id', cellId).eq('status', 'pending'),
+        ])
+      : [null, null]
+  const noteOf = new Map(((joinNotes?.data ?? []) as { user_id: string; message: string | null; church: string | null }[]).map((n) => [n.user_id, n]))
+  const dateOf = new Map(((joinDates?.data ?? []) as { user_id: string; requested_at: string }[]).map((d) => [d.user_id, d.requested_at]))
   if (all.some((r) => r.error) || !row.data) return null
   const c = row.data
   const list = (cards.data ?? []) as Card[]
@@ -446,7 +456,9 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
     foundedAt: iso(c.created_at),
     myRole,
     members,
-    pendingJoins: list.filter((x) => x.status === 'pending').map((x) => ({ id: x.user_id, name: x.name || 'Sem nome', phone: x.phone ?? '', requestedAt: '' })),
+    pendingJoins: list
+      .filter((x) => x.status === 'pending')
+      .map((x) => ({ id: x.user_id, name: x.name || 'Sem nome', phone: x.phone ?? '', requestedAt: iso(dateOf.get(x.user_id) ?? ''), message: noteOf.get(x.user_id)?.message ?? '', church: noteOf.get(x.user_id)?.church ?? '' })),
     visitors: (leads.data ?? []).map((v) => ({ id: v.id, name: v.name, phone: v.phone, date: iso(v.created_at), notes: v.notes ?? '', followUpAt: v.follow_up_at ?? '' })),
     schedule: schedRows,
     plan: plan.sections ?? [],
@@ -515,9 +527,9 @@ export async function findCellByCode(code: string): Promise<FoundCell | 'invalid
 }
 
 /** Pede para entrar. Sempre fica pendente até o líder aprovar. */
-export async function requestJoinRemote(code: string): Promise<'ok' | 'invalid' | 'failed'> {
+export async function requestJoinRemote(code: string, extra: { message?: string; church?: string } = {}): Promise<'ok' | 'invalid' | 'failed'> {
   if (!supabase) return 'failed'
-  const { error } = await supabase.rpc('request_join', { p_code: code })
+  const { error } = await supabase.rpc('request_join', { p_code: code, p_message: extra.message?.trim() || null, p_church: extra.church?.trim() || null })
   if (!error) return 'ok'
   return /inv[aá]lido/i.test(error.message) ? 'invalid' : 'failed'
 }

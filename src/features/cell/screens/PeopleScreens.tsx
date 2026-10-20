@@ -14,7 +14,7 @@ import { CellGuard } from './Guard'
 import { setMemberSeatRemote } from '../sync'
 import type { SeatState } from '../../subscription/plan'
 
-function formatPhone(p: string) {
+export function formatPhone(p: string) {
   const d = onlyDigits(p)
   return d.length >= 10 ? `(${d.slice(0, 2)}) ${formatPhoneNumber(d.slice(2))}` : p
 }

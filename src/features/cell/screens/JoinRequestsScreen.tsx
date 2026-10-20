@@ -3,9 +3,12 @@ import { AppText, Avatar, Button, Card, EmptyState, Page, useToast } from '../..
 import { formatDiaryDate } from '../../prayer/dates'
 import { useCell } from '../CellContext'
 import { CellGuard } from './Guard'
+import { formatPhone } from './PeopleScreens'
+import { useTheme } from '../../../theme/ThemeProvider'
 
 /** O líder aprova cada pessoa que pediu para entrar (regra decidida), como membro ou como visitante. */
 export function JoinRequestsScreen() {
+  const { colors } = useTheme()
   const toast = useToast()
   const { update } = useCell()
 
@@ -30,9 +33,24 @@ export function JoinRequestsScreen() {
                 <Avatar name={j.name} />
                 <View style={{ flex: 1 }}>
                   <AppText variant="bodyStrong">{j.name}</AppText>
-                  <AppText variant="small" tone="secondary">{`Pediu ${formatDiaryDate(j.requestedAt).toLowerCase()}`}</AppText>
+                  {j.requestedAt ? <AppText variant="small" tone="secondary">{`Pediu ${formatDiaryDate(j.requestedAt).toLowerCase()}`}</AppText> : null}
                 </View>
               </View>
+              {/* O que ajuda o líder a reconhecer quem pede (QA de 20/10). Telefone só o líder vê. */}
+              {j.church || j.phone ? (
+                <View style={{ gap: 2 }}>
+                  {j.church ? <AppText variant="small">{`Igreja: ${j.church}`}</AppText> : null}
+                  {j.phone ? <AppText variant="small">{`Celular: ${formatPhone(j.phone)}`}</AppText> : null}
+                </View>
+              ) : null}
+              {j.message ? (
+                <View style={{ borderRadius: 12, padding: 12, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.line }}>
+                  <AppText variant="small" tone="secondary">
+                    Mensagem
+                  </AppText>
+                  <AppText variant="body">{j.message}</AppText>
+                </View>
+              ) : null}
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Button
                   label="Recusar"

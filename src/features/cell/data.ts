@@ -110,7 +110,8 @@ export interface Cell {
   foundedAt: string
   myRole: CellRole
   members: Member[]
-  pendingJoins: { id: string; name: string; phone: string; requestedAt: string }[]
+  /** Pedidos de entrada. Mensagem e igreja são opcionais, escritas por quem pede; só o líder vê. */
+  pendingJoins: { id: string; name: string; phone: string; requestedAt: string; message?: string; church?: string }[]
   visitors: { id: string; name: string; phone: string; date: string; notes: string; followUpAt: string }[]
   /** id: linha da escala no banco (uuid). */
   schedule: { id?: string; role: string; memberId: string | null }[]
@@ -190,7 +191,7 @@ export function sampleCell(myRole: CellRole, myName: string): Cell {
     foundedAt: '2023-03-01',
     myRole,
     members,
-    pendingJoins: myRole === 'lider' ? [{ id: 'j1', name: 'Fernanda Reis', phone: '11983334444', requestedAt: '2026-10-02' }] : [],
+    pendingJoins: myRole === 'lider' ? [{ id: 'j1', name: 'Fernanda Reis', phone: '11983334444', requestedAt: '2026-10-02', message: 'Sou amiga da Maria, vim no culto de domingo.', church: 'Igreja Batista Central' }] : [],
     visitors: [],
     schedule: [
       { role: 'Recebe em casa', memberId: 'u3' },

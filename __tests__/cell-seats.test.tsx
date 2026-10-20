@@ -115,6 +115,13 @@ describe('líder e as vagas', () => {
     expect(screen.queryByRole('button', { name: 'Dar vaga' })).toBeNull()
   })
 
+  test('pedido de entrada mostra igreja, celular e a mensagem de quem pede', async () => {
+    await renderApp(<JoinRequestsScreen />, asRole('lider'))
+    expect(screen.getByText('Igreja: Igreja Batista Central')).toBeTruthy()
+    expect(screen.getByText('Celular: (11) 98333-4444')).toBeTruthy()
+    expect(screen.getByText('Sou amiga da Maria, vim no culto de domingo.')).toBeTruthy()
+  })
+
   test('aprova como visitante', async () => {
     await renderApp(<JoinRequestsScreen />, asRole('lider'))
     await fireEvent.press(screen.getByRole('button', { name: 'Aprovar como visitante' }))

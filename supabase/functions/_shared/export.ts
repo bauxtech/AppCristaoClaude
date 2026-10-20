@@ -30,6 +30,7 @@ export const EXPORT_TABLES: [table: string, owner: string][] = [
   ['cell_attendance', 'user_id'],
   ['cell_rsvps', 'user_id'],
   ['cell_poll_votes', 'user_id'],
+  ['join_request_notes', 'user_id'],
   ['hidden_content', 'user_id'],
   ['notifications', 'user_id'],
   ['blocks', 'blocker_id'],

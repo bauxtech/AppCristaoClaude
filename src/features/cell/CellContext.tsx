@@ -24,7 +24,7 @@ interface CellValue {
   update: (fn: (c: Cell) => Cell) => void
   createCell: (input: { name: string; type: CellType | null; day: number; time: string; address: string; reference: string; neighborhood: string; webSlug?: string }) => Cell
   /** Pede para entrar com um código. A entrada depende do líder. Com servidor, devolve o resultado do pedido. */
-  requestJoin: (code?: string) => Promise<'ok' | 'invalid' | 'failed'>
+  requestJoin: (code?: string, extra?: { message?: string; church?: string }) => Promise<'ok' | 'invalid' | 'failed'>
   /** Traz a célula de novo do banco (ao abrir a aba). Sem servidor, não faz nada. */
   refresh: () => Promise<void>
   /** Só na prévia: o líder aprovou. */
@@ -137,9 +137,9 @@ export function CellProvider({ children, initial }: { children: ReactNode; initi
         }
         return c
       },
-      requestJoin: async (code) => {
+      requestJoin: async (code, extra) => {
         if (remote && code) {
-          const r = await requestJoinRemote(code)
+          const r = await requestJoinRemote(code, extra)
           if (r === 'ok' && state.cells.length === 0) setCellStatus('pending')
           return r
         }

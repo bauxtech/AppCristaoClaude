@@ -24,7 +24,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - A referência visual é o repositório do protótipo. Leia os valores no código, não em imagem.
 - Estrutura: 5 abas (Hoje, Bíblia, Célula, Igreja, Eu), botão do chat e oração como painel por cima.
 - Fontes: Nunito na interface (geométrica e arredondada) e Literata no texto bíblico e nos títulos. Texto bíblico em 19. Título das abas em Literata 34; título de cartão e da barra de topo em Literata 20 (visual do site, 16/10).
-- Paleta da marca acasa (12/10): verde principal #254C3A (ícone, botões principais, destaques), verde claro #A9BBA7 (elementos secundários e progresso), off-white #F6F4EE, areia #E8DCC9, carvão #1F1F1F (textos e ícones). No modo claro, desde 16/10 (visual do site): fundo branco, cartões off-white e divisórias #ECE6DA. Escuro e alto contraste derivados dela, em src/theme/colors.ts. Verde claro e areia não carregam texto nem informação sozinhos. O seletor de paletas e o controle Demo do protótipo não entram no app; o protótipo continua sendo a referência de layout, não de cor.
+- Paleta da marca acasa (12/10): verde principal #254C3A (ícone, botões principais, destaques), verde claro #A9BBA7 (elementos secundários e progresso), off-white #F6F4EE, areia #E8DCC9, carvão #1F1F1F (textos e ícones). No modo claro, desde 16/10 (visual do site): fundo branco, cartões off-white e divisórias #ECE6DA. Alto contraste derivado dela, em src/theme/colors.ts. Sem modo escuro (decidido em 20/10): só claro e alto contraste; as telas sempre escuras (gravação, oração guiada) usam a paleta escura direto. Verde claro e areia não carregam texto nem informação sozinhos. O seletor de paletas e o controle Demo do protótipo não entram no app; o protótipo continua sendo a referência de layout, não de cor.
 - Ícone: fundo verde principal com o "a" em off-white. Direção visual: fundo branco, títulos grandes em serifa, bastante espaço em branco e cartões discretos (margem lateral 20, cantos de 20).
 - Componentes primeiro, telas depois.
 - Tela que existe no protótipo: siga o protótipo. Tela que não existe: construa a partir de docs/, com os mesmos componentes.
@@ -37,15 +37,17 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Contraste de texto de no mínimo 4,5 para 1. Bordas e ícones, 3 para 1.
 - Todo controle com nome e função para leitor de tela. Todo campo com rótulo. Estado selecionado anunciado.
 - Corpo do texto em 16. Respeitar o tamanho de fonte do sistema.
-- Modo claro, escuro e alto contraste funcionando.
+- Modo claro e alto contraste funcionando (sem modo escuro desde 20/10).
 - Nenhuma informação passada só por cor.
 
 ## REGRAS DO PRODUTO, JÁ DECIDIDAS
-- Entrada na célula: o líder aprova cada pessoa.
+- Entrada na célula: o líder aprova cada pessoa. O pedido leva, opcional, uma mensagem para o líder e a igreja de quem pede (tabela join_request_notes, só o líder lê, apagada ao aprovar ou recusar). A data de nascimento é pedida (opcional) ao entrar na célula, não no cadastro.
+- Cadastro (20/10): celular, código, termos, nome com e-mail e ofertas, objetivos (escolha múltipla) e célula. Tradição, horário dos lembretes e igreja ficam para depois.
 - Papéis: o auxiliar marca presença e edita a escala. O anfitrião não tem permissão a mais.
 - Líder: a célula pode ter mais de um. Só o único líder de uma célula com outros membros precisa passar a liderança antes de sair ou excluir a conta.
 - Telefone dos membros: aparece só para o líder.
 - Visitante: vê reunião, endereço e roteiro. Não vê os pedidos de oração. O líder escolhe ao aprovar se a pessoa entra como visitante ou membro. Visitante não ocupa vaga e vira membro sozinho depois de 3 reuniões da célula (contam as que aconteceram, mesmo se faltou) ou 30 dias, o que vier primeiro. O líder pode passar para membro antes. Os números ficam em app_settings (visitor_meetings, visitor_days).
+- Site da célula (nome no app desde 20/10; antes "Página na internet"): em destaque na tela da Célula do líder, com link, Compartilhar e Editar site. Sem logo, mostra as iniciais ("JC") num círculo verde.
 - Página web da célula, cartão de visita (19/10): mostra só nome, tipo, o texto "Sobre a célula" (até 300 letras, cells.web_bio), bairro, logo, capa e, se o líder quiser, dia e horário (cells.web_show_schedule). Nada interno: sem endereço, roteiro, materiais, pedidos de oração nem nome do líder. Nada leva para o WhatsApp. O formulário "Quero participar" guarda nome e telefone para o líder e mostra o código de convite: a pessoa entra na célula pelo app, com conta, e vê o resto depois da aprovação do líder. A página não recebe pedido de oração.
 - Endereço da página (16/10): acasa.app.br/celulas/<nome>. O líder escolhe ao criar a célula ou depois, em Opções > Página na internet. O endereço é único (o nome da célula pode repetir). Letras minúsculas sem acento, números e hífen, de 3 a 30. Palavras reservadas e palavrões bloqueados (tabelas reserved_slugs e blocked_slug_words, editáveis no painel). Trocar: o antigo leva para o novo por 30 dias. Célula encerrada ou sem o plano Líder: o endereço fica guardado 90 dias e depois fica livre. O link /c/<código> continua funcionando e é o link público da célula enquanto ela não tem endereço próprio (o app mostra e compartilha esse link).
 - Logo e capa da página (19/10): só o líder envia, em Opções > Página na internet, imagem até 1 MB cada, públicos na página (capa larga 3 por 1, logo por cima, como LinkedIn). A capa da página é separada da capa interna do app. A equipe tira a capa do ar com cells.web_cover_hidden.
@@ -53,6 +55,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Página da célula, limite por aparelho (19/10): 5 contatos por dia por endereço de internet. O banco guarda só um código do endereço, apagado em 2 dias.
 - Logo da célula: só o líder envia, imagem até 1 MB, público na página. Quem abre a página pode denunciar (web_reports, vai para a equipe); o logo denunciado some na hora para quem denunciou. A equipe tira do ar com cells.logo_hidden.
 - Idade: só maiores de 18 no lançamento.
+- Traduções licenciadas, comparar traduções e Bíblia em Libras: no backlog, sem aparecer no app (nada de "Em breve").
 - Bíblia: Bíblia Livre no lançamento (licença Creative Commons Atribuição, uso comercial permitido, crédito obrigatório no app). Não é domínio público. As licenciadas entram depois. Origem e licença registradas em src/features/bible/translations.ts e na tabela bible_translations.
 - Planos (decididos em 12/10, preços revistos em 19/10), cada um mensal ou anual, com os mesmos limites:
   - Essencial (R$ 19,90/mês ou R$ 159,90/ano): Bíblia completa, planos de leitura, oração guiada, diário, pedidos, campanhas, igreja, ministérios, cursos (cadastro à mão; aulas, presença, material e notas), música, participar de célula, chat com 5 perguntas por dia. Sem culto. Sem curso pela foto do cronograma (botão com cadeado e "No plano Completo").
