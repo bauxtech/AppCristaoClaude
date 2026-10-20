@@ -7,31 +7,37 @@ import { useTheme } from '../../../theme/ThemeProvider'
 import { IntroArt } from '../IntroArt'
 import { useOnboarding } from '../OnboardingContext'
 
+// Ordem pelos diferenciais do acasa (QA de 20/10): culto, célula e o site da célula primeiro.
 export const INTRO_STEPS = [
-  {
-    title: 'Leia a Bíblia todo dia',
-    text: 'Plano de leitura, passagem do dia e o seu progresso nos 66 livros.',
-    art: 'Ilustração: uma Bíblia aberta e uma barra de progresso.',
-  },
-  {
-    title: 'Tire dúvidas sobre a Bíblia',
-    text: 'Pergunte sobre qualquer passagem e receba a resposta com os versículos.',
-    art: 'Ilustração: um balão de pergunta e um balão de resposta com um versículo marcado.',
-  },
   {
     title: 'Grave o culto e guarde o resumo',
     text: 'O app transcreve a pregação e separa os pontos principais e os versículos citados.',
     art: 'Ilustração: um microfone ao lado de uma folha com o texto da pregação.',
-  },
-  {
-    title: 'Ore com um guia e registre seus pedidos',
-    text: 'Momentos de oração guiados, diário e pedidos que você marca como respondidos.',
-    art: 'Ilustração: um coração ao lado de uma lista de pedidos, com o primeiro marcado como respondido.',
+    pic: 2,
   },
   {
     title: 'Organize a sua célula',
-    text: 'Convide as pessoas, monte a escala e o roteiro e acompanhe os pedidos do grupo.',
+    text: 'Escala, roteiro, presença e os pedidos de oração do grupo, tudo pelo celular.',
     art: 'Ilustração: cinco pessoas em volta de uma mesa.',
+    pic: 4,
+  },
+  {
+    title: 'Um site para a sua célula',
+    text: 'Uma página com o nome, a capa e o bairro do grupo, para quem ainda não conhece pedir para participar.',
+    art: 'Ilustração: uma página de internet com capa, logo e um botão.',
+    pic: 5,
+  },
+  {
+    title: 'Tire dúvidas sobre a Bíblia',
+    text: 'Pergunte sobre qualquer passagem e receba a resposta com o versículo e a fonte.',
+    art: 'Ilustração: um balão de pergunta e um balão de resposta com um versículo marcado.',
+    pic: 1,
+  },
+  {
+    title: 'Bíblia e oração todo dia',
+    text: 'A Bíblia completa sem internet, planos de leitura, oração guiada e diário.',
+    art: 'Ilustração: uma Bíblia aberta e uma barra de progresso.',
+    pic: 0,
   },
 ]
 
@@ -81,29 +87,53 @@ export function IntroScreen() {
         accessibilityLabel="Apresentação do app"
       >
         {INTRO_STEPS.map((s, i) => (
-          <View
-            key={s.title}
-            style={{ width, flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 24 }}
-            importantForAccessibility={i === index ? 'auto' : 'no-hide-descendants'}
-            accessibilityElementsHidden={i !== index}
-          >
-            <View accessible accessibilityRole="image" accessibilityLabel={s.art}>
-              <IntroArt step={i} />
-            </View>
-            <View style={{ gap: 10, alignItems: 'center' }}>
-              <AppText variant="screenTitle" accessibilityRole="header" style={{ textAlign: 'center' }}>
-                {s.title}
-              </AppText>
-              <AppText variant="body" tone="secondary" style={{ textAlign: 'center' }}>
-                {s.text}
-              </AppText>
-            </View>
+          <View key={s.title} style={{ width, flex: 1 }} importantForAccessibility={i === index ? 'auto' : 'no-hide-descendants'} accessibilityElementsHidden={i !== index}>
+            {/* Rola na vertical quando a tela é baixa ou a fonte do sistema é grande: o texto nunca fica cortado. */}
+            <ScrollView
+              contentContainerStyle={{
+                flexGrow: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 32,
+                paddingVertical: 16,
+                gap: 24,
+              }}
+              showsVerticalScrollIndicator={false}
+            >
+              <View accessible accessibilityRole="image" accessibilityLabel={s.art}>
+                <IntroArt step={s.pic} />
+              </View>
+              <View
+                style={{
+                  gap: 10,
+                  alignItems: 'center',
+                  alignSelf: 'stretch',
+                  maxWidth: 520,
+                  width: '100%',
+                }}
+              >
+                <AppText variant="screenTitle" accessibilityRole="header" style={{ textAlign: 'center' }}>
+                  {s.title}
+                </AppText>
+                <AppText variant="body" tone="secondary" style={{ textAlign: 'center' }}>
+                  {s.text}
+                </AppText>
+              </View>
+            </ScrollView>
           </View>
         ))}
       </ScrollView>
 
       {/* Indicador de passos: tocar num ponto também muda de passo (ajuda quem usa leitor de tela). */}
-      <View style={{ flexDirection: 'row', justifyContent: 'center', paddingVertical: 8 }} accessibilityRole="tablist" accessibilityLabel="Passos da apresentação">
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          paddingVertical: 8,
+        }}
+        accessibilityRole="tablist"
+        accessibilityLabel="Passos da apresentação"
+      >
         {INTRO_STEPS.map((s, i) => (
           <Pressable
             key={s.title}
@@ -111,14 +141,33 @@ export function IntroScreen() {
             accessibilityRole="tab"
             accessibilityLabel={`Passo ${i + 1} de ${INTRO_STEPS.length}: ${s.title}`}
             accessibilityState={{ selected: i === index }}
-            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+            style={{
+              width: 44,
+              height: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <View style={{ width: i === index ? 24 : 10, height: 10, borderRadius: 5, backgroundColor: i === index ? colors.primary : colors.lineStrong }} />
+            <View
+              style={{
+                width: i === index ? 24 : 10,
+                height: 10,
+                borderRadius: 5,
+                backgroundColor: i === index ? colors.primary : colors.lineStrong,
+              }}
+            />
           </Pressable>
         ))}
       </View>
 
-      <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: insets.bottom + 20, gap: 10 }}>
+      <View
+        style={{
+          paddingHorizontal: 24,
+          paddingTop: 8,
+          paddingBottom: insets.bottom + 20,
+          gap: 10,
+        }}
+      >
         <Button label="Criar conta" onPress={() => start('create')} />
         <Button label="Entrar" variant="outline" onPress={() => start('login')} />
       </View>

@@ -126,11 +126,11 @@ describe('tela do capítulo', () => {
     expect(router.replace).toHaveBeenCalledWith('/biblia/salmos/25')
   })
 
-  test('traduções licenciadas aparecem como em breve', async () => {
+  test('só aparece a tradução que existe no app, sem "em breve"', async () => {
     await renderApp(<ChapterScreen />, { onboarded: true })
     await fireEvent.press(screen.getByRole('button', { name: 'Bíblia Livre' }))
     expect(screen.getByLabelText('Bíblia Livre, selecionada')).toBeTruthy()
-    expect(screen.getByLabelText('NVI, em breve')).toBeTruthy()
+    expect(screen.queryByLabelText(/em breve/)).toBeNull()
   })
 
   test('capítulo que não existe mostra a tela de não encontrado', async () => {

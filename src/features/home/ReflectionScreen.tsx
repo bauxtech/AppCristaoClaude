@@ -4,6 +4,7 @@ import { AppText, Button, TopBar } from '../../components'
 import { useTheme } from '../../theme/ThemeProvider'
 import { useAudio } from '../audio/AudioContext'
 import { reflection } from './data'
+import { ScreenPlayer } from '../audio/MiniPlayer'
 
 export function ReflectionScreen() {
   const { colors } = useTheme()
@@ -26,6 +27,7 @@ export function ReflectionScreen() {
           onPress={() => audio.play({ title: 'Reflexão de hoje', text: [...reflection.paragraphs, reflection.prayer].join(' ') })}
         />
       </ScrollView>
+      <ScreenPlayer />
     </View>
   )
 }

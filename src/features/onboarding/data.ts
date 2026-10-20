@@ -16,16 +16,11 @@ export const DEMO_INVITE_CODE = 'ABC123'
 
 export const demoCell = { name: 'Jovens da Central', leader: 'João Silva', when: 'Quartas, 20h', neighborhood: 'Pinheiros' }
 
-/** Só uma tradução de domínio público no lançamento (regra decidida). As outras aparecem como "Em breve". */
-export const TRANSLATIONS = [
-  { id: 'biblia-livre', label: 'Bíblia Livre', available: true },
-  { id: 'nvi', label: 'NVI', available: false },
-  { id: 'ara', label: 'ARA', available: false },
-  { id: 'acf', label: 'ACF', available: false },
-  { id: 'nvt', label: 'NVT', available: false },
-  { id: 'ntlh', label: 'NTLH', available: false },
-  { id: 'a21', label: 'A21', available: false },
-]
+/**
+ * Traduções que a pessoa pode escolher. No lançamento, só a Bíblia Livre (regra decidida).
+ * As licenciadas (NVI, ARA, ACF, NVT, NTLH, A21) estão no backlog e não aparecem no app até existirem (QA de 20/10).
+ */
+export const TRANSLATIONS = [{ id: 'biblia-livre', label: 'Bíblia Livre', available: true }]
 
 export const TRADITIONS = ['Batista', 'Pentecostal', 'Presbiteriana', 'Católica', 'Outra', 'Prefiro não dizer']
 

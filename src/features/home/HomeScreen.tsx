@@ -26,8 +26,6 @@ import { verseText } from '../bible/text'
 import { moods, passage, reflection, wordForNow } from './data'
 import { PrayerMomentsSection, ReadingPlansSection } from './HomeSections'
 
-const SOON = 'Disponível em breve'
-
 export function HomeScreen() {
   const { colors } = useTheme()
   const songOfDay = songForDay()
@@ -187,18 +185,6 @@ export function HomeScreen() {
                   <SectionLabel>Reflexão de hoje</SectionLabel>
                   <AppText variant="bodyStrong">{reflection.minutes} min de leitura</AppText>
                 </View>
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 12,
-                    backgroundColor: colors.primarySoft,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Icon name="pen" size={18} color={colors.primary} />
-                </View>
               </View>
               <AppText variant="small" tone="secondary" numberOfLines={2} style={{ marginBottom: 16 }}>
                 {reflection.paragraphs[0]}
@@ -211,10 +197,20 @@ export function HomeScreen() {
         {!simple ? (
           <>
             {/* Palavra para agora */}
-            <Card>
-              <AppText variant="bodyStrong" accessibilityRole="header" style={{ marginBottom: 12 }}>
-                Como você está agora?
-              </AppText>
+            <Card style={{ backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="heart" size={20} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppText variant="bodyStrong" accessibilityRole="header">
+                    O que você está sentindo agora?
+                  </AppText>
+                  <AppText variant="small" tone="secondary">
+                    Escolha e receba um versículo para este momento.
+                  </AppText>
+                </View>
+              </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {moods.map((m) => (
                   <Chip key={m} label={m} selected={mood === m} onPress={() => setMood(mood === m ? null : m)} />
@@ -224,7 +220,7 @@ export function HomeScreen() {
                 <View style={{ marginTop: 16, gap: 8 }} accessibilityLiveRegion="polite">
                   <View
                     style={{
-                      backgroundColor: colors.primarySoft,
+                      backgroundColor: colors.card,
                       borderRadius: 12,
                       padding: 14,
                       gap: 6,

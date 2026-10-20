@@ -33,12 +33,12 @@ describe('abertura', () => {
   test('apresentação: 5 passos com título, texto e ilustração descrita', async () => {
     await renderApp(<IntroScreen />)
     expect(INTRO_STEPS).toHaveLength(5)
-    expect(screen.getByText('Leia a Bíblia todo dia')).toBeTruthy()
-    expect(screen.getByLabelText('Ilustração: uma Bíblia aberta e uma barra de progresso.')).toBeTruthy()
+    expect(screen.getByText('Grave o culto e guarde o resumo')).toBeTruthy()
+    expect(screen.getByLabelText('Ilustração: um microfone ao lado de uma folha com o texto da pregação.')).toBeTruthy()
     expect(screen.getAllByRole('tab')).toHaveLength(5)
-    expect(screen.getByRole('tab', { name: 'Passo 1 de 5: Leia a Bíblia todo dia' }).props.accessibilityState.selected).toBe(true)
-    await fireEvent.press(screen.getByRole('tab', { name: 'Passo 3 de 5: Grave o culto e guarde o resumo' }))
-    expect(screen.getByRole('tab', { name: 'Passo 3 de 5: Grave o culto e guarde o resumo' }).props.accessibilityState.selected).toBe(true)
+    expect(screen.getByRole('tab', { name: 'Passo 1 de 5: Grave o culto e guarde o resumo' }).props.accessibilityState.selected).toBe(true)
+    await fireEvent.press(screen.getByRole('tab', { name: 'Passo 3 de 5: Um site para a sua célula' }))
+    expect(screen.getByRole('tab', { name: 'Passo 3 de 5: Um site para a sua célula' }).props.accessibilityState.selected).toBe(true)
   })
 
   test('apresentação: o ponto ativo acompanha o arraste', async () => {
@@ -46,9 +46,9 @@ describe('abertura', () => {
     const pager = screen.getByLabelText('Apresentação do app')
     const { width } = Dimensions.get('window')
     await fireEvent.scroll(pager, { nativeEvent: { contentOffset: { x: width * 2, y: 0 } } })
-    expect(screen.getByRole('tab', { name: 'Passo 3 de 5: Grave o culto e guarde o resumo' }).props.accessibilityState.selected).toBe(true)
+    expect(screen.getByRole('tab', { name: 'Passo 3 de 5: Um site para a sua célula' }).props.accessibilityState.selected).toBe(true)
     await fireEvent.scroll(pager, { nativeEvent: { contentOffset: { x: width * 4, y: 0 } } })
-    expect(screen.getByRole('tab', { name: 'Passo 5 de 5: Organize a sua célula' }).props.accessibilityState.selected).toBe(true)
+    expect(screen.getByRole('tab', { name: 'Passo 5 de 5: Bíblia e oração todo dia' }).props.accessibilityState.selected).toBe(true)
   })
 
   test('Criar conta e Entrar abrem a tela de acesso com o título certo', async () => {
@@ -155,7 +155,7 @@ test('tradição: só a tradução de domínio público pode ser escolhida', asy
   await renderApp(<TraditionScreen />)
   expect(screen.getByRole('button', { name: 'Bíblia Livre' })).toBeSelected()
   expect(screen.queryByRole('button', { name: 'NVI' })).toBeNull()
-  expect(screen.getByLabelText(/Em breve: NVI/)).toBeTruthy()
+  expect(screen.queryByLabelText(/Em breve/)).toBeNull()
 })
 
 test('célula: código de convite inválido avisa; válido leva para aguardando aprovação', async () => {

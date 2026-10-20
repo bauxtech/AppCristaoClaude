@@ -6,6 +6,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 // O áudio gravado por narrador entra depois; a voz sintetizada continua como opção.
 
 export const SPEEDS = [1, 1.25, 1.5] as const
+/** A voz do celular em 1x soa rápida para leitura bíblica (QA de 20/10): o 1x do app fala um pouco mais devagar. */
+export const BASE_RATE = 0.85
 export type Speed = (typeof SPEEDS)[number]
 
 interface Track {
@@ -39,7 +41,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     Speech.speak(t.text, {
       language: 'pt-BR',
       voice: voiceRef.current ?? undefined,
-      rate,
+      rate: rate * BASE_RATE,
       onDone: () => setPlaying(false),
       onStopped: () => setPlaying(false),
       onError: () => setPlaying(false),

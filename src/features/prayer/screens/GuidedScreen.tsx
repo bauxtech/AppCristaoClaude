@@ -11,6 +11,7 @@ import { palettes } from '../../../theme/colors'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts, size } from '../../../theme/typography'
 import { guidedSteps, themeById, type ThemeId } from '../data'
+import { BASE_RATE } from '../../audio/AudioContext'
 
 const ON_DARK = '#FFFFFF'
 const ON_DARK_SOFT = 'rgba(255,255,255,0.78)'
@@ -26,7 +27,8 @@ export function GuidedScreen() {
   const params = useLocalSearchParams<{ tema: string; min: string; formato: string }>()
   const theme = themeById(String(params.tema)) ?? themeById('gratidao')!
   const minutes = Number(params.min) || 5
-  const audio = params.formato === 'audio'
+  // Voz: começa como a pessoa escolheu antes e pode ser ligada ou desligada aqui.
+  const [audio, setAudio] = useState(params.formato === 'audio')
   const total = minutes * 60
   const steps = guidedSteps(theme.id as ThemeId)
 
@@ -42,17 +44,26 @@ export function GuidedScreen() {
 
   const progress = total > 0 ? elapsed / total : 0
   const step = Math.min(Math.floor(progress * steps.length), steps.length - 1)
+  // Cada passo tem o mesmo tempo. Avançar ou voltar leva o cronômetro para o começo do passo.
+  const stepSecs = total / steps.length
+  const goToStep = (i: number) => {
+    const next = Math.max(0, Math.min(steps.length - 1, i))
+    spoken.current = -1
+    setElapsed(Math.ceil(next * stepSecs))
+    setActive(true)
+  }
 
   useEffect(() => {
     if (!audio || !active || spoken.current === step) return
     spoken.current = step
     Speech.stop()
-    Speech.speak(steps[step], { language: 'pt-BR' })
+    Speech.speak(steps[step], { language: 'pt-BR', rate: BASE_RATE })
   }, [audio, active, step, steps])
 
   useEffect(() => {
-    if (!active) Speech.stop()
-  }, [active])
+    if (!active || !audio) Speech.stop()
+    if (!audio) spoken.current = -1
+  }, [active, audio])
 
   useEffect(() => () => void Speech.stop(), [])
 
@@ -114,20 +125,48 @@ export function GuidedScreen() {
       </View>
 
       <View style={{ alignItems: 'center', gap: 12 }}>
+        <AppText style={{ color: ON_DARK_SOFT, fontSize: size.small, textAlign: 'center', paddingHorizontal: 24 }}>
+          {`Passo ${step + 1} de ${steps.length}. Ore em silêncio ou toque em Próximo quando quiser.`}
+        </AppText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 24 }}>
+          <Pressable
+            onPress={() => goToStep(step - 1)}
+            disabled={step === 0}
+            accessibilityRole="button"
+            accessibilityLabel="Passo anterior"
+            accessibilityState={{ disabled: step === 0 }}
+            style={{ width: 56, height: 56, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)', alignItems: 'center', justifyContent: 'center', opacity: step === 0 ? 0.4 : 1 }}
+          >
+            <Icon name="chevronLeft" size={22} color={ON_DARK} strokeWidth={2.5} />
+          </Pressable>
+          <Pressable
+            onPress={() => setActive((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={active ? 'Pausar' : elapsed > 0 ? 'Continuar' : 'Iniciar'}
+            style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Icon name={active ? 'pause' : 'play'} size={24} color={colors.primaryText} />
+          </Pressable>
+          <Pressable
+            onPress={() => (step === steps.length - 1 ? setElapsed(total) : goToStep(step + 1))}
+            accessibilityRole="button"
+            accessibilityLabel={step === steps.length - 1 ? 'Concluir o momento' : 'Próximo passo'}
+            style={{ width: 56, height: 56, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Icon name="chevronRight" size={22} color={ON_DARK} strokeWidth={2.5} />
+          </Pressable>
+        </View>
+        {/* Voz que lê cada passo: liga e desliga aqui, sem depender do que foi escolhido antes. */}
         <Pressable
-          onPress={() => setActive((v) => !v)}
-          accessibilityRole="button"
-          accessibilityLabel={active ? 'Pausar' : elapsed > 0 ? 'Continuar' : 'Iniciar'}
-          style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}
+          onPress={() => setAudio((v) => !v)}
+          accessibilityRole="switch"
+          accessibilityLabel="Ler cada passo em voz alta"
+          accessibilityState={{ checked: audio }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: MIN_TOUCH, paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' }}
         >
-          <Icon name={active ? 'pause' : 'play'} size={24} color={colors.primaryText} />
+          <Icon name="volume" size={16} color={ON_DARK} />
+          <AppText style={{ color: ON_DARK, fontSize: size.small, fontFamily: fonts.medium }}>{audio ? 'Voz ligada' : 'Voz desligada'}</AppText>
         </Pressable>
-        {audio ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Icon name="volume" size={14} color={ON_DARK_SOFT} />
-            <AppText style={{ color: ON_DARK_SOFT, fontSize: size.label }}>Áudio ligado</AppText>
-          </View>
-        ) : null}
       </View>
     </View>
   )

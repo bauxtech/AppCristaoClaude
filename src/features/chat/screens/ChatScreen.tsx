@@ -1,4 +1,5 @@
 import { requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from 'expo-audio'
+import { ScreenPlayer } from '../../audio/MiniPlayer'
 import { useRemoteState } from '../../../state/connection'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
@@ -246,7 +247,6 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
               maxLength={500}
               style={{ flex: 1, minHeight: 48, maxHeight: 120, borderRadius: 16, borderWidth: 1, borderColor: colors.lineStrong, paddingHorizontal: 14, paddingVertical: 12, color: colors.text, fontFamily: fonts.regular, fontSize: size.body, backgroundColor: colors.bg }}
             />
-            <IconButton icon="mic" label="Perguntar por voz" onPress={() => setVoice(true)} />
             <Pressable
               onPress={() => ask(input)}
               disabled={!input.trim()}
@@ -266,6 +266,7 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
         <AppText variant="body">Igrejas cristãs têm leituras diferentes sobre este tema. O chat mostra o que a Bíblia diz e avisa quando há diferença entre as tradições. Converse também com o seu pastor.</AppText>
         <Button label="Entendi" onPress={() => setDivided(false)} />
       </Sheet>
+      <ScreenPlayer />
     </KeyboardAvoidingView>
   )
 }

@@ -74,9 +74,11 @@ export function ChapterScreen() {
         onBack={() => router.back()}
         right={
           <View style={{ flexDirection: 'row' }}>
-            <IconButton
+            <Button
               icon="volume"
-              label="Ouvir o capítulo"
+              label="Ouvir"
+              variant="text"
+              size="sm"
               onPress={() => (verses.length ? audio.play({ title, text: verses.map((v) => `${v.v}. ${v.text}`).join(' ') }) : toast('Este capítulo ainda não tem texto na prévia'))}
             />
             <IconButton icon="info" label="Mais opções do capítulo" onPress={() => setSheet('more')} />
@@ -84,7 +86,7 @@ export function ChapterScreen() {
         }
       />
 
-      {/* Tradução, tamanho da letra e comparar */}
+      {/* Tradução e tamanho da letra */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: colors.line }}>
         <Button label={translation.name} icon="chevronDown" variant="text" size="sm" onPress={() => setSheet('translation')} accessibilityHint="Trocar a tradução" />
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -279,9 +281,6 @@ export function ChapterScreen() {
             {t.available ? <Icon name="check" size={18} color={colors.primary} strokeWidth={2.5} /> : <Tag label="Em breve" tone="neutral" />}
           </View>
         ))}
-        <AppText variant="small" tone="secondary">
-          No lançamento, só a Bíblia Livre está disponível. As traduções licenciadas entram depois.
-        </AppText>
       </Sheet>
 
       {/* Mais opções */}
@@ -292,23 +291,6 @@ export function ChapterScreen() {
           onPress={() => {
             setSheet(null)
             router.push({ pathname: '/biblia/contexto', params: { livro: slug } })
-          }}
-        />
-        <Button
-          label="Bíblia em Libras"
-          icon="hand"
-          variant="outline"
-          onPress={() => {
-            setSheet(null)
-            router.push({ pathname: '/biblia/libras', params: { livro: slug, capitulo: String(chapter) } })
-          }}
-        />
-        <Button
-          label="Comparar traduções"
-          variant="outline"
-          onPress={() => {
-            setSheet(null)
-            router.push('/biblia/comparar')
           }}
         />
       </Sheet>

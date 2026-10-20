@@ -1,4 +1,5 @@
 import { Pressable, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppText, IconButton, MIN_TOUCH } from '../../components'
 import { Icon } from '../../components/Icon'
 import { useTheme } from '../../theme/ThemeProvider'
@@ -45,6 +46,18 @@ export function MiniPlayer() {
         <Icon name={playing ? 'stop' : 'play'} size={22} color="#FFFFFF" />
       </Pressable>
       <IconButton icon="close" label="Fechar leitura em voz alta" onPress={close} color="#FFFFFF" />
+    </View>
+  )
+}
+
+/** Mesma barra nas telas fora das abas (reflexão, culto, chat), presa ao pé da tela. */
+export function ScreenPlayer() {
+  const insets = useSafeAreaInsets()
+  const { track } = useAudio()
+  if (!track) return null
+  return (
+    <View style={{ paddingBottom: insets.bottom }}>
+      <MiniPlayer />
     </View>
   )
 }

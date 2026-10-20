@@ -64,10 +64,7 @@ export function BooksScreen() {
               accessibilityHint="Abre o último capítulo que você leu"
             />
           ) : null}
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Button label="Planos" variant="outline" size="sm" onPress={() => router.push('/biblia/planos')} style={{ flex: 1 }} />
-            <Button label="Comparar" variant="outline" size="sm" onPress={() => router.push('/biblia/comparar')} style={{ flex: 1 }} />
-          </View>
+          <Button label="Planos de leitura" variant="outline" size="sm" onPress={() => router.push('/biblia/planos')} />
           {!query ? (
             <Segmented
               label="Testamento"

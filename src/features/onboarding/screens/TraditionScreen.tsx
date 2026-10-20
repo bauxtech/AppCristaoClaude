@@ -41,14 +41,6 @@ export function TraditionScreen() {
             <Chip key={t.id} label={t.label} selected={translation === t.id} onPress={() => setTranslation(t.id)} />
           ))}
         </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' }} accessible accessibilityLabel={`Em breve: ${TRANSLATIONS.filter((t) => !t.available).map((t) => t.label).join(', ')}`}>
-          <AppText variant="small" tone="secondary">
-            Em breve:
-          </AppText>
-          {TRANSLATIONS.filter((t) => !t.available).map((t) => (
-            <Tag key={t.id} label={t.label} tone="neutral" />
-          ))}
-        </View>
       </View>
       <View style={{ gap: 10 }}>
         <AppText variant="body" style={{ fontFamily: fonts.semibold }} accessibilityRole="header">

@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router'
+import { ScreenPlayer } from '../../audio/MiniPlayer'
 import { NotesLockedInline, useNotesLocked } from '../../settings/NotesLock'
 import { useState } from 'react'
 import { Share, View } from 'react-native'
@@ -103,6 +104,7 @@ function Ready({ s }: { s: Sermon }) {
   }
 
   return (
+    <>
     <Page title="Resultado" right={<IconButton icon="more" label="Mais opções do culto" onPress={() => setSheet('options')} />}>
       <View style={{ borderRadius: 20, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.primarySoft, padding: 20, gap: 4 }}>
         <AppText variant="small" tone="secondary">{[s.church, formatMeetingDay(s.date)].filter(Boolean).join(' · ')}</AppText>
@@ -249,5 +251,7 @@ function Ready({ s }: { s: Sermon }) {
         <Button label="Cancelar" variant="text" onPress={() => setSheet(null)} />
       </Sheet>
     </Page>
+    <ScreenPlayer />
+    </>
   )
 }

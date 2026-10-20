@@ -230,9 +230,6 @@ export function BibleSettingsScreen() {
             {t.available ? <Icon name="check" size={18} color={colors.primary} strokeWidth={2.5} /> : <Tag label="Em breve" tone="neutral" />}
           </View>
         ))}
-        <AppText variant="small" tone="secondary">
-          No lançamento, só a tradução de domínio público está disponível. As outras entram depois.
-        </AppText>
       </Card>
 
       <Card style={{ gap: 12 }}>

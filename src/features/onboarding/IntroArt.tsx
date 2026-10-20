@@ -87,6 +87,20 @@ export function IntroArt({ step }: { step: number }) {
           <Line x1={110} y1={108} x2={130} y2={108} stroke={line} strokeWidth={3} strokeLinecap="round" />
         </>
       ) : null}
+      {step === 5 ? (
+        <>
+          {/* Página da célula no navegador: capa, logo e o botão Quero participar */}
+          <Rect x={44} y={36} width={152} height={112} rx={12} fill={card} stroke={main} strokeWidth={3} />
+          <Line x1={44} y1={54} x2={196} y2={54} stroke={line} strokeWidth={2} />
+          <Circle cx={56} cy={45} r={3} fill={line} />
+          <Circle cx={66} cy={45} r={3} fill={line} />
+          <Rect x={54} y={62} width={132} height={30} rx={6} fill={soft} />
+          <Circle cx={74} cy={94} r={12} fill={main} stroke={card} strokeWidth={3} />
+          <Line x1={94} y1={102} x2={160} y2={102} stroke={line} strokeWidth={3} strokeLinecap="round" />
+          <Line x1={62} y1={118} x2={140} y2={118} stroke={line} strokeWidth={3} strokeLinecap="round" />
+          <Rect x={62} y={128} width={64} height={12} rx={6} fill={accent} />
+        </>
+      ) : null}
     </Svg>
   )
 }

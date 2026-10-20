@@ -51,6 +51,8 @@ export default function TabsLayout() {
           tabBarAllowFontScaling: true,
           tabBarItemStyle: { minHeight: MIN_TOUCH },
           sceneStyle: { backgroundColor: colors.bg },
+          // Ao sair de uma aba, ela volta para a tela inicial: tocar de novo na aba nunca reabre uma tela interna antiga.
+          popToTopOnBlur: true,
         }}
       >
         {TABS.map((t) => (
