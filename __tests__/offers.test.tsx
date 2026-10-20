@@ -64,7 +64,7 @@ describe('ofertas e novidades', () => {
     await fireEvent.press(screen.getByRole('checkbox', { name: /Ofertas e novidades/ }))
     await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }))
     expect(JSON.parse(screen.getByTestId('offers').props.children)).toEqual({ push: true, email: true })
-    expect(router.push).toHaveBeenCalledWith('/tradicao')
+    expect(router.push).toHaveBeenCalledWith('/objetivo')
   })
 
   test('sem marcar, nada é ligado', async () => {

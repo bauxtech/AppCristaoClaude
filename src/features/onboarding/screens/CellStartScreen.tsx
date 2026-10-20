@@ -5,15 +5,17 @@ import { Button, SelectCard, TextField } from '../../../components'
 import { IS_REMOTE } from '../../../lib/supabase'
 import { useSession } from '../../../state/session'
 import { useCell } from '../../cell/CellContext'
-import { DEMO_INVITE_CODE } from '../data'
+import { DEMO_INVITE_CODE, goalList } from '../data'
 import { OnboardingScaffold } from '../OnboardingScaffold'
 import { normalizeInvite } from '../validation'
 
 type Choice = 'join' | 'create' | 'later'
 
 export function CellStartScreen() {
-  const { finishOnboarding, setCellStatus } = useSession()
-  const [choice, setChoice] = useState<Choice | null>(null)
+  const { finishOnboarding, setCellStatus, profile } = useSession()
+  // Quem marcou liderar ou participar de célula nos objetivos já chega com a opção escolhida.
+  const goals = goalList(profile.goal)
+  const [choice, setChoice] = useState<Choice | null>(goals.includes('lead') ? 'create' : goals.includes('join') ? 'join' : null)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)

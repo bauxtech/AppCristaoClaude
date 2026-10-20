@@ -2,7 +2,8 @@
 
 /** Telas que contam na barra de progresso, na ordem. */
 /** A tela de acesso (Criar conta ou Entrar) vem da apresentação e não conta na barra. */
-export const PROGRESS_STEPS = ['celular', 'codigo', 'termos', 'nome', 'tradicao', 'objetivo', 'horario', 'igreja', 'celula'] as const
+// Cadastro curto (decisão de 20/10): tradição, horário e igreja ficam para depois, em Configurações e na aba Igreja.
+export const PROGRESS_STEPS = ['celular', 'codigo', 'termos', 'nome', 'objetivo', 'celula'] as const
 export type ProgressStep = (typeof PROGRESS_STEPS)[number]
 
 /** Na prévia, estes códigos simulam as respostas do servidor. */
@@ -24,12 +25,17 @@ export const TRANSLATIONS = [{ id: 'biblia-livre', label: 'Bíblia Livre', avail
 
 export const TRADITIONS = ['Batista', 'Pentecostal', 'Presbiteriana', 'Católica', 'Outra', 'Prefiro não dizer']
 
+/** Objetivos do cadastro. A pessoa marca quantos quiser; ficam guardados juntos, separados por vírgula. */
 export const GOALS = [
-  { id: 'read', label: 'Ler a Bíblia inteira', desc: 'Seguir um plano de leitura e concluir os 66 livros.' },
-  { id: 'pray', label: 'Orar mais', desc: 'Criar um hábito diário de oração com guias e diário.' },
-  { id: 'understand', label: 'Entender melhor a Bíblia', desc: 'Usar o chat e as anotações para aprofundar o estudo.' },
-  { id: 'lead', label: 'Liderar uma célula', desc: 'Criar e conduzir meu próprio grupo com ferramentas do app.' },
+  { id: 'read', label: 'Ler a Bíblia', desc: 'Seguir um plano de leitura e acompanhar o progresso nos 66 livros.' },
+  { id: 'pray', label: 'Orar mais', desc: 'Criar um hábito de oração com momentos guiados e diário.' },
+  { id: 'understand', label: 'Entender melhor a Bíblia', desc: 'Tirar dúvidas no chat e guardar anotações.' },
+  { id: 'sermon', label: 'Guardar o que ouço no culto', desc: 'Gravar a pregação e ter o texto e o resumo.' },
+  { id: 'join', label: 'Participar de uma célula', desc: 'Entrar no grupo com o código de convite.' },
+  { id: 'lead', label: 'Liderar uma célula', desc: 'Criar e conduzir o meu grupo pelo app.' },
 ]
+
+export const goalList = (goal: string | null | undefined) => (goal ? goal.split(',').filter(Boolean) : [])
 
 export const TIMES = [
   { id: 'manha', label: 'Manhã', desc: 'Entre 6h e 9h' },

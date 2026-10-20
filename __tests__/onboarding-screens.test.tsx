@@ -4,7 +4,7 @@ import { router } from 'expo-router'
 import { CodeScreen } from '../src/features/onboarding/screens/CodeScreen'
 import { PhoneScreen } from '../src/features/onboarding/screens/PhoneScreen'
 import { TermsScreen } from '../src/features/onboarding/screens/TermsScreen'
-import { TraditionScreen } from '../src/features/onboarding/screens/TraditionScreen'
+import { GoalScreen } from '../src/features/onboarding/screens/GoalScreen'
 import { IntroScreen, INTRO_STEPS } from '../src/features/onboarding/screens/IntroScreen'
 import { LoginScreen } from '../src/features/onboarding/screens/LoginScreen'
 import { Splash } from '../src/features/onboarding/Splash'
@@ -68,13 +68,13 @@ describe('abertura', () => {
   })
 
   test('a tela de acesso não conta na barra do cadastro', () => {
-    expect(PROGRESS_STEPS).toHaveLength(9)
+    expect(PROGRESS_STEPS).toHaveLength(6)
     expect(PROGRESS_STEPS[0]).toBe('celular')
   })
 
   test('o cadastro mostra uma barra de progresso contínua no topo', async () => {
     await renderApp(<PhoneScreen />)
-    expect(screen.getByRole('progressbar', { name: 'Passo 1 de 9' })).toBeTruthy()
+    expect(screen.getByRole('progressbar', { name: 'Passo 1 de 6' })).toBeTruthy()
   })
 })
 
@@ -151,11 +151,19 @@ test('termos: sem marcar 18 anos, avisa que o app é para maiores de 18', async 
   expect(router.push).toHaveBeenCalledWith('/nome')
 })
 
-test('tradição: só a tradução de domínio público pode ser escolhida', async () => {
-  await renderApp(<TraditionScreen />)
-  expect(screen.getByRole('button', { name: 'Bíblia Livre' })).toBeSelected()
-  expect(screen.queryByRole('button', { name: 'NVI' })).toBeNull()
-  expect(screen.queryByLabelText(/Em breve/)).toBeNull()
+test('objetivos: marca mais de um, e liderar célula já chega escolhido na última tela', async () => {
+  await renderApp(
+    <>
+      <GoalScreen />
+      <CellStartScreen />
+    </>,
+  )
+  await fireEvent.press(screen.getByRole('checkbox', { name: /Orar mais/ }))
+  await fireEvent.press(screen.getByRole('checkbox', { name: /Liderar uma célula/ }))
+  expect(screen.getByRole('checkbox', { name: /Orar mais/ }).props.accessibilityState.checked).toBe(true)
+  expect(screen.getByRole('checkbox', { name: /Liderar uma célula/ }).props.accessibilityState.checked).toBe(true)
+  await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }))
+  expect(router.push).toHaveBeenCalledWith('/celula-inicio')
 })
 
 test('célula: código de convite inválido avisa; válido leva para aguardando aprovação', async () => {

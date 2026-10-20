@@ -26,7 +26,7 @@ export function NameScreen() {
     updateProfile({ name: name.trim(), ...(mail ? { email: mail } : {}) })
     // Ofertas só com a autorização marcada. Por e-mail, só se a pessoa informou o e-mail.
     if (offers) settings.setOffers({ push: true, email: !!mail })
-    router.push('/tradicao')
+    router.push('/objetivo')
   }
 
   function photoAction(msg: string) {
@@ -43,7 +43,7 @@ export function NameScreen() {
       footer={
         <>
           <Button label="Continuar" onPress={next} />
-          <Button label="Pular" variant="text" onPress={() => router.push('/tradicao')} style={{ alignSelf: 'center' }} />
+          <Button label="Pular" variant="text" onPress={() => router.push('/objetivo')} style={{ alignSelf: 'center' }} />
         </>
       }
     >
