@@ -10,27 +10,47 @@ import { useChurch } from '../ChurchContext'
 import { ACCESS_ITEMS, servicesByDay } from './format'
 import { PlanButton } from '../../subscription/PlanLock'
 
+/** Culto em destaque no topo da Igreja (QA de 20/10): gravar e abrir os cultos gravados lado a lado, e o último culto. */
 function RecordCard() {
   const { colors } = useTheme()
   const { sermons } = useSermons()
+  const last = sermons[0]
   return (
-    <>
-      <Pressable
-        onPress={() => router.push('/culto/gravar')}
-        accessibilityRole="button"
-        accessibilityLabel="Gravar culto. Transcrição e resumo"
-        style={({ pressed }) => ({ borderRadius: 16, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.primarySoft, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pressed ? 0.85 : 1 })}
-      >
+    <Card style={{ gap: 12, backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="mic" size={22} color={colors.primary} />
+        </View>
         <View style={{ flex: 1 }}>
-          <AppText variant="bodyStrong">Gravar culto</AppText>
+          <AppText variant="title">Culto</AppText>
           <AppText variant="small" tone="secondary">
-            Transcrição e resumo
+            Grave a pregação e tenha o texto, o resumo e os versículos.
           </AppText>
         </View>
-        <Icon name="mic" size={22} color={colors.primary} />
-      </Pressable>
-      <Button label={sermons.length ? `Ver cultos gravados (${sermons.length})` : 'Ver cultos gravados'} variant="text" onPress={() => router.push('/culto')} />
-    </>
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <PlanButton feature="sermon" label="Gravar culto" icon="mic" onPress={() => router.push('/culto/gravar')} />
+        <Button label={sermons.length ? `Cultos gravados (${sermons.length})` : 'Cultos gravados'} variant="outline" onPress={() => router.push('/culto')} />
+      </View>
+      {last ? (
+        <Pressable
+          onPress={() => router.push({ pathname: '/culto/[id]', params: { id: last.id } })}
+          accessibilityRole="button"
+          accessibilityLabel={`Último culto: ${last.theme || 'Culto'}`}
+          style={{ minHeight: MIN_TOUCH, flexDirection: 'row', alignItems: 'center', gap: 8, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 10 }}
+        >
+          <View style={{ flex: 1 }}>
+            <AppText variant="label" tone="secondary">
+              Último culto
+            </AppText>
+            <AppText variant="bodyStrong" numberOfLines={1}>
+              {last.theme || 'Culto'}
+            </AppText>
+          </View>
+          <Icon name="chevronRight" size={16} color={colors.textSecondary} />
+        </Pressable>
+      ) : null}
+    </Card>
   )
 }
 
@@ -91,6 +111,42 @@ export function ChurchHubScreen() {
         <IconButton icon="search" label="Buscar igreja" onPress={() => router.push('/igreja/buscar')} />
       </View>
 
+      <RecordCard />
+
+      <TileGrid
+        items={[
+          {
+            label: 'Ministérios',
+            sub: ministries.length ? `${ministries.length} ${ministries.length === 1 ? 'ministério' : 'ministérios'}` : 'Onde você serve',
+            icon: 'people',
+            onPress: () => router.push('/igreja/ministerios'),
+          },
+          { label: 'Cursos', sub: activeCourses ? `${activeCourses} em andamento` : 'Nenhum em andamento', icon: 'book', onPress: () => router.push('/igreja/cursos') },
+        ]}
+      />
+
+      <Card style={{ paddingVertical: 4 }}>
+        <Pressable
+          onPress={() => router.push('/igreja/eventos')}
+          accessibilityRole="button"
+          accessibilityLabel={`Eventos, ${events.length} ${events.length === 1 ? 'próximo evento' : 'próximos eventos'}`}
+          style={{ minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+        >
+          <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="calendar" size={18} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <AppText variant="bodyStrong">Eventos</AppText>
+            <AppText variant="small" tone="secondary">
+              {events.length ? `${events.length} ${events.length === 1 ? 'próximo evento' : 'próximos eventos'}` : 'Nenhum evento'}
+            </AppText>
+          </View>
+          <Icon name="chevronRight" size={16} color={colors.lineStrong} />
+        </Pressable>
+      </Card>
+
+      <SectionLabel>Sobre a igreja</SectionLabel>
+
       <Card style={{ gap: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <SectionLabel>Cultos</SectionLabel>
@@ -102,7 +158,12 @@ export function ChurchHubScreen() {
           </AppText>
         ) : (
           byDay.map((d, i) => (
-            <View key={d.day} accessible accessibilityLabel={`${d.day}: ${d.times}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, borderBottomWidth: i < byDay.length - 1 ? 1 : 0, borderBottomColor: colors.line }}>
+            <View
+              key={d.day}
+              accessible
+              accessibilityLabel={`${d.day}: ${d.times}`}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, borderBottomWidth: i < byDay.length - 1 ? 1 : 0, borderBottomColor: colors.line }}
+            >
               <Icon name="clock" size={16} color={colors.primary} />
               <AppText variant="body" style={{ flex: 1 }}>
                 {d.day}
@@ -124,7 +185,12 @@ export function ChurchHubScreen() {
           const v = a[it.key]
           const sub = it.key === 'libras' && v && a.librasServices ? a.librasServices : v === undefined ? 'Ninguém informou ainda' : v ? 'Disponível' : 'Não disponível'
           return (
-            <View key={it.key} accessible accessibilityLabel={`${it.label}: ${sub}`} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10, borderBottomWidth: i < ACCESS_ITEMS.length - 1 ? 1 : 0, borderBottomColor: colors.line }}>
+            <View
+              key={it.key}
+              accessible
+              accessibilityLabel={`${it.label}: ${sub}`}
+              style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10, borderBottomWidth: i < ACCESS_ITEMS.length - 1 ? 1 : 0, borderBottomColor: colors.line }}
+            >
               <View style={{ width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: v ? colors.primarySoft : colors.bg, marginTop: 2 }}>
                 <Icon name={v ? 'check' : v === false ? 'close' : 'info'} size={12} color={v ? colors.primary : colors.textSecondary} strokeWidth={3} />
               </View>
@@ -159,27 +225,6 @@ export function ChurchHubScreen() {
           />
         </Card>
       ) : null}
-
-      <TileGrid
-        items={[
-          { label: 'Ministérios', sub: ministries.length ? `${ministries.length} ${ministries.length === 1 ? 'ministério' : 'ministérios'}` : 'Onde você serve', icon: 'people', onPress: () => router.push('/igreja/ministerios') },
-          { label: 'Cursos', sub: activeCourses ? `${activeCourses} em andamento` : 'Nenhum em andamento', icon: 'book', onPress: () => router.push('/igreja/cursos') },
-        ]}
-      />
-
-      <Card style={{ paddingVertical: 4 }}>
-        <Pressable onPress={() => router.push('/igreja/eventos')} accessibilityRole="button" accessibilityLabel={`Eventos, ${events.length} ${events.length === 1 ? 'próximo evento' : 'próximos eventos'}`} style={{ minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="calendar" size={18} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <AppText variant="bodyStrong">Eventos</AppText>
-            <AppText variant="small" tone="secondary">{events.length ? `${events.length} ${events.length === 1 ? 'próximo evento' : 'próximos eventos'}` : 'Nenhum evento'}</AppText>
-          </View>
-          <Icon name="chevronRight" size={16} color={colors.lineStrong} />
-        </Pressable>
-      </Card>
-      <RecordCard />
     </ScrollView>
   )
 }
