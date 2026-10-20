@@ -64,7 +64,7 @@ export function NoticesScreen() {
   }
 
   return (
-    <Page title={unread ? `Avisos (${unread})` : 'Avisos'} right={<IconButton icon="settings" label="Configurar avisos" onPress={() => router.push('/avisos/configurar')} />}>
+    <Page title={unread ? `Avisos (${unread})` : 'Avisos'} right={<Button label="Configurar" icon="settings" variant="text" size="sm" onPress={() => router.push('/avisos/configurar')} accessibilityHint="Escolher quais avisos receber e o horário de silêncio" />}>
       <PermissionCard perm={perm} ask={ask} />
       {remote.loading ? (
         <>

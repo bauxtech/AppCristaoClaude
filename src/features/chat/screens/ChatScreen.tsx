@@ -1,4 +1,5 @@
 import { requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from 'expo-audio'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ScreenPlayer } from '../../audio/MiniPlayer'
 import { useRemoteState } from '../../../state/connection'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -56,6 +57,7 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
   const { colors } = useTheme()
   const toast = useToast()
   const audio = useAudio()
+  const insets = useSafeAreaInsets()
   const chat = useChat()
   const faith = useFaithConsent()
   const { profile } = useSession()
@@ -160,7 +162,8 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
         onBack={() => router.back()}
         right={
           <View style={{ flexDirection: 'row' }}>
-            <IconButton icon="plus" label="Nova conversa" onPress={() => onConversation(null)} />
+            {/* Só aparece com uma conversa aberta: sem conversa, a tela já é uma conversa nova (o + parecia não responder). */}
+            {conv && conv.messages.length ? <IconButton icon="plus" label="Nova conversa" onPress={() => onConversation(null)} /> : null}
             <IconButton icon="clock" label="Histórico de conversas" onPress={() => router.push('/chat/historico')} />
           </View>
         }
@@ -206,7 +209,8 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
         ) : null}
       </ScrollView>
 
-      <View style={{ padding: 12, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.card }}>
+      {/* Respiro embaixo para os botões do sistema (tablets e celulares com barra de navegação) não cobrirem a pergunta. */}
+      <View style={{ padding: 12, paddingBottom: 12 + (audio.track ? 0 : insets.bottom), borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.card }}>
         {!sub.can('chat') ? (
           <View style={{ gap: 8 }}>
             <PlanLockRow feature="chat" label="Fazer uma pergunta" />

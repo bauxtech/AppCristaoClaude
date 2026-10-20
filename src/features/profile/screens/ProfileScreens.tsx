@@ -45,6 +45,8 @@ export function EditProfileScreen() {
 
   async function pick(camera: boolean) {
     setSheet(false)
+    // No Android, abrir a galeria enquanto o painel ainda fecha não abre nada (QA de 20/10): espera o painel sair.
+    await new Promise((r) => setTimeout(r, 400))
     const uri = await pickImage(camera ? 'camera' : 'library', 'para a sua foto de perfil', { allowsEditing: true, aspect: [1, 1], quality: 0.6 })
     if (uri) {
       profile.setPhoto(uri)

@@ -1,7 +1,7 @@
 import { router } from 'expo-router'
 import { Image, Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AppText, Avatar, Button, Card, ListRow, useToast } from '../../../components'
+import { AppText, Avatar, Button, Card, IconButton, ListRow, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { useSession } from '../../../state/session'
@@ -64,6 +64,7 @@ export function ProfileHome() {
           </AppText>
         </View>
         <Button label="Editar" variant="outline" size="sm" onPress={() => router.push('/eu/editar')} accessibilityHint="Editar nome, foto e aniversário" />
+        <IconButton icon="settings" label="Configurações" onPress={() => router.push('/configuracoes')} />
       </View>
 
       <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -109,14 +110,14 @@ export function ProfileHome() {
       </Card>
 
       <Card style={{ paddingVertical: 8 }}>
+        <ListRow label="Configurações" sub="Conta, avisos, aparência e privacidade" onPress={() => router.push('/configuracoes')} divider />
         <ListRow
           label="Meu plano"
           sub={sub.status === 'trial' ? `Teste grátis, faltam ${sub.daysLeft} ${sub.daysLeft === 1 ? 'dia' : 'dias'}` : sub.status === 'paymentFailed' ? 'Pagamento falhou' : 'Assinatura e cobrança'}
           onPress={() => router.push('/assinatura/meu-plano')}
           divider
         />
-        <ListRow label="Avisos" sub={settings.unreadCount ? `${settings.unreadCount} não ${settings.unreadCount === 1 ? 'lido' : 'lidos'}` : undefined} onPress={() => router.push('/avisos')} divider />
-        <ListRow label="Configurações" onPress={() => router.push('/configuracoes')} />
+        <ListRow label="Avisos" sub={settings.unreadCount ? `${settings.unreadCount} não ${settings.unreadCount === 1 ? 'lido' : 'lidos'}` : undefined} onPress={() => router.push('/avisos')} />
       </Card>
 
       <Card style={{ paddingVertical: 8 }}>
