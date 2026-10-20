@@ -55,7 +55,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Página da célula, limite por aparelho (19/10): 5 contatos por dia por endereço de internet. O banco guarda só um código do endereço, apagado em 2 dias.
 - Logo da célula: só o líder envia, imagem até 1 MB, público na página. Quem abre a página pode denunciar (web_reports, vai para a equipe); o logo denunciado some na hora para quem denunciou. A equipe tira do ar com cells.logo_hidden.
 - Idade: só maiores de 18 no lançamento.
-- Traduções licenciadas, comparar traduções e Bíblia em Libras: no backlog, sem aparecer no app (nada de "Em breve").
+- Traduções licenciadas, comparar traduções, Bíblia em Libras e versículo como imagem (20/10): no backlog, sem aparecer no app (nada de "Em breve"). Compartilhar versículo vai como texto.
 - Bíblia: Bíblia Livre no lançamento (licença Creative Commons Atribuição, uso comercial permitido, crédito obrigatório no app). Não é domínio público. As licenciadas entram depois. Origem e licença registradas em src/features/bible/translations.ts e na tabela bible_translations.
 - Planos (decididos em 12/10, preços revistos em 19/10), cada um mensal ou anual, com os mesmos limites:
   - Essencial (R$ 19,90/mês ou R$ 159,90/ano): Bíblia completa, planos de leitura, oração guiada, diário, pedidos, campanhas, igreja, ministérios, cursos (cadastro à mão; aulas, presença, material e notas), música, participar de célula, chat com 5 perguntas por dia. Sem culto. Sem curso pela foto do cronograma (botão com cadeado e "No plano Completo").
