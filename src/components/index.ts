@@ -21,3 +21,4 @@ export { ConnectionFrame, ErrorState, OFFLINE_TEXT, SkeletonBlock, SkeletonCard 
 export { COVER_TONES, Cover, CoverArt, CoverGrid, coverStyle, useCarouselItemWidth, useGridItemWidth } from './Cover'
 export { Carousel } from './Carousel'
 export { UpdateBanner } from './UpdateBanner'
+export { AlertCard } from './AlertCard'

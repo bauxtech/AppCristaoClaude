@@ -113,12 +113,12 @@ describe('configurações', () => {
       </>,
       { onboarded: true },
     )
-    expect(screen.getByText(/modo (light|dark) normal/)).toBeTruthy()
+    // Só claro e alto contraste (20/10): não há mais escolha de modo escuro.
+    expect(screen.getByText('modo light normal')).toBeTruthy()
+    expect(screen.queryByRole('tab', { name: 'Escuro' })).toBeNull()
     await fireEvent.press(screen.getByRole('switch', { name: 'Alto contraste' }))
     await fireEvent.press(screen.getByRole('switch', { name: 'Fonte grande' }))
-    expect(screen.getByText(/modo highContrast(Light|Dark) grande/)).toBeTruthy()
-    await fireEvent.press(screen.getByRole('tab', { name: 'Escuro' }))
-    expect(screen.getByText('modo highContrastDark grande')).toBeTruthy()
+    expect(screen.getByText('modo highContrastLight grande')).toBeTruthy()
   })
 
   test('privacidade atualiza a frase de efeito', async () => {

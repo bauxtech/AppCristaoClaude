@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
-import { AppText, Button, Card, Icon, MIN_TOUCH, Page, Segmented, Sheet, TextField, useToast } from '../../../components'
+import { AlertCard, AppText, Button, Card, Icon, MIN_TOUCH, Page, Segmented, Sheet, TextField, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { openStoreSubscriptions, purchase, simulateStorePurchase, STORE_ENABLED, STORE_NAME, syncSubscription } from '../../../lib/store'
 import { sendPhoneChangeCode, supabase, verifyPhoneChange } from '../../../lib/supabase'
@@ -387,19 +387,14 @@ export function MyPlanScreen() {
       </Card>
 
       {sub.status === 'paymentFailed' && a.graceUntil ? (
-        <Card style={{ gap: 4, borderColor: colors.danger, backgroundColor: colors.dangerSoft }}>
-          <AppText variant="bodyStrong" style={{ color: colors.danger }}>
-            Pagamento falhou
-          </AppText>
-          <AppText variant="small" style={{ color: colors.text }}>
-            {`Regularize na loja até ${longDate(a.graceUntil)} para não perder o acesso.`}
-          </AppText>
-        </Card>
+        <AlertCard tone="danger" title="Pagamento não aprovado" action={{ label: 'Atualizar pagamento na loja', onPress: openStoreSubscriptions }}>
+          {`A loja não conseguiu renovar sua assinatura. Atualize a forma de pagamento até ${longDate(a.graceUntil)} para continuar com tudo liberado.`}
+        </AlertCard>
       ) : null}
       {sub.status === 'canceledActive' ? (
-        <Card style={{ backgroundColor: colors.primarySoft, borderColor: colors.primary }}>
-          <AppText variant="small">Sua assinatura foi cancelada, mas continua ativa até o fim do período pago.</AppText>
-        </Card>
+        <AlertCard tone="info" title="Assinatura cancelada">
+          Ela continua ativa até o fim do período pago. Se mudar de ideia, é só assinar de novo.
+        </AlertCard>
       ) : null}
 
       <Button label="Trocar de plano" variant="soft" onPress={() => router.push('/assinatura')} />
@@ -440,33 +435,23 @@ export function TrialBanner() {
 
 /** Cartão no Hoje no fim do teste. */
 export function LastDayCard() {
-  const { colors } = useTheme()
   const sub = useSubscription()
   if (sub.status !== 'trial' || sub.daysLeft > 1) return null
   return (
-    <Card style={{ gap: 8, borderColor: colors.accent }}>
-      <AppText variant="bodyStrong">Seu teste termina hoje à meia-noite</AppText>
-      <AppText variant="small" tone="secondary">
-        Escolha um plano para continuar usando tudo. A Bíblia continua grátis e nada do que você criou é apagado.
-      </AppText>
-      <Button label="Ver planos" size="sm" onPress={() => router.push('/assinatura')} style={{ alignSelf: 'flex-start' }} />
-    </Card>
+    <AlertCard tone="attention" icon="clock" title="Seu teste termina hoje à meia-noite" action={{ label: 'Ver planos', onPress: () => router.push('/assinatura') }}>
+      Para seguir com tudo, escolha um plano. Se preferir, a Bíblia continua grátis e nada do que você criou é apagado.
+    </AlertCard>
   )
 }
 
 /** Aviso no Hoje quando a renovação falha. */
 export function PaymentFailedCard() {
-  const { colors } = useTheme()
   const sub = useSubscription()
   if (sub.status !== 'paymentFailed' || !sub.access.graceUntil) return null
   return (
-    <Card style={{ gap: 8, borderColor: colors.danger }}>
-      <AppText variant="bodyStrong">Pagamento falhou na renovação</AppText>
-      <AppText variant="small" tone="secondary">
-        {`Regularize na loja até ${longDate(sub.access.graceUntil)} para não perder o acesso.`}
-      </AppText>
-      <Button label="Abrir a loja" size="sm" variant="soft" onPress={openStoreSubscriptions} style={{ alignSelf: 'flex-start' }} />
-    </Card>
+    <AlertCard tone="danger" title="Pagamento falhou na renovação" action={{ label: 'Abrir a loja', onPress: openStoreSubscriptions }}>
+      {`Regularize na loja até ${longDate(sub.access.graceUntil)} para não perder o acesso.`}
+    </AlertCard>
   )
 }
 
@@ -478,15 +463,10 @@ export function TrialPhoneCard() {
 
 /** Quem entrou pelo Google ainda não tem celular confirmado: o teste começa depois disso. */
 export function ConfirmPhoneCard() {
-  const { colors } = useTheme()
   return (
-    <Card style={{ gap: 8, borderColor: colors.primary }}>
-      <AppText variant="bodyStrong">{`Ganhe ${TRIAL_DAYS} dias grátis`}</AppText>
-      <AppText variant="small" tone="secondary">
-        Confirme seu número de celular para começar o teste. É um teste por número.
-      </AppText>
-      <Button label="Confirmar celular" size="sm" onPress={() => router.push('/assinatura/celular')} style={{ alignSelf: 'flex-start' }} />
-    </Card>
+    <AlertCard tone="info" icon="gift" title={`Comece sua jornada com ${TRIAL_DAYS} dias grátis`} action={{ label: 'Confirmar celular', onPress: () => router.push('/assinatura/celular') }}>
+      Confirme seu número de celular para liberar tudo por 7 dias, sem cartão. É um teste por número.
+    </AlertCard>
   )
 }
 

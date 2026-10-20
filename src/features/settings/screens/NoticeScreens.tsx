@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { Linking, Pressable, View } from 'react-native'
-import { AppText, Button, Card, Chip, ErrorState, Icon, IconButton, Page, SectionLabel, SkeletonCard, Switch, TextField, useToast } from '../../../components'
+import { AlertCard, AppText, Button, Card, Chip, ErrorState, Icon, IconButton, Page, SectionLabel, SkeletonCard, Switch, TextField, useToast } from '../../../components'
 import { useRemoteState } from '../../../state/connection'
 import { isInternalRoute } from '../../../lib/links'
 import type { IconName } from '../../../components/Icon'
@@ -28,25 +28,18 @@ function usePermission() {
 }
 
 function PermissionCard({ perm, ask }: { perm: ReminderPermission; ask: () => void }) {
-  const { colors } = useTheme()
   if (perm === 'granted' || perm === 'unavailable') return null
   return (
-    <Card style={{ gap: 8, borderColor: colors.accent }} accessibilityLiveRegion="polite">
-      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-        <Icon name="alert" size={18} color={colors.text} />
-        <AppText variant="bodyStrong">Avisos desligados no celular</AppText>
-      </View>
-      <AppText variant="small" tone="secondary">
-        {perm === 'denied'
-          ? 'Os lembretes de leitura e oração não vão tocar. Para ligar, abra os ajustes do celular e permita os avisos do app.'
-          : 'Para receber os lembretes de leitura e oração, permita os avisos do app.'}
-      </AppText>
-      {perm === 'denied' ? (
-        <Button label="Abrir ajustes do celular" variant="soft" size="sm" onPress={() => Linking.openSettings()} />
-      ) : (
-        <Button label="Permitir avisos" variant="soft" size="sm" onPress={ask} />
-      )}
-    </Card>
+    <AlertCard
+      tone="attention"
+      icon="bell"
+      title="Avisos desligados no celular"
+      action={perm === 'denied' ? { label: 'Abrir ajustes do celular', onPress: () => Linking.openSettings() } : { label: 'Permitir avisos', onPress: ask }}
+    >
+      {perm === 'denied'
+        ? 'Os lembretes de leitura e oração não vão tocar. Para ligar, abra os ajustes do celular e permita os avisos do app.'
+        : 'Para receber os lembretes de leitura e oração, permita os avisos do app.'}
+    </AlertCard>
   )
 }
 

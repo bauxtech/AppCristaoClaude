@@ -65,7 +65,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [preference, highContrastOverride, largeText])
 
   const value = useMemo<ThemeContextValue>(() => {
-    const isDark = preference === 'system' ? scheme === 'dark' : preference === 'dark'
+    // Só modo claro e alto contraste (decisão de 20/10): o escuro saiu do app. As telas que são sempre escuras
+    // (gravação, oração guiada) usam a paleta escura direto.
+    const isDark = false
     const highContrast = highContrastOverride ?? systemHighContrast
     const mode = resolveMode(isDark, highContrast)
     return {

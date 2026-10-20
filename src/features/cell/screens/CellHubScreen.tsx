@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router'
 import { useCallback } from 'react'
 import { Image, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AppText, Avatar, Button, Card, IconButton, SectionLabel, Tag, useToast } from '../../../components'
+import { AlertCard, AppText, Avatar, Button, Card, IconButton, SectionLabel, Tag, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { IS_REMOTE } from '../../../lib/supabase'
@@ -50,28 +50,18 @@ function CellPlanNotice({ cellId, leader }: { cellId: string; leader: boolean })
   const sub = useSubscription()
   if (!sub.cellActive(cellId)) {
     return (
-      <Card style={{ gap: 6, borderColor: colors.danger, backgroundColor: colors.dangerSoft }} accessibilityLiveRegion="polite">
-        <AppText variant="bodyStrong" style={{ color: colors.danger }}>
-          Célula parada
-        </AppText>
-        <AppText variant="small" style={{ color: colors.text }}>
-          {leader
-            ? 'Sem o plano Líder, a célula fica só para leitura: nada de reunião, escala, presença, avisos ou página web. Nada foi apagado. Assine de novo ou passe a liderança para alguém com o plano Líder.'
-            : 'O líder está sem o plano Líder. A célula fica só para leitura até ele voltar a assinar. Nada foi apagado.'}
-        </AppText>
-        {leader ? <Button label="Ver plano Líder" size="sm" onPress={() => router.push('/assinatura?plano=lider&origem=celula-lider' as '/assinatura')} style={{ alignSelf: 'flex-start' }} /> : null}
-      </Card>
+      <AlertCard tone="danger" title="Célula parada" action={leader ? { label: 'Ver plano Líder', onPress: () => router.push('/assinatura?plano=lider&origem=celula-lider' as '/assinatura') } : undefined}>
+        {leader
+          ? 'Sem o plano Líder, a célula fica só para leitura: nada de reunião, escala, presença, avisos ou página web. Nada foi apagado. Assine de novo ou passe a liderança para alguém com o plano Líder.'
+          : 'O líder está sem o plano Líder. A célula fica só para leitura até ele voltar a assinar. Nada foi apagado.'}
+      </AlertCard>
     )
   }
   if (sub.cellSeatless(cellId)) {
     return (
-      <Card style={{ gap: 6, borderColor: colors.primary }}>
-        <AppText variant="bodyStrong">Você está sem vaga nesta célula</AppText>
-        <AppText variant="small" tone="secondary">
-          Você vê a reunião, o horário, o endereço e o roteiro e confirma presença. O resto da célula aparece quando o líder te der uma vaga ou com o plano Essencial.
-        </AppText>
-        <Button label="Ver plano Essencial" size="sm" onPress={() => router.push('/assinatura?plano=essencial&origem=celula-vaga' as '/assinatura')} style={{ alignSelf: 'flex-start' }} />
-      </Card>
+      <AlertCard tone="info" title="Você está sem vaga nesta célula" action={{ label: 'Ver plano Essencial', onPress: () => router.push('/assinatura?plano=essencial&origem=celula-vaga' as '/assinatura') }}>
+        Você vê a reunião, o horário, o endereço e o roteiro e confirma presença. O resto da célula aparece quando o líder te der uma vaga ou com o plano Essencial.
+      </AlertCard>
     )
   }
   return null
@@ -254,16 +244,15 @@ function LeaderView({ cell }: { cell: Cell }) {
       ) : null}
 
       {cell.pendingJoins.length > 0 ? (
-        <Card style={{ gap: 8, borderColor: colors.accent }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <AppText variant="bodyStrong">Pedidos de entrada</AppText>
-            <Tag label={`${cell.pendingJoins.length} ${cell.pendingJoins.length === 1 ? 'novo' : 'novos'}`} tone="accent" />
-          </View>
-          <AppText variant="small" tone="secondary">
-            Cada pessoa só entra depois que você aprovar.
-          </AppText>
-          <Button label="Ver pedidos de entrada" variant="outline" size="sm" onPress={() => router.push('/celula/entradas')} style={{ alignSelf: 'flex-start' }} />
-        </Card>
+        <AlertCard
+          tone="attention"
+          icon="users"
+          title="Pedidos de entrada"
+          right={<Tag label={`${cell.pendingJoins.length} ${cell.pendingJoins.length === 1 ? 'novo' : 'novos'}`} tone="accent" />}
+          action={{ label: 'Ver pedidos de entrada', onPress: () => router.push('/celula/entradas') }}
+        >
+          Cada pessoa só entra depois que você aprovar.
+        </AlertCard>
       ) : null}
 
       <MeetingCard cell={cell}>

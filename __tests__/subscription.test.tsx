@@ -79,7 +79,7 @@ describe('contador e avisos do teste', () => {
   test('último dia: contador e cartão no Hoje', async () => {
     await renderApp(<HomeScreen />, { onboarded: true, subscription: previewState('lastDay') })
     expect(screen.getByRole('button', { name: 'Seu teste termina hoje à meia-noite. Ver planos' })).toBeTruthy()
-    expect(screen.getByText(/A Bíblia continua grátis e nada do que você criou é apagado/)).toBeTruthy()
+    expect(screen.getByText(/a Bíblia continua grátis e nada do que você criou é apagado/)).toBeTruthy()
   })
 
   test('assinante não vê contador', async () => {
@@ -193,7 +193,7 @@ describe('meu plano', () => {
 
   test('cancelada e ainda ativa', async () => {
     await renderApp(<MyPlanScreen />, { onboarded: true, subscription: previewState('canceledActive') })
-    expect(screen.getByText('Sua assinatura foi cancelada, mas continua ativa até o fim do período pago.')).toBeTruthy()
+    expect(screen.getByText('Assinatura cancelada')).toBeTruthy()
     expect(screen.getByLabelText(/^Acesso até:/)).toBeTruthy()
   })
 

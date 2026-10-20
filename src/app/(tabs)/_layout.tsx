@@ -1,5 +1,5 @@
 import { Redirect, router, Tabs } from 'expo-router'
-import { Pressable, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon, type IconName } from '../../components/Icon'
 import { MIN_TOUCH } from '../../components'
@@ -62,7 +62,17 @@ export default function TabsLayout() {
             options={{
               title: t.title,
               tabBarAccessibilityLabel: t.title,
-              tabBarIcon: ({ color }) => <Icon name={t.icon} size={22} color={String(color)} />,
+              // Aba ativa bem marcada (QA de 20/10): fundo verde claro atrás do ícone e nome em negrito, além da cor.
+              tabBarIcon: ({ color, focused }) => (
+                <View style={{ width: 56, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: focused ? colors.primarySoft : 'transparent' }}>
+                  <Icon name={t.icon} size={22} color={String(color)} strokeWidth={focused ? 2.4 : 2} />
+                </View>
+              ),
+              tabBarLabel: ({ color, focused }) => (
+                <Text style={{ color: String(color), fontSize: 12, fontFamily: focused ? fonts.bold : fonts.medium }} maxFontSizeMultiplier={1.4}>
+                  {t.title}
+                </Text>
+              ),
             }}
           />
         ))}
