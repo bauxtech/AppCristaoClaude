@@ -6,7 +6,7 @@ import { Platform, Pressable, View } from 'react-native'
 import { AppText, Button, Card, Chip, Icon, ListRow, Page, SectionLabel, Segmented, SelectCard, Switch, Tag, TextField, useToast } from '../../../components'
 import { MIN_TOUCH } from '../../../components/Button'
 import { IS_PREVIEW } from '../../../lib/preview'
-import { currentVersionLabel } from '../../../lib/appUpdate'
+import { applyNewVersion, checkUpdateNow, currentVersionLabel, type UpdateCheck } from '../../../lib/appUpdate'
 import Constants from 'expo-constants'
 import { useSession } from '../../../state/session'
 import { useTheme, type AppearancePreference } from '../../../theme/ThemeProvider'
@@ -60,9 +60,34 @@ export function SettingsHome() {
         <ListRow label="Bloquear ou denunciar" onPress={() => router.push('/configuracoes/bloquear')} divider />
         <ListRow label="Ajuda e termos" onPress={() => router.push('/configuracoes/ajuda')} />
       </Card>
-      {/* Para saber, no teste, se o celular já está na versão nova. */}
-      <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>{`acasa ${APP_VERSION} · ${currentVersionLabel()}`}</AppText>
+      <VersionBox />
     </Page>
+  )
+}
+
+/** Para saber, no teste, se o celular já está na versão nova, e procurar a versão nova na hora. */
+function VersionBox() {
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<UpdateCheck | null>(null)
+  const search = async () => {
+    setBusy(true)
+    setResult(await checkUpdateNow())
+    setBusy(false)
+  }
+  return (
+    <View style={{ alignItems: 'center', gap: 8 }}>
+      <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>{`acasa ${APP_VERSION} · ${currentVersionLabel()}`}</AppText>
+      {result ? (
+        <AppText variant="small" accessibilityLiveRegion="polite" style={{ textAlign: 'center' }}>
+          {result.message}
+        </AppText>
+      ) : null}
+      {result?.kind === 'ready' ? (
+        <Button label="Atualizar agora" size="sm" onPress={() => void applyNewVersion()} />
+      ) : (
+        <Button label={busy ? 'Procurando' : 'Procurar atualização'} size="sm" variant="outline" disabled={busy} onPress={() => void search()} />
+      )}
+    </View>
   )
 }
 

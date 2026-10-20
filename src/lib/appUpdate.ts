@@ -28,3 +28,18 @@ export function currentVersionLabel(createdAt: Date | null = Updates.createdAt, 
   const p = (n: number) => String(n).padStart(2, '0')
   return `atualização de ${p(createdAt.getDate())}/${p(createdAt.getMonth() + 1)}, ${p(createdAt.getHours())}:${p(createdAt.getMinutes())}`
 }
+
+export type UpdateCheck = { kind: 'ready' | 'latest' | 'off' | 'error'; message: string }
+
+/** Procura a versão nova quando a pessoa pede, e diz o que achou, inclusive o erro. */
+export async function checkUpdateNow(): Promise<UpdateCheck> {
+  if (!Updates.isEnabled || __DEV__) return { kind: 'off', message: 'Atualização desligada nesta versão.' }
+  try {
+    const check = await Updates.checkForUpdateAsync()
+    if (!check.isAvailable) return { kind: 'latest', message: 'Você já está na versão mais nova.' }
+    await Updates.fetchUpdateAsync()
+    return { kind: 'ready', message: 'Versão nova baixada.' }
+  } catch (e) {
+    return { kind: 'error', message: `Não deu para procurar: ${e instanceof Error ? e.message : String(e)}` }
+  }
+}
