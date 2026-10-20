@@ -10,6 +10,8 @@ import { currentCellId } from '../cell/current'
 import { useFaithConsent } from '../settings/SettingsContext'
 import { fetchFaithConsentRemote } from '../../lib/account'
 import { mergePrayer, prayerDiffOps, pullPrayer } from './sync'
+import { useSubscription } from '../subscription/SubscriptionContext'
+import { openPlans } from '../subscription/PlanLock'
 
 interface PrayerState {
   diary: DiaryEntry[]
@@ -135,6 +137,15 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
     }
   }, [uid, sample]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sem a função oração no plano, diário, pedidos e campanhas ficam só para leitura (apagar e parar de compartilhar pode).
+  // Pedido compartilhado numa célula que a pessoa usa continua editável: a tela confere isso antes de chamar.
+  const sub = useSubscription()
+  const canPray = sub.can('prayer')
+  const locked = () => {
+    openPlans('prayer', sub.minPlan('prayer'))
+    return true
+  }
+
   const value = useMemo<PrayerValue>(
     () => ({
       ...state,
@@ -147,7 +158,7 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
         update((s) => ({ ...s, diary: [entry, ...s.diary] }))
         return entry
       },
-      updateDiaryEntry: (id, text) => update((s) => ({ ...s, diary: s.diary.map((e) => (e.id === id ? { ...e, text: text.trim() } : e)) })),
+      updateDiaryEntry: (id, text) => (!canPray && locked()) || update((s) => ({ ...s, diary: s.diary.map((e) => (e.id === id ? { ...e, text: text.trim() } : e)) })),
       deleteDiaryEntry: (id) => update((s) => ({ ...s, diary: s.diary.filter((e) => e.id !== id) })),
       addRequest: ({ text, shared, videoUri }) => {
         const r: PrayerRequest = {
@@ -182,6 +193,7 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
         return c
       },
       markCampaignDay: (id, day) => {
+        if (!canPray && locked()) return
         markActiveToday()
         update((s) => ({ ...s, campaigns: s.campaigns.map((c) => (c.id === id && !c.doneDays.includes(day) ? { ...c, doneDays: [...c.doneDays, day].sort((a, b) => a - b) } : c)) }))
       },
@@ -189,7 +201,7 @@ export function PrayerProvider({ children, initial }: { children: ReactNode; ini
       draftVideo,
       setDraftVideo,
     }),
-    [state, diaryUnlocked, draftVideo, update, markActiveToday],
+    [state, diaryUnlocked, draftVideo, update, markActiveToday, canPray],
   )
 
   return <PrayerContext.Provider value={value}>{children}</PrayerContext.Provider>

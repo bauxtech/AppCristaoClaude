@@ -11,6 +11,8 @@ import { toISODate } from '../data'
 import { brToISO, formatAgo, formatBR, formatDayMonth, maskDate, parseISODate } from '../dates'
 import { usePrayer } from '../PrayerContext'
 import { ConfirmDelete, PrayerPage } from './parts'
+import { useSubscription } from '../../subscription/SubscriptionContext'
+import { PlanLockRow } from '../../subscription/PlanLock'
 
 export function RequestDetailScreen() {
   const { colors } = useTheme()
@@ -18,6 +20,7 @@ export function RequestDetailScreen() {
   const prayer = usePrayer()
   const { cellStatus } = useSession()
   const hasCell = cellStatus === 'member' || cellStatus === 'leader'
+  const sub = useSubscription()
   const { id } = useLocalSearchParams<{ id: string }>()
   const r = prayer.requests.find((x) => x.id === id)
   const [editing, setEditing] = useState(false)
@@ -35,6 +38,11 @@ export function RequestDetailScreen() {
       </PrayerPage>
     )
   }
+
+  // Sem plano, o pedido fica só para leitura: dá para apagar e parar de compartilhar, não para mudar.
+  // Pedido compartilhado numa célula que a pessoa usa (líder com o plano Líder e vaga) continua editável, como no banco.
+  const inUsableCell = !!r.sharedCellId && sub.cellActive(r.sharedCellId) && !sub.cellSeatless(r.sharedCellId)
+  const canChange = sub.can('prayer') || (r.shared && inUsableCell)
 
   function confirmAnswered() {
     const iso = brToISO(date)
@@ -86,9 +94,9 @@ export function RequestDetailScreen() {
             }}
             style={{ flex: 1 }}
           />
-        ) : (
+        ) : canChange ? (
           <Button label="Editar" icon="edit" variant="outline" onPress={() => setEditing(true)} style={{ flex: 1 }} />
-        )}
+        ) : null}
         <Button label="Apagar" icon="trash" variant="dangerSoft" onPress={() => setConfirm(true)} style={{ flex: 1 }} />
       </View>
 
@@ -114,7 +122,8 @@ export function RequestDetailScreen() {
         <Switch
           label="Compartilhar com a célula"
           value={r.shared && hasCell}
-          disabled={!hasCell}
+          // Sem plano, só dá para desligar.
+          disabled={!hasCell || (!r.shared && !canChange)}
           onChange={(v) => {
             prayer.updateRequest(r.id, { shared: v })
             toast(v ? 'Compartilhado com a célula' : 'Parou de compartilhar com a célula')
@@ -138,7 +147,13 @@ export function RequestDetailScreen() {
         </Card>
       ) : null}
 
-      {!r.answeredAt && !answering ? <Button label="Marcar como respondido" icon="check" variant="soft" onPress={() => setAnswering(true)} /> : null}
+      {!r.answeredAt && !answering ? (
+        canChange ? (
+          <Button label="Marcar como respondido" icon="check" variant="soft" onPress={() => setAnswering(true)} />
+        ) : (
+          <PlanLockRow feature="prayer" label="Editar ou marcar como respondido" />
+        )
+      ) : null}
 
       {answering ? (
         <Card style={{ gap: 14 }}>
@@ -156,7 +171,15 @@ export function RequestDetailScreen() {
             keyboardType="number-pad"
             error={dateError}
           />
-          <TextField label="Testemunho curto (opcional)" value={testimony} onChangeText={setTestimony} placeholder="Conte como Deus respondeu" multiline maxLength={280} hint={`${testimony.length} de 280 letras`} />
+          <TextField
+            label="Testemunho curto (opcional)"
+            value={testimony}
+            onChangeText={setTestimony}
+            placeholder="Conte como Deus respondeu"
+            multiline
+            maxLength={280}
+            hint={`${testimony.length} de 280 letras`}
+          />
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Button label="Cancelar" variant="outline" onPress={() => setAnswering(false)} style={{ flex: 1 }} />
             <Button label="Confirmar" onPress={confirmAnswered} style={{ flex: 1 }} />

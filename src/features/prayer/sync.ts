@@ -38,6 +38,27 @@ function diffList<T extends { id: string }>(prev: T[], next: T[], table: string,
   return ops
 }
 
+/**
+ * Pedidos: parar de compartilhar vai pela função unshare_prayer, que o dono pode usar sempre, até sem plano.
+ * Se só o compartilhamento mudou, a gravação comum não é enviada (sem plano, o banco a recusaria).
+ */
+function requestOps(prev: PrayerRequest[], next: PrayerRequest[], toRow: (r: PrayerRequest) => Record<string, unknown>): SyncOp[] {
+  const before = byId(prev)
+  const ops: SyncOp[] = []
+  for (const op of diffList(prev, next, 'prayer_requests', toRow)) {
+    const id = op.kind === 'upsert' && !Array.isArray(op.row) ? String(op.row.id) : null
+    const old = id ? before.get(id) : undefined
+    const now = id ? next.find((r) => r.id === id) : undefined
+    if (op.kind === 'upsert' && old && now && old.shared && !now.shared) {
+      ops.push({ kind: 'rpc', fn: 'unshare_prayer', args: { p_request: id } })
+      const onlyShare = old.text === now.text && old.title === now.title && old.answeredAt === now.answeredAt && old.testimony === now.testimony
+      if (onlyShare) continue
+    }
+    ops.push(op)
+  }
+  return ops
+}
+
 /** cellId: célula aberta agora. Pedido marcado como compartilhado vai para ela; sem célula, fica só da pessoa. */
 /** faith: consentimento de fé. Sem ele, diário e pedidos ficam só no aparelho; campanhas seguem. */
 export function prayerDiffOps(prev: SyncedPrayer, next: SyncedPrayer, now = new Date(), cellId: string | null = null, faith = true): SyncOp[] {
@@ -47,7 +68,7 @@ export function prayerDiffOps(prev: SyncedPrayer, next: SyncedPrayer, now = new 
   }
   return [
     ...diffList(prev.diary, next.diary, 'prayer_diary', (e) => ({ id: e.id, user_id: '$uid', text: e.text, created_at: atNoon(e.date, now), updated_at: now.toISOString() })),
-    ...diffList(prev.requests, next.requests, 'prayer_requests', (r) => ({
+    ...requestOps(prev.requests, next.requests, (r) => ({
       id: r.id,
       user_id: '$uid',
       title: r.title,

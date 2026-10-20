@@ -6,6 +6,8 @@ import { isUuid, uuid } from '../../lib/uuid'
 import { churchDiffOps, mergeChurch, pullChurch } from './sync'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
+import { useSubscription } from '../subscription/SubscriptionContext'
+import { openPlans } from '../subscription/PlanLock'
 import { DIRECTORY, sampleCourses, sampleMinistries, type Church, type ChurchEvent, type Course, type Ministry } from './data'
 
 interface ChurchState {
@@ -104,11 +106,22 @@ export function ChurchProvider({ children, initial }: { children: ReactNode; ini
 
   const main = state.churches.find((x) => x.church.id === state.mainId)?.church ?? state.churches[0]?.church ?? null
 
+  // Sem a função igreja no plano, o que a pessoa criou fica só para leitura: apagar pode, mudar ou criar abre a tela de planos.
+  // É a mesma regra do banco, que recusaria a mudança e deixaria o aparelho diferente do servidor.
+  const sub = useSubscription()
+  const can = sub.can('church')
+  const locked = () => {
+    openPlans('church', sub.minPlan('church'))
+    return true
+  }
+  const onlyRemoved = <T,>(prev: T[], next: T[]) => next.length <= prev.length && next.every((x) => prev.includes(x))
+
   const value = useMemo<ChurchValue>(
     () => ({
       ...state,
       main,
       addChurch: (c, relation) =>
+        (!can && locked()) ||
         setState((s) => {
           const rest = s.churches.filter((x) => x.church.id !== c.id).map((x) => (relation === 'frequento' && x.relation === 'frequento' ? { ...x, relation: 'visito' as const } : x))
           return { ...s, churches: [...rest, { church: c, relation }], mainId: relation === 'frequento' || !s.mainId ? c.id : s.mainId }
@@ -118,20 +131,21 @@ export function ChurchProvider({ children, initial }: { children: ReactNode; ini
           const rest = s.churches.filter((x) => x.church.id !== id)
           return { ...s, churches: rest, mainId: s.mainId === id ? (rest[0]?.church.id ?? null) : s.mainId }
         }),
-      setMain: (id) => setState((s) => ({ ...s, mainId: id, churches: s.churches.map((x) => ({ ...x, relation: x.church.id === id ? 'frequento' : 'visito' })) })),
-      updateChurch: (id, fn) => setState((s) => ({ ...s, churches: s.churches.map((x) => (x.church.id === id ? { ...x, church: fn(x.church) } : x)) })),
-      toggleEvent: (id) => setState((s) => ({ ...s, savedEvents: s.savedEvents.includes(id) ? s.savedEvents.filter((e) => e !== id) : [...s.savedEvents, id] })),
+      setMain: (id) => (!can && locked()) || setState((s) => ({ ...s, mainId: id, churches: s.churches.map((x) => ({ ...x, relation: x.church.id === id ? 'frequento' : 'visito' })) })),
+      updateChurch: (id, fn) => (!can && locked()) || setState((s) => ({ ...s, churches: s.churches.map((x) => (x.church.id === id ? { ...x, church: fn(x.church) } : x)) })),
+      toggleEvent: (id) => (!can && !state.savedEvents.includes(id) && locked()) || setState((s) => ({ ...s, savedEvents: s.savedEvents.includes(id) ? s.savedEvents.filter((e) => e !== id) : [...s.savedEvents, id] })),
       addEvent: (e) =>
+        (!can && locked()) ||
         setState((s) => {
           const id = `ev${Date.now().toString(36)}`
           const mainId = s.mainId ?? s.churches[0]?.church.id
           return { ...s, savedEvents: [...s.savedEvents, id], churches: s.churches.map((x) => (x.church.id === mainId ? { ...x, church: { ...x.church, events: [...x.church.events, { ...e, id }] } } : x)) }
         }),
-      setMinistries: (fn) => setState((s) => ({ ...s, ministries: withIds(fn(s.ministries)) })),
-      setCourses: (fn) => setState((s) => ({ ...s, courses: withIds(fn(s.courses)) })),
-      updateCourse: (id, fn) => setState((s) => ({ ...s, courses: s.courses.map((c) => (c.id === id ? fn(c) : c)) })),
+      setMinistries: (fn) => (!can && !onlyRemoved(state.ministries, fn(state.ministries)) && locked()) || setState((s) => ({ ...s, ministries: withIds(fn(s.ministries)) })),
+      setCourses: (fn) => (!can && !onlyRemoved(state.courses, fn(state.courses)) && locked()) || setState((s) => ({ ...s, courses: withIds(fn(s.courses)) })),
+      updateCourse: (id, fn) => (!can && locked()) || setState((s) => ({ ...s, courses: s.courses.map((c) => (c.id === id ? fn(c) : c)) })),
     }),
-    [state, main, remote], // eslint-disable-line react-hooks/exhaustive-deps
+    [state, main, remote, can], // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   return <ChurchContext.Provider value={value}>{children}</ChurchContext.Provider>

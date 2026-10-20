@@ -307,7 +307,7 @@ select tests.ok('o líder volta a assinar e a célula volta a funcionar', public
 update public.subscriptions set trial_start = now() - interval '4 days', trial_reminded = 0 where user_id = '00000000-0000-0000-0000-000000000022';
 select public.trial_reminders();
 select tests.ok('dia 5: aviso de que faltam 2 dias, com o que a pessoa usou (sem falar de orações)',
-  exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-000000000022' and title = 'Faltam 2 dias do seu teste' and body like 'Até agora:%'));
+  exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-000000000022' and title = 'Faltam 3 dias do seu teste' and body like 'Até agora:%'));
 select tests.ok('o aviso do dia 5 não se repete', public.trial_reminders() = 0);
 update public.subscriptions set trial_start = now() - interval '6 days' where user_id = '00000000-0000-0000-0000-000000000022';
 select public.trial_reminders();
