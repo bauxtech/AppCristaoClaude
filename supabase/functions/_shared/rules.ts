@@ -4,6 +4,8 @@ const CRISIS = [
   'me machucar', 'me ferir', 'me cortar', 'suicid', 'me matar', 'tirar minha vida', 'tirar a minha vida', 'acabar com tudo', 'nao quero mais viver', 'quero morrer', 'sumir de vez', 'nao aguento mais viver',
   'nao quero viver', 'me mutilar', 'automutila', 'auto mutila', 'me enforcar', 'me jogar', 'tomar todos os remedios', 'tomar todos os comprimidos', 'overdose',
   'sem sentido em viver', 'nao vejo sentido em viver', 'nao vejo sentido na vida', 'quero desaparecer', 'queria desaparecer', 'melhor sem mim', 'acabar com a minha vida', 'acabar com minha vida',
+  'acabar comigo', 'dar fim na minha vida', 'dar fim a minha vida', 'por fim a minha vida', 'por fim na minha vida', 'tirar a propria vida', 'tirar minha propria vida', 'cansado de viver', 'cansada de viver', 'perdi a vontade de viver', 'sem vontade de viver',
+  'nao quero mais acordar', 'queria nao ter nascido', 'nao queria ter nascido', 'se eu morresse', 'cortar os pulsos', 'cortar meus pulsos', 'pular da ponte', 'pular do predio', 'me envenenar', 'nao quero mais estar aqui', 'nao quero mais existir',
 ]
 
 /** "morrer" junto de vontade ou intenção ("tenho vontade de morrer", "penso em morrer"). Errar para mais é aceitável aqui. */

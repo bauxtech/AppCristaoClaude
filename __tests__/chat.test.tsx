@@ -18,6 +18,7 @@ beforeEach(() => {
 describe('regras de segurança', () => {
   test('reconhece fala sobre se machucar, com e sem acento', () => {
     for (const t of ['Eu quero me machucar', 'penso em suicídio', 'nao quero mais viver', 'Quero morrer']) expect(isCrisis(t)).toBe(true)
+    for (const t of ['Às vezes penso em acabar comigo', 'Estou cansada de viver', 'Queria não ter nascido', 'Não quero mais acordar', 'Vou pôr fim à minha vida']) expect(isCrisis(t)).toBe(true)
     expect(isCrisis('O que é o perdão?')).toBe(false)
   })
 

@@ -1,5 +1,5 @@
 // POST /functions/v1/chat  { question, conversationId?, context? }
-// Chat bíblico. Confere login, assinatura e o limite de 20 perguntas por dia no servidor.
+// Chat bíblico. Confere login, assinatura e o limite de perguntas por dia do plano no servidor.
 import { answerChat } from '../_shared/chat.ts'
 import { askJsonFor, CHAT_MODEL } from '../_shared/claude.ts'
 import { useLimit } from '../_shared/usage.ts'

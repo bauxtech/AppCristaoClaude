@@ -52,7 +52,7 @@ export function ShareScreen() {
         </View>
         <Button label="Compartilhar" onPress={() => Share.share({ message: `"${verse?.text ?? ''}" ${ref}\n\n${creditLine()}` }).catch(() => {})} />
         <AppText variant="small" tone="secondary">
-          Na prévia, o texto é compartilhado sem a imagem. A imagem entra com o app no celular.
+          O versículo vai como texto, com a referência e o crédito da tradução.
         </AppText>
       </ScrollView>
     </View>
