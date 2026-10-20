@@ -12,7 +12,7 @@ export function CrossRefsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TopBar title="Referências cruzadas" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 120 }}>
         <AppText variant="label" tone="secondary">{`Ligadas a ${ref}`}</AppText>
         {isSample ? (
           CROSS_REFS.map((r) => (
@@ -26,7 +26,7 @@ export function CrossRefsScreen() {
           ))
         ) : (
           <AppText variant="body" tone="secondary">
-            Na prévia, só Salmos 23 tem referências cruzadas.
+            Este versículo ainda não tem referências cruzadas.
           </AppText>
         )}
       </ScrollView>

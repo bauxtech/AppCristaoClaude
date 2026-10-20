@@ -320,7 +320,8 @@ export function MyPlanScreen() {
             {sub.status === 'trial'
               ? sub.daysLeft <= 1
                 ? 'Seu teste termina hoje à meia-noite.'
-                : `Faltam ${sub.daysLeft} dias. O teste termina em ${longDate(sub.trialEndsAt!)}.`
+                : // O fim é a meia-noite depois do último dia: o último dia de uso é o anterior.
+                  `Faltam ${sub.daysLeft} dias. O teste vale até ${longDate(new Date(new Date(sub.trialEndsAt!).getTime() - 1).toISOString())}.`
               : 'A Bíblia continua grátis. O que você criou continua guardado, só para leitura.'}
           </AppText>
         </Card>

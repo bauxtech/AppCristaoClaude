@@ -42,6 +42,7 @@ export type IconName =
   | 'info'
   | 'alert'
   | 'plus'
+  | 'minus'
   | 'chevronDown'
   | 'qr'
   | 'sun'
@@ -332,6 +333,8 @@ function paths(name: IconName, s: Record<string, unknown>, color: string) {
           <Line x1="5" y1="12" x2="19" y2="12" {...s} />
         </>
       )
+    case 'minus':
+      return <Line x1="5" y1="12" x2="19" y2="12" {...s} />
     case 'chevronDown':
       return <Polyline points="6 9 12 15 18 9" {...s} />
     case 'qr':

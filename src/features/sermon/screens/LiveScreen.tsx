@@ -121,8 +121,8 @@ export function LiveScreen() {
           </AppText>
         ) : null}
         <View style={{ borderRadius: 16, padding: 16, backgroundColor: 'rgba(255,255,255,0.08)', gap: 6 }}>
-          <AppText style={{ color: SOFT, fontSize: size.small }}>Legenda ao vivo</AppText>
-          <AppText style={{ color: ON_DARK }}>A legenda ao vivo e os versículos citados aparecem aqui quando a transcrição estiver ligada ao servidor. O áudio está sendo gravado.</AppText>
+          <AppText style={{ color: SOFT, fontSize: size.small }}>Gravando</AppText>
+          <AppText style={{ color: ON_DARK }}>O texto, o resumo e os versículos citados ficam prontos depois que você encerrar a gravação. Marque momentos e escreva notas aqui embaixo.</AppText>
         </View>
         {[...moments.map((m) => ({ ts: m.ts, text: m.label, kind: 'Momento marcado' })), ...notes.map((n) => ({ ts: n.ts, text: n.text, kind: 'Nota' }))]
           .sort((a, b) => a.ts - b.ts)

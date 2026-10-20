@@ -70,7 +70,7 @@ export function CellStartScreen() {
             autoCapitalize="characters"
             autoCorrect={false}
             error={error || undefined}
-            hint={`Na prévia, use ${DEMO_INVITE_CODE}.`}
+            hint={IS_REMOTE ? undefined : `Na prévia, use ${DEMO_INVITE_CODE}.`}
           />
         ) : null}
         <SelectCard kind="radio" label="Criar uma célula" description="Quero liderar meu próprio grupo." selected={choice === 'create'} onPress={() => setChoice('create')} />

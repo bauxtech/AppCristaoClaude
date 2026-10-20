@@ -52,7 +52,7 @@ export function SettingsHome() {
         <ListRow label="Conta" sub="Nome, telefone, e-mail" onPress={() => router.push('/configuracoes/conta')} divider />
         <ListRow label="Avisos" sub="Lembretes, silêncio e vibração" onPress={() => router.push('/avisos/configurar')} divider />
         <ListRow label="Bíblia e leitura" sub="Tradução, fonte, voz" onPress={() => router.push('/configuracoes/biblia')} divider />
-        <ListRow label="Aparência e acessibilidade" sub="Tema, contraste, fonte grande" onPress={() => router.push('/configuracoes/aparencia')} divider />
+        <ListRow label="Aparência e acessibilidade" sub="Contraste e fonte grande" onPress={() => router.push('/configuracoes/aparencia')} divider />
         <ListRow label="Privacidade" sub="Quem vê meu progresso" onPress={() => router.push('/configuracoes/privacidade')} divider />
         <ListRow label="Gravações" sub="Guardar áudio ou só texto" onPress={() => router.push('/configuracoes/gravacoes')} divider />
         <ListRow label="Tradição do chat" sub="Denominação para o assistente" onPress={() => router.push('/configuracoes/tradicao')} divider />
@@ -333,14 +333,11 @@ export function BibleSettingsScreen() {
 
 export function AppearanceScreen() {
   const theme = useTheme()
-  const s = useSettings()
   return (
     <Page title="Aparência e acessibilidade">
       <Card style={{ paddingVertical: 4 }}>
         <SwitchRow label="Fonte grande" sub="Aumenta o tamanho do texto no app" value={theme.largeText} onChange={theme.setLargeText} divider />
-        <SwitchRow label="Alto contraste" sub="Aumenta o contraste entre elementos" value={theme.highContrast} onChange={(v) => theme.setHighContrastOverride(v)} divider />
-        <SwitchRow label="Legenda em tempo real" sub="No chat e nos momentos de oração" value={s.captions} onChange={(v) => s.update({ captions: v })} divider />
-        <SwitchRow label="Modo simplificado" sub="Mostra menos elementos por tela" value={s.simple} onChange={(v) => s.update({ simple: v })} />
+        <SwitchRow label="Alto contraste" sub="Aumenta o contraste entre elementos" value={theme.highContrast} onChange={(v) => theme.setHighContrastOverride(v)} />
       </Card>
       <AppText variant="small" tone="secondary">
         A fonte grande se soma ao tamanho de letra escolhido nos ajustes do celular.

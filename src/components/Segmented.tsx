@@ -14,9 +14,14 @@ interface Props<T extends string> {
 
 /** Alternância entre duas ou três opções (Antigo/Novo Testamento, Sozinho/Com a célula). */
 export function Segmented<T extends string>({ options, value, onChange, label }: Props<T>) {
-  const { colors } = useTheme()
+  const { colors, highContrast } = useTheme()
   return (
-    <View accessibilityRole="tablist" accessibilityLabel={label} style={{ flexDirection: 'row', backgroundColor: colors.line, borderRadius: 12, padding: 4, gap: 4 }}>
+    // No alto contraste o fundo fica claro com borda: a opção não escolhida precisa de contraste com o texto.
+    <View
+      accessibilityRole="tablist"
+      accessibilityLabel={label}
+      style={{ flexDirection: 'row', backgroundColor: highContrast ? colors.card : colors.line, borderWidth: highContrast ? 1 : 0, borderColor: colors.lineStrong, borderRadius: 12, padding: 4, gap: 4 }}
+    >
       {options.map((o) => {
         const selected = o.id === value
         return (
@@ -35,7 +40,7 @@ export function Segmented<T extends string>({ options, value, onChange, label }:
               justifyContent: 'center',
               paddingHorizontal: 8,
               backgroundColor: selected ? colors.card : 'transparent',
-              borderWidth: selected ? 1 : 0,
+              borderWidth: selected ? (highContrast ? 2 : 1) : 0,
               borderColor: colors.lineStrong,
             }}
           >

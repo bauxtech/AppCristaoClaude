@@ -53,9 +53,15 @@ export function ProfileHome() {
         </Card>
       ) : null}
       <TrialBanner />
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 4, paddingBottom: 4 }}>
-        {profile.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: 64, height: 64, borderRadius: 32 }} accessible={false} /> : <Avatar name={name} size={64} />}
-        <View style={{ flex: 1 }}>
+      {/* Foto e botões numa linha; o nome embaixo, com a largura toda, para nomes longos não quebrarem. */}
+      <View style={{ gap: 10, paddingHorizontal: 4, paddingBottom: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {profile.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: 64, height: 64, borderRadius: 32 }} accessible={false} /> : <Avatar name={name} size={64} />}
+          <View style={{ flex: 1 }} />
+          <Button label="Editar" variant="outline" size="sm" onPress={() => router.push('/eu/editar')} accessibilityHint="Editar nome, foto e aniversário" />
+          <IconButton icon="settings" label="Configurações" onPress={() => router.push('/configuracoes')} />
+        </View>
+        <View>
           <AppText variant="screenTitle" accessibilityRole="header">
             {name}
           </AppText>
@@ -63,8 +69,6 @@ export function ProfileHome() {
             {main?.name ?? 'Sem igreja vinculada'}
           </AppText>
         </View>
-        <Button label="Editar" variant="outline" size="sm" onPress={() => router.push('/eu/editar')} accessibilityHint="Editar nome, foto e aniversário" />
-        <IconButton icon="settings" label="Configurações" onPress={() => router.push('/configuracoes')} />
       </View>
 
       <View style={{ flexDirection: 'row', gap: 8 }}>

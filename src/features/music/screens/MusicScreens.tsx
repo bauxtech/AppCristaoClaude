@@ -100,9 +100,6 @@ export function PlaylistScreen() {
       {PLAYLISTS[m.id as MomentId].map((s) => (
         <SongCard key={s.title} song={s} />
       ))}
-      <AppText variant="small" tone="secondary">
-        Playlist de exemplo. A equipe do app monta as definitivas.
-      </AppText>
     </Page>
   )
 }

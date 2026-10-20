@@ -16,7 +16,8 @@ export function UsageCard() {
   const { sermons } = useSermons()
   const q = useSermonQuota(sermons)
   if (!q.canRecord) return null
-  const text = `${q.used} de ${q.limit} cultos usados neste período`
+  // Depois de uma troca de plano no meio do período, o uso pode passar do limite novo: mostra no máximo o limite.
+  const text = `${Math.min(q.used, q.limit)} de ${q.limit} cultos usados neste período`
   return (
     <Card style={{ gap: 8 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>

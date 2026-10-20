@@ -225,14 +225,17 @@ export function ChapterScreen() {
             router.push({ pathname: '/biblia/compartilhar', params: { livro: slug, capitulo: String(chapter), v: String(selected) } })
           }}
         />
-        <Button
-          label="Referências cruzadas"
-          variant="outline"
-          onPress={() => {
-            setSheet(null)
-            router.push({ pathname: '/biblia/referencias', params: { ref: selRef } })
-          }}
-        />
+        {/* Referências cruzadas só existem para Salmos 23 por enquanto: nos outros versículos o botão não aparece. */}
+        {selRef.startsWith('Salmos 23:') ? (
+          <Button
+            label="Referências cruzadas"
+            variant="outline"
+            onPress={() => {
+              setSheet(null)
+              router.push({ pathname: '/biblia/referencias', params: { ref: selRef } })
+            }}
+          />
+        ) : null}
       </Sheet>
 
       {/* Grifar */}

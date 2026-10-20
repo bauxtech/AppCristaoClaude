@@ -260,9 +260,6 @@ export function LessonScreen() {
             }}
           />
         </View>
-        <AppText variant="small" tone="secondary">
-          Gravar a aula e transformar em texto chega com o fluxo do culto, que usa o mesmo gravador.
-        </AppText>
       </Card>
 
       {notesLocked ? (

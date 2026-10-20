@@ -149,7 +149,7 @@ export function MyDataScreen() {
       <DownloadDataCard />
       <Card style={{ paddingVertical: 4 }}>
         {s.faithConsent ? (
-          <ListRow label="Retirar consentimento" sub="Seus dados religiosos deixarão de ser usados" danger onPress={() => router.push('/configuracoes/consentimento')} />
+          <ListRow label="Retirar consentimento" sub="Diário, pedidos e chat saem do servidor" danger onPress={() => router.push('/configuracoes/consentimento')} />
         ) : (
           <ListRow label="Consentimento retirado" sub="Toque para dar o consentimento de novo" onPress={() => router.push('/configuracoes/consentimento')} />
         )}
@@ -202,13 +202,13 @@ export function DataSummaryScreen() {
   )
 }
 
+// O mesmo que o banco apaga em withdraw_faith_consent e o que diz o termo de Dados de fé.
 const CONSENT_LOSES = [
-  'Sugestões personalizadas de leitura',
-  'Conteúdo de fé baseado no seu perfil',
-  'Resumos adaptados ao seu progresso',
-  'Diário e pedidos de oração guardados na nuvem: passam a ficar só neste celular e são apagados da nuvem',
+  'Diário e pedidos de oração: apagados do servidor. Continuam neste celular',
   'Pedidos compartilhados com a célula saem da célula',
-  'Histórico do chat na nuvem: as conversas ficam só neste celular e são apagadas da nuvem',
+  'Histórico do chat: apagado do servidor. Continua neste celular',
+  'O registro de que você orou pelos pedidos de outras pessoas é apagado',
+  'A tradição escolhida para o chat é apagada',
 ]
 
 export function RevokeConsentScreen() {
@@ -223,7 +223,7 @@ export function RevokeConsentScreen() {
         <Card style={{ gap: 6 }}>
           <AppText variant="bodyStrong">Consentimento retirado</AppText>
           <AppText variant="body" tone="secondary">
-            Autorize de novo o uso dos seus dados religiosos (tradição, hábitos de leitura e oração) para personalizar sua experiência. Esses dados nunca são vendidos.
+            Autorize de novo para o servidor guardar o seu diário, os pedidos de oração, o histórico do chat, o registro de oração e a tradição. O que está neste celular volta a ser enviado. Esses dados nunca são vendidos.
           </AppText>
         </Card>
         <Button

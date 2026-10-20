@@ -176,7 +176,7 @@ describe('meus dados', () => {
 
   test('retirar consentimento: o que deixa de funcionar e confirmação', async () => {
     await renderApp(<RevokeConsentScreen />, { onboarded: true })
-    expect(screen.getByText('Sugestões personalizadas de leitura')).toBeTruthy()
+    expect(screen.getByText('O registro de que você orou pelos pedidos de outras pessoas é apagado')).toBeTruthy()
     await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }))
     await fireEvent.press(screen.getByRole('button', { name: 'Retirar' }))
     expect(screen.getByText('Consentimento retirado.')).toBeTruthy()

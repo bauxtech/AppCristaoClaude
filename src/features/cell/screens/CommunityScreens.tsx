@@ -390,11 +390,11 @@ function Multiplication({ cell }: { cell: Cell }) {
       <Card style={{ gap: 10 }}>
         <SectionLabel>Tamanho máximo da célula</SectionLabel>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <IconButton icon="arrowDown" label="Diminuir tamanho máximo" onPress={() => update((c) => ({ ...c, maxSize: Math.max(4, c.maxSize - 1) }))} />
+          <IconButton icon="minus" label="Diminuir tamanho máximo" onPress={() => update((c) => ({ ...c, maxSize: Math.max(4, c.maxSize - 1) }))} />
           <AppText accessibilityLiveRegion="polite" accessibilityLabel={`Tamanho máximo ${cell.maxSize}`} style={{ flex: 1, textAlign: 'center', fontFamily: fonts.bold, fontSize: 28, color: colors.text }}>
             {cell.maxSize}
           </AppText>
-          <IconButton icon="arrowUp" label="Aumentar tamanho máximo" onPress={() => update((c) => ({ ...c, maxSize: Math.min(40, c.maxSize + 1) }))} />
+          <IconButton icon="plus" label="Aumentar tamanho máximo" onPress={() => update((c) => ({ ...c, maxSize: Math.min(40, c.maxSize + 1) }))} />
         </View>
         <AppText variant="small" tone="secondary">
           Avisamos quando a célula passar deste número de pessoas ativas.
