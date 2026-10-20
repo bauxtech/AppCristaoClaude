@@ -16,6 +16,7 @@ import { bookProgress } from '../../bible/screens/BooksScreen'
 import { verseText } from '../../bible/text'
 import { useChurch } from '../../church/ChurchContext'
 import { brToISO, formatBR, formatDayMonth, maskDate } from '../../prayer/dates'
+import { toISODate } from '../../prayer/data'
 import { usePrayer } from '../../prayer/PrayerContext'
 import { useSermons } from '../../sermon/SermonContext'
 import { NotesGate } from '../../settings/NotesLock'
@@ -215,6 +216,7 @@ export function MilestoneScreen() {
         onPress={() => {
           const iso = brToISO(date)
           if (!iso) return setError('Digite a data no formato DD/MM/AAAA.')
+          if (iso > toISODate(new Date())) return setError('A data não pode ser no futuro.')
           profile.saveMilestone({ id: existing?.id, type, date: iso, desc: desc.trim() })
           toast('Marco salvo')
           router.back()

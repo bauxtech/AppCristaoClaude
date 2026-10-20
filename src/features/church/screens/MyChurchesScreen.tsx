@@ -6,6 +6,7 @@ import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { formatMeetingDay, formatTime, isValidTime, maskTime } from '../../cell/meetings'
 import { brToISO, maskDate } from '../../prayer/dates'
+import { toISODate } from '../../prayer/data'
 import { useChurch } from '../ChurchContext'
 import { PlanButton } from '../../subscription/PlanLock'
 
@@ -146,6 +147,7 @@ export function NewEventScreen() {
         onPress={() => {
           const iso = brToISO(date)
           if (!iso) return setError('Digite a data no formato DD/MM/AAAA.')
+          if (iso < toISODate(new Date())) return setError('Essa data já passou. Escolha hoje ou um dia depois.')
           if (time && !isValidTime(time)) return setError('Digite o horário no formato 19:00.')
           addEvent({ title: title.trim(), date: iso, time: time || undefined, desc: desc.trim() })
           toast('Evento salvo na sua agenda')

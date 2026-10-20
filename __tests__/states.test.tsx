@@ -73,11 +73,11 @@ describe('erro e carregando', () => {
   })
 })
 
-describe('modo simplificado', () => {
-  test('o Hoje mostra menos cartões', async () => {
+describe('modo simplificado (saiu em 20/10)', () => {
+  test('quem tinha ligado volta a ver o Hoje inteiro', async () => {
     await renderApp(<HomeScreen />, { onboarded: true, settings: { simple: true } })
     expect(screen.getByText('Passagem do dia')).toBeTruthy()
-    expect(screen.queryByText('Música do dia')).toBeNull()
+    expect(screen.getByText('Música do dia')).toBeTruthy()
   })
 })
 

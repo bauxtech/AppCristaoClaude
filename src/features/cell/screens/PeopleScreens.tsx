@@ -80,12 +80,13 @@ export function VisitorScreen() {
   const [phone, setPhone] = useState('')
   const [notes, setNotes] = useState('')
   const [reminder, setReminder] = useState(true)
+  const [phoneError, setPhoneError] = useState<string | undefined>()
   return (
     <CellGuard title="Registrar visitante" action="markAttendance">
       {() => (
         <Page title="Registrar visitante">
           <TextField label="Nome (obrigatório)" value={name} onChangeText={setName} placeholder="Nome completo" maxLength={80} />
-          <TextField label="Telefone ou WhatsApp" value={phone} onChangeText={(v) => setPhone(onlyDigits(v).slice(0, 11))} placeholder="11 99999-9999" keyboardType="phone-pad" hint="Só o líder vê o telefone." />
+          <TextField label="Telefone ou WhatsApp" value={phone} onChangeText={(v) => (setPhone(onlyDigits(v).slice(0, 11)), setPhoneError(undefined))} placeholder="11 99999-9999" keyboardType="phone-pad" hint="Só o líder vê o telefone." error={phoneError} />
           <TextField label="Observações" value={notes} onChangeText={setNotes} placeholder="Como conheceu a célula" multiline maxLength={300} />
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}>
             <View style={{ flex: 1 }}>
@@ -100,6 +101,7 @@ export function VisitorScreen() {
             label="Salvar visitante"
             disabled={!name.trim()}
             onPress={() => {
+              if (phone && phone.length < 10) return setPhoneError('Digite o telefone com DDD: 10 ou 11 números.')
               const follow = new Date()
               follow.setDate(follow.getDate() + 7)
               update((c) => ({

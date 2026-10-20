@@ -38,7 +38,8 @@ export function HomeScreen() {
   const church = useChurch()
   const totalDays = activeDays.length
   const settings = useSettings()
-  const { simple } = settings
+  // O modo simplificado saiu do app (20/10). Quem tinha ligado antes volta a ver a tela inteira.
+  const simple = false
   const blockedIds = useBlockedIds()
   const unreadNotifications = visibleNotices(settings.notices, !cell || can(cell.myRole, 'seePrayers')).filter((n) => !n.read).length
   const daily = useRemoteState()
