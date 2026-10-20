@@ -30,7 +30,7 @@ describe('versão nova do app', () => {
 
 describe('procurar atualização nas Configurações', () => {
   // No teste o app roda como desenvolvimento, onde a atualização fica desligada.
-  const g = global as unknown as { __DEV__: boolean }
+  const g = globalThis as unknown as { __DEV__: boolean }
   beforeEach(() => void (g.__DEV__ = false))
   afterEach(() => void (g.__DEV__ = true))
 

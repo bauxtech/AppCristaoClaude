@@ -8,6 +8,7 @@ import { MIN_TOUCH } from '../../../components/Button'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { applyNewVersion, checkUpdateNow, currentVersionLabel, type UpdateCheck } from '../../../lib/appUpdate'
 import Constants from 'expo-constants'
+import { IS_REMOTE, sendPhoneChangeCode, verifyPhoneChange } from '../../../lib/supabase'
 import { useSession } from '../../../state/session'
 import { useTheme, type AppearancePreference } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -109,18 +110,44 @@ export function AccountScreen() {
   const [emailOpen, setEmailOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
   const newLabel = `+55 (${onlyDigits(ddd)}) ${formatPhoneNumber(number)}`
 
-  function sendCode() {
+  const newE164 = `+55${onlyDigits(ddd)}${onlyDigits(number)}`
+
+  // Com servidor, o SMS sai de verdade e quem confere o código é o servidor. Sem servidor (prévia), vale o código de exemplo.
+  async function sendCode() {
     if (!isValidPhone(ddd, number)) return setError('Digite o DDD e o celular com 9 números.')
     setError(null)
+    if (IS_REMOTE) {
+      setBusy(true)
+      try {
+        await sendPhoneChangeCode(newE164)
+      } catch {
+        setBusy(false)
+        return setError('Não foi possível enviar o código. Confira o número. Se ele já tem conta no app, use outro número.')
+      }
+      setBusy(false)
+    }
+    setCode('')
     setStep('code')
   }
 
-  function confirm() {
-    const r = checkCode(code, DEMO_CODES)
-    if (r === 'incomplete') return setError('Digite os 6 números do código.')
-    if (r !== 'ok') return setError(CODE_MESSAGES[r])
+  async function confirm() {
+    if (onlyDigits(code).length < 6) return setError('Digite os 6 números do código.')
+    if (IS_REMOTE) {
+      setBusy(true)
+      try {
+        await verifyPhoneChange(newE164, onlyDigits(code))
+      } catch {
+        setBusy(false)
+        return setError('Código errado ou vencido. Tente de novo.')
+      }
+      setBusy(false)
+    } else {
+      const r = checkCode(code, DEMO_CODES)
+      if (r !== 'ok') return setError(CODE_MESSAGES[r === 'incomplete' ? 'wrong' : r])
+    }
     updateProfile({ phone: newLabel })
     setError(null)
     setStep('done')
@@ -196,7 +223,7 @@ export function AccountScreen() {
               <TextField label="Celular" value={formatPhoneNumber(number)} onChangeText={(v) => setNumber(onlyDigits(v).slice(0, 9))} keyboardType="number-pad" placeholder="99999-0000" error={error ?? undefined} />
             </View>
           </View>
-          <Button label="Enviar código" onPress={sendCode} />
+          <Button label={busy ? 'Enviando' : 'Enviar código'} busy={busy} onPress={() => void sendCode()} />
         </Card>
       ) : null}
 
@@ -209,7 +236,7 @@ export function AccountScreen() {
               {`Na prévia, use ${DEMO_CODES.ok}.`}
             </AppText>
           ) : null}
-          <Button label="Confirmar" onPress={confirm} />
+          <Button label={busy ? 'Confirmando' : 'Confirmar'} busy={busy} onPress={() => void confirm()} />
           <Button label="Voltar e corrigir o número" variant="text" size="sm" onPress={() => setStep('input')} />
         </Card>
       ) : null}
