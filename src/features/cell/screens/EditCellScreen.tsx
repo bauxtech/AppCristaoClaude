@@ -2,7 +2,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { Image, Pressable, View } from 'react-native'
-import { AppText, Button, Card, ConfirmCard, Page, useToast } from '../../../components'
+import { AppText, Button, Card, ConfirmCard, Page, TapCard, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { useCell } from '../CellContext'
@@ -36,8 +36,14 @@ function EditCell({ cell }: { cell: Cell }) {
 
   return (
     <Page title="Editar célula">
+      <TapCard label="Site da célula: logo, capa, texto e endereço" onPress={() => router.push('/celula/pagina')}>
+        <AppText variant="bodyStrong">Logo, capa e texto do site</AppText>
+        <AppText variant="small" tone="secondary">
+          Ficam em Site da célula, junto com o endereço na internet.
+        </AppText>
+      </TapCard>
       <View style={{ gap: 8 }}>
-        <AppText variant="bodyStrong">Foto de capa</AppText>
+        <AppText variant="bodyStrong">Foto do grupo (só no app)</AppText>
         <Pressable
           onPress={pickCover}
           accessibilityRole="button"

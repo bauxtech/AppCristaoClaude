@@ -44,8 +44,8 @@ function Options({ cell }: { cell: Cell }) {
       </Card>
 
       {isLeader ? (
-        <TapCard label={`Página na internet. ${cell.webSlug ? webUrl(cell.webSlug).replace('https://', '') : 'Escolha o endereço e o logo'}`} onPress={() => router.push('/celula/pagina')}>
-          <AppText variant="bodyStrong">Página na internet</AppText>
+        <TapCard label={`Site da célula. ${cell.webSlug ? webUrl(cell.webSlug).replace('https://', '') : 'Escolha o endereço e o logo'}`} onPress={() => router.push('/celula/pagina')}>
+          <AppText variant="bodyStrong">Site da célula</AppText>
           <AppText variant="small" tone="secondary">
             {cell.webSlug ? webUrl(cell.webSlug).replace('https://', '') : 'Escolha o endereço e o logo da página'}
           </AppText>

@@ -4,7 +4,7 @@ import { sampleCell, type Cell } from '../src/features/cell/data'
 import { CreateCellScreen } from '../src/features/cell/screens/CreateCellScreen'
 import { OptionsScreen } from '../src/features/cell/screens/OptionsScreen'
 import { WebPageScreen } from '../src/features/cell/screens/WebPageScreen'
-import { cleanSlugInput, codeUrl, publicUrl, slugFormatOk, slugify, webUrl } from '../src/features/cell/webPage'
+import { cellInitials, cleanSlugInput, codeUrl, publicUrl, slugFormatOk, slugify, webUrl } from '../src/features/cell/webPage'
 import { renderApp } from '../test-utils/render'
 
 function asLeader(patch: Partial<Cell> = {}) {
@@ -144,7 +144,13 @@ describe('página na internet', () => {
 
   test('nas opções, o líder acha a página na internet', async () => {
     await renderApp(<OptionsScreen />, asLeader({ webSlug: 'celula-viva' }))
-    await fireEvent.press(screen.getByRole('button', { name: /Página na internet/ }))
+    await fireEvent.press(screen.getByRole('button', { name: /Site da célula/ }))
     expect(router.push).toHaveBeenCalledWith('/celula/pagina')
   })
+})
+
+test('sem logo, o site usa as iniciais da célula', () => {
+  expect(cellInitials('Jovens da Central')).toBe('JC')
+  expect(cellInitials('Rrr')).toBe('R')
+  expect(cellInitials('casais em missão')).toBe('CE')
 })

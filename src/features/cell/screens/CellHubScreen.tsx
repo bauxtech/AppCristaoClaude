@@ -1,8 +1,8 @@
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback } from 'react'
-import { Image, ScrollView, View } from 'react-native'
+import { Image, ScrollView, Share, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AlertCard, AppText, Avatar, Button, Card, IconButton, SectionLabel, Tag, useToast } from '../../../components'
+import { AlertCard, AppText, Avatar, Button, Card, IconButton, ListRow, SectionLabel, Tag, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { IS_REMOTE } from '../../../lib/supabase'
@@ -16,6 +16,7 @@ import { formatMeeting, formatTime, missedTwoWeeks, nextMeeting } from '../meeti
 import { can, ROLE_LABEL } from '../permissions'
 import { SEATLESS_LINE } from './Guard'
 import { TileGrid } from './parts'
+import { cellInitials, publicUrl } from '../webPage'
 import { PlanButton } from '../../subscription/PlanLock'
 import { useSubscription } from '../../subscription/SubscriptionContext'
 
@@ -321,20 +322,32 @@ function LeaderView({ cell }: { cell: Cell }) {
         </Card>
       ) : null}
 
+      {/* Site da célula em destaque (QA de 20/10): é o que traz gente nova. */}
+      <SiteCard cell={cell} />
+
+      {/* Atalhos em grupos, em vez de dez quadrados soltos (QA de 20/10). */}
+      <SectionLabel>A reunião</SectionLabel>
       <TileGrid
         items={[
           { label: 'Escala', sub: 'Esta semana', icon: 'calendarCheck', onPress: () => router.push('/celula/escala') },
-          { label: 'Membros', sub: `${cell.members.length} ${cell.members.length === 1 ? 'pessoa' : 'pessoas'}`, icon: 'people', onPress: () => router.push('/celula/membros') },
           { label: 'Agenda', sub: 'Próximas reuniões', icon: 'calendar', onPress: () => router.push('/celula/agenda') },
-          { label: 'Mural', sub: `${cell.board.length} ${cell.board.length === 1 ? 'aviso' : 'avisos'}`, icon: 'flag', onPress: () => router.push('/celula/mural') },
           { label: 'Materiais', sub: `${cell.materials.length} ${cell.materials.length === 1 ? 'arquivo' : 'arquivos'}`, icon: 'file', onPress: () => router.push('/celula/materiais') },
           { label: 'Playlist', sub: `${cell.playlist.length} ${cell.playlist.length === 1 ? 'música' : 'músicas'}`, icon: 'music', onPress: () => router.push('/celula/playlist') },
-          { label: 'Aniversários', sub: birthdaysThisMonth ? `${birthdaysThisMonth} este mês` : 'Este mês', icon: 'gift', onPress: () => router.push('/celula/aniversarios') },
-          { label: 'Histórico', sub: `${cell.history.meetings} reuniões`, icon: 'clock', onPress: () => router.push('/celula/historico') },
-          { label: 'Plano de leitura', sub: 'Em grupo', icon: 'book', onPress: () => router.push('/celula/leitura') },
-          { label: 'Minhas células', sub: 'Trocar ou adicionar', icon: 'users', onPress: () => router.push('/celula/minhas') },
         ]}
       />
+      <SectionLabel>As pessoas</SectionLabel>
+      <TileGrid
+        items={[
+          { label: 'Membros', sub: `${cell.members.length} ${cell.members.length === 1 ? 'pessoa' : 'pessoas'}`, icon: 'people', onPress: () => router.push('/celula/membros') },
+          { label: 'Mural', sub: `${cell.board.length} ${cell.board.length === 1 ? 'aviso' : 'avisos'}`, icon: 'flag', onPress: () => router.push('/celula/mural') },
+          { label: 'Aniversários', sub: birthdaysThisMonth ? `${birthdaysThisMonth} este mês` : 'Este mês', icon: 'gift', onPress: () => router.push('/celula/aniversarios') },
+          { label: 'Plano de leitura', sub: 'Em grupo', icon: 'book', onPress: () => router.push('/celula/leitura') },
+        ]}
+      />
+      <Card style={{ paddingVertical: 4 }}>
+        <ListRow label="Histórico" sub={`${cell.history.meetings} reuniões`} onPress={() => router.push('/celula/historico')} divider />
+        <ListRow label="Minhas células" sub="Trocar ou adicionar" onPress={() => router.push('/celula/minhas')} />
+      </Card>
 
       {active.length > cell.maxSize ? (
         <Card style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
@@ -433,5 +446,37 @@ function MemberView({ cell }: { cell: Cell }) {
         </Card>
       )}
     </>
+  )
+}
+
+/** Cartão do site da célula para o líder: o link, compartilhar e editar. */
+function SiteCard({ cell }: { cell: Cell }) {
+  const { colors } = useTheme()
+  const link = publicUrl(cell)
+  return (
+    <Card style={{ gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ width: 48, height: 48, borderRadius: 24, overflow: 'hidden', backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+          {cell.logoUrl ? (
+            <Image source={{ uri: cell.logoUrl }} style={{ width: '100%', height: '100%' }} accessible={false} />
+          ) : (
+            <AppText style={{ color: colors.primaryText, fontFamily: fonts.bible, fontSize: 18 }}>{cellInitials(cell.name)}</AppText>
+          )}
+        </View>
+        <View style={{ flex: 1 }}>
+          <AppText variant="title">Site da célula</AppText>
+          <AppText variant="small" tone="secondary" numberOfLines={1}>
+            {link.replace('https://', '')}
+          </AppText>
+        </View>
+      </View>
+      <AppText variant="small" tone="secondary">
+        Quem ainda não conhece a célula vê o site e pede para participar. Compartilhe no WhatsApp e nas redes.
+      </AppText>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <Button label="Compartilhar" icon="external" size="sm" onPress={() => Share.share({ message: `${cell.name}: ${link}` }).catch(() => {})} />
+        <Button label="Editar site" variant="outline" size="sm" onPress={() => router.push('/celula/pagina')} />
+      </View>
+    </Card>
   )
 }

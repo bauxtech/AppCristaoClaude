@@ -120,8 +120,8 @@ function ActiveCell({ cell }: { cell: PublicCell }) {
         <header className="profile">
           <div className={cover ? 'cover' : 'cover cover-empty'}>{cover ? <img src={cover} alt={`Capa da célula ${cell.name}`} /> : null}</div>
           <div className="profile-body">
-            <div className="avatar" aria-hidden={logo ? undefined : true}>
-              {logo ? <img src={logo} alt={`Logo da célula ${cell.name}`} /> : <span>{cell.name.trim().charAt(0).toUpperCase()}</span>}
+            <div className={logo ? 'avatar' : 'avatar initials'} aria-hidden={logo ? undefined : true}>
+              {logo ? <img src={logo} alt={`Logo da célula ${cell.name}`} /> : <span>{initials(cell.name)}</span>}
             </div>
             <p className="eyebrow">Célula{cell.type ? ` · ${cell.type}` : ''}</p>
             <h1>{cell.name}</h1>
@@ -173,6 +173,13 @@ function ActiveCell({ cell }: { cell: PublicCell }) {
       </main>
     </>
   )
+}
+
+/** Sem logo: as iniciais do nome, como no app. "Jovens da Central" vira "JC"; uma palavra, a primeira letra. */
+function initials(name: string) {
+  const words = name.trim().split(/\s+/).filter((w) => w && !/^(da|de|do|das|dos|e)$/i.test(w))
+  if (!words.length) return '?'
+  return (words.length === 1 ? words[0].charAt(0) : words[0].charAt(0) + words[1].charAt(0)).toUpperCase()
 }
 
 /** Barra do topo igual à do site: a marca acasa e o link para conhecer o app. */

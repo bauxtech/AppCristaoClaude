@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { Image, Share, View } from 'react-native'
 import { AppText, Button, Card, Icon, ListRow, Page, SectionLabel, Switch, TextField, useToast } from '../../../components'
 import { useTheme } from '../../../theme/ThemeProvider'
+import { fonts } from '../../../theme/typography'
 import { useCell } from '../CellContext'
 import type { Cell } from '../data'
-import { checkSlugRemote, cleanSlugInput, publicUrl, removePageImageRemote, setSlugRemote, SLUG_MESSAGE, slugFormatOk, uploadPageImageRemote, WEB_BASE, type PageImage, type SlugStatus } from '../webPage'
+import { cellInitials, checkSlugRemote, cleanSlugInput, publicUrl, removePageImageRemote, setSlugRemote, SLUG_MESSAGE, slugFormatOk, uploadPageImageRemote, WEB_BASE, type PageImage, type SlugStatus } from '../webPage'
 import { CellGuard } from './Guard'
 
 /** Campo do endereço da página, com a conferência de que está livre enquanto o líder digita. */
@@ -71,7 +72,7 @@ export function SlugField({ value, onChange, cellId, current, onStatus }: { valu
 }
 
 export function WebPageScreen() {
-  return <CellGuard title="Página na internet" action="editCell">{(cell) => <WebPage cell={cell} />}</CellGuard>
+  return <CellGuard title="Site da célula" action="editCell">{(cell) => <WebPage cell={cell} />}</CellGuard>
 }
 
 const LOGO_ERROR = {
@@ -133,9 +134,9 @@ function WebPage({ cell }: { cell: Cell }) {
   }
 
   return (
-    <Page title="Página na internet">
+    <Page title="Site da célula">
       <AppText variant="body" tone="secondary">
-        A página mostra nome, tipo, o texto sobre a célula, bairro e, se você quiser, dia e horário. Endereço, roteiro e pedidos de oração ficam só no app. Quem quer participar deixa nome e telefone e recebe o código para entrar pelo app.
+        O site da célula mostra nome, tipo, o texto sobre a célula, bairro e, se você quiser, dia e horário. Nome, tipo e bairro você muda em Editar célula. Endereço, roteiro e pedidos de oração ficam só no app. Quem quer participar deixa nome e telefone e recebe o código para entrar pelo app.
       </AppText>
 
       <Card style={{ gap: 12 }}>
@@ -207,7 +208,13 @@ function WebPage({ cell }: { cell: Cell }) {
             {cell.webCoverUrl ? <Image source={{ uri: cell.webCoverUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="image" size={24} color={colors.primary} />}
           </View>
           <View style={{ position: 'absolute', left: 16, bottom: 0, width: 64, height: 64, borderRadius: 16, borderWidth: 3, borderColor: colors.card, backgroundColor: colors.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-            {cell.logoUrl ? <Image source={{ uri: cell.logoUrl }} style={{ width: '100%', height: '100%' }} resizeMode="contain" /> : <Icon name="people" size={22} color={colors.textSecondary} />}
+            {cell.logoUrl ? (
+              <Image source={{ uri: cell.logoUrl }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+            ) : (
+              <View style={{ width: '100%', height: '100%', borderRadius: 32, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                <AppText style={{ color: colors.primaryText, fontFamily: fonts.bible, fontSize: 22 }}>{cellInitials(cell.name)}</AppText>
+              </View>
+            )}
           </View>
         </View>
         {cell.webCoverHidden ? (
