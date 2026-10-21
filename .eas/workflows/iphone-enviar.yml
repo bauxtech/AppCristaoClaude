@@ -1,0 +1,20 @@
+# Envia para o TestFlight a última compilação de iPhone, sem compilar de novo.
+name: Enviar o último iPhone para o TestFlight
+on:
+  workflow_dispatch: {}
+jobs:
+  ultima:
+    name: Achar a última compilação de iPhone
+    type: get-build
+    params:
+      platform: ios
+      profile: production
+      distribution: store
+  enviar:
+    name: Enviar para o TestFlight
+    needs: [ultima]
+    type: testflight
+    env:
+      EXPO_DEBUG: '1'
+    params:
+      build_id: ${{ needs.ultima.outputs.build_id }}
