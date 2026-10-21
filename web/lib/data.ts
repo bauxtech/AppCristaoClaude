@@ -18,7 +18,8 @@ export interface PublicCell {
   neighborhood: string
   city: string
   /** Dia (0 = domingo) e horário. null quando o líder escolheu não mostrar. */
-  schedule: { day: number; time: string } | null
+  /** Dias e horários, de segunda a domingo (21/10: pode ser mais de um). */
+  schedule: { day: number; time: string }[] | null
   /** paused: o líder está sem o plano Líder; a célula volta quando ele assinar de novo. */
   status: 'active' | 'archived' | 'paused'
 }

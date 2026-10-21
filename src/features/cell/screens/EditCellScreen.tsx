@@ -8,10 +8,15 @@ import { useTheme } from '../../../theme/ThemeProvider'
 import { useCell } from '../CellContext'
 import type { Cell } from '../data'
 import { CellForm } from './CreateCellScreen'
+import { slotsOf } from '../meetings'
 import { CellGuard } from './Guard'
 
 export function EditCellScreen() {
-  return <CellGuard title="Editar célula" action="editCell">{(cell) => <EditCell cell={cell} />}</CellGuard>
+  return (
+    <CellGuard title="Editar célula" action="editCell">
+      {(cell) => <EditCell cell={cell} />}
+    </CellGuard>
+  )
 }
 
 function EditCell({ cell }: { cell: Cell }) {
@@ -48,7 +53,16 @@ function EditCell({ cell }: { cell: Cell }) {
           onPress={pickCover}
           accessibilityRole="button"
           accessibilityLabel={cell.coverUri ? 'Trocar foto de capa' : 'Adicionar foto de capa'}
-          style={{ height: 140, borderRadius: 16, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: colors.primarySoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            height: 140,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: colors.lineStrong,
+            backgroundColor: colors.primarySoft,
+            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           {cell.coverUri ? (
             <Image source={{ uri: cell.coverUri }} style={{ width: '100%', height: '100%' }} accessible={false} />
@@ -77,7 +91,7 @@ function EditCell({ cell }: { cell: Cell }) {
         />
       ) : null}
       <CellForm
-        initial={cell}
+        initial={{ ...cell, slots: slotsOf(cell) }}
         submitLabel={() => 'Salvar'}
         note={(changed) =>
           changed ? (
@@ -90,7 +104,9 @@ function EditCell({ cell }: { cell: Cell }) {
           ) : null
         }
         onSubmit={(v) => {
-          const changed = v.day !== cell.day || v.time !== cell.time || v.address !== cell.address
+          const before = slotsOf(cell)
+          const sameSlots = before.length === v.slots.length && before.every((x) => v.slots.some((y) => y.day === x.day && y.time === x.time))
+          const changed = !sameSlots || v.address !== cell.address
           if (changed) setPending(v)
           else save(v)
         }}

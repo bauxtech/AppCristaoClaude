@@ -3,7 +3,7 @@ import { contentTypeOf, signedUrl } from '../../lib/files'
 import { supabase } from '../../lib/supabase'
 import { isUuid, uuid } from '../../lib/uuid'
 import { DEFAULT_ROLES, type Cell, type Member } from './data'
-import { lastMeeting, nextMeeting } from './meetings'
+import { lastMeeting, nextMeeting, scheduleLabel } from './meetings'
 import type { CellRole } from './permissions'
 import { seatState } from '../subscription/plan'
 import { logoPublicUrl } from './webPage'
@@ -13,12 +13,16 @@ import { logoPublicUrl } from './webPage'
 // e, ao abrir, traz a célula de novo do banco.
 // No app, a própria pessoa aparece com o id 'me'. Na ida para o banco, 'me' vira '$uid' (id de quem está logado).
 
-const me = (id: string | null | undefined) => (id === 'me' ? '$uid' : id ?? null)
+const me = (id: string | null | undefined) => (id === 'me' ? '$uid' : (id ?? null))
 const iso = (ts: string | null | undefined) => (ts ? ts.slice(0, 10) : '')
 
 /** Caminho do material na pasta da célula. O nome vai sem caracteres especiais. */
 export function materialPath(cell: string, id: string, name: string) {
-  const safe = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-60)
+  const safe = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .slice(-60)
   return `${cell}/materiais/${id}-${safe}`
 }
 
@@ -74,6 +78,7 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
   if (prev.type !== next.type) info.type = next.type
   if (prev.day !== next.day) info.weekday = next.day
   if (prev.time !== next.time) info.time = next.time
+  if (JSON.stringify(prev.slots ?? []) !== JSON.stringify(next.slots ?? [])) info.meeting_slots = (next.slots ?? []).map((x) => ({ weekday: x.day, time: x.time }))
   if (prev.address !== next.address) info.address = next.address
   if (prev.reference !== next.reference) info.reference = next.reference
   if (prev.neighborhood !== next.neighborhood) info.neighborhood = next.neighborhood
@@ -158,7 +163,8 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
     if (!next.cancelledDates.includes(d)) ops.push({ kind: 'upsert', table: 'cell_meetings', row: { cell_id: cell, date: d, cancelled: false }, onConflict: 'cell_id,date' })
   }
   for (const e of next.extraMeetings) {
-    if (!prev.extraMeetings.some((x) => x.date === e.date)) ops.push({ kind: 'upsert', table: 'cell_meetings', row: { cell_id: cell, date: e.date, time: e.time, extra: true }, onConflict: 'cell_id,date' })
+    if (!prev.extraMeetings.some((x) => x.date === e.date))
+      ops.push({ kind: 'upsert', table: 'cell_meetings', row: { cell_id: cell, date: e.date, time: e.time, extra: true }, onConflict: 'cell_id,date' })
   }
   for (const e of prev.extraMeetings) {
     if (!next.extraMeetings.some((x) => x.date === e.date)) ops.push({ kind: 'delete', table: 'cell_meetings', match: { cell_id: cell, date: e.date, extra: true } })
@@ -167,7 +173,8 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
   // Vou / não vou na próxima reunião.
   if (prev.myRsvp !== next.myRsvp && next.myRsvp) {
     const meeting = nextMeeting(next, now)
-    if (meeting) ops.push({ kind: 'upsert', table: 'cell_rsvps', row: { cell_id: cell, meeting_date: meeting.date, user_id: '$uid', going: next.myRsvp === 'vou' }, onConflict: 'cell_id,meeting_date,user_id' })
+    if (meeting)
+      ops.push({ kind: 'upsert', table: 'cell_rsvps', row: { cell_id: cell, meeting_date: meeting.date, user_id: '$uid', going: next.myRsvp === 'vou' }, onConflict: 'cell_id,meeting_date,user_id' })
   }
 
   // Mural (só o líder publica e apaga).
@@ -186,7 +193,8 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
     for (const q of r.requests) {
       const old = before?.requests.find((x) => x.memberId === q.memberId)
       if (!old && q.memberId === 'me') ops.push({ kind: 'upsert', table: 'ride_requests', row: { ride_id: r.id, user_id: '$uid', status: 'pending' } })
-      if (old && old.status !== q.status && r.driverId === 'me' && isUuid(q.memberId)) ops.push({ kind: 'update', table: 'ride_requests', values: { status: q.status }, match: { ride_id: r.id, user_id: q.memberId } })
+      if (old && old.status !== q.status && r.driverId === 'me' && isUuid(q.memberId))
+        ops.push({ kind: 'update', table: 'ride_requests', values: { status: q.status }, match: { ride_id: r.id, user_id: q.memberId } })
     }
   }
   for (const r of prev.rides) if (!nextRides.has(r.id) && isUuid(r.id) && r.driverId === 'me') ops.push({ kind: 'delete', table: 'cell_rides', match: { id: r.id } })
@@ -208,7 +216,11 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
   const prevVisitors = byId(prev.visitors)
   for (const v of next.visitors) {
     if (isUuid(v.id) && prevVisitors.get(v.id) !== v) {
-      ops.push({ kind: 'upsert', table: 'cell_leads', row: { id: v.id, cell_id: cell, name: v.name, phone: v.phone.replace(/\D/g, ''), notes: v.notes || null, follow_up_at: v.followUpAt || null, source: 'manual' } })
+      ops.push({
+        kind: 'upsert',
+        table: 'cell_leads',
+        row: { id: v.id, cell_id: cell, name: v.name, phone: v.phone.replace(/\D/g, ''), notes: v.notes || null, follow_up_at: v.followUpAt || null, source: 'manual' },
+      })
     }
   }
   const nextVisitors = byId(next.visitors)
@@ -220,14 +232,16 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
     if (!isUuid(q.id)) continue
     const before = prevPolls.get(q.id)
     if (!before) ops.push({ kind: 'upsert', table: 'cell_polls', row: { id: q.id, cell_id: cell, question: q.question, options: q.options.map((o) => o.label) } })
-    if (q.myVote != null && before?.myVote !== q.myVote) ops.push({ kind: 'upsert', table: 'cell_poll_votes', row: { poll_id: q.id, user_id: '$uid', option: q.myVote }, onConflict: 'poll_id,user_id' })
+    if (q.myVote != null && before?.myVote !== q.myVote)
+      ops.push({ kind: 'upsert', table: 'cell_poll_votes', row: { poll_id: q.id, user_id: '$uid', option: q.myVote }, onConflict: 'poll_id,user_id' })
   }
   const nextPolls = byId(next.polls)
   for (const q of prev.polls) if (isUuid(q.id) && !nextPolls.has(q.id)) ops.push({ kind: 'delete', table: 'cell_polls', match: { id: q.id } })
 
   // Playlist da célula (o líder).
   const prevSongs = byId(prev.playlist)
-  for (const s of next.playlist) if (isUuid(s.id) && !prevSongs.has(s.id)) ops.push({ kind: 'upsert', table: 'cell_playlist', row: { id: s.id, cell_id: cell, title: s.title, artist: s.artist, url: s.url ?? null } })
+  for (const s of next.playlist)
+    if (isUuid(s.id) && !prevSongs.has(s.id)) ops.push({ kind: 'upsert', table: 'cell_playlist', row: { id: s.id, cell_id: cell, title: s.title, artist: s.artist, url: s.url ?? null } })
   const nextSongs = byId(next.playlist)
   for (const s of prev.playlist) if (isUuid(s.id) && !nextSongs.has(s.id)) ops.push({ kind: 'delete', table: 'cell_playlist', match: { id: s.id } })
 
@@ -263,7 +277,9 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
   for (const p of next.prayers) {
     const before = prevPrayers.get(p.id)
     if (!before || !isUuid(p.id) || !!before.iPrayed === !!p.iPrayed) continue
-    ops.push(p.iPrayed ? { kind: 'upsert', table: 'prayer_prayed', row: { request_id: p.id, user_id: '$uid' } } : { kind: 'delete', table: 'prayer_prayed', match: { request_id: p.id, user_id: '$uid' } })
+    ops.push(
+      p.iPrayed ? { kind: 'upsert', table: 'prayer_prayed', row: { request_id: p.id, user_id: '$uid' } } : { kind: 'delete', table: 'prayer_prayed', match: { request_id: p.id, user_id: '$uid' } },
+    )
   }
 
   // Conteúdo denunciado: some na hora para quem denunciou, também em outro celular.
@@ -279,9 +295,23 @@ export function cellDiffOps(prev: Cell, next: Cell, now = new Date()): SyncOp[] 
 /** Criar célula: a função do banco põe quem criou como líder. Depois vão a escala e o roteiro. */
 export function createCellOps(c: Cell): SyncOp[] {
   // Como a célula nasce no banco: sem escala, sem roteiro e com o tamanho máximo padrão (10).
-  const blank: Cell = { ...c, schedule: [], plan: [], planTitle: '', planRef: '', maxSize: 10 }
+  const blank: Cell = { ...c, schedule: [], plan: [], planTitle: '', planRef: '', maxSize: 10, slots: [] }
   return [
-    { kind: 'rpc', fn: 'create_cell', args: { p_id: c.id, p_name: c.name, p_type: c.type, p_weekday: c.day, p_time: c.time, p_address: c.address, p_reference: c.reference, p_neighborhood: c.neighborhood, p_web_slug: c.webSlug || null } },
+    {
+      kind: 'rpc',
+      fn: 'create_cell',
+      args: {
+        p_id: c.id,
+        p_name: c.name,
+        p_type: c.type,
+        p_weekday: c.day,
+        p_time: c.time,
+        p_address: c.address,
+        p_reference: c.reference,
+        p_neighborhood: c.neighborhood,
+        p_web_slug: c.webSlug || null,
+      },
+    },
     ...cellDiffOps(blank, c),
   ]
 }
@@ -337,7 +367,13 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   const asMe = (id: string | null) => (id === uid ? 'me' : id)
   const today = now.toISOString().slice(0, 10)
   const [row, cards, schedule, meetings, board, rides, swaps, leads, prayers, prayed, rsvp, hidden, polls, votes, counts, playlist, materials] = await Promise.all([
-    db.from('cells').select('id, name, type, weekday, time, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, reading_plan_id, created_at, web_slug, logo_path, logo_hidden, web_cover_path, web_cover_hidden, web_bio, web_show_schedule').eq('id', cellId).single(),
+    db
+      .from('cells')
+      .select(
+        'id, name, type, weekday, time, meeting_slots, address, reference, neighborhood, invite_code, archived, max_size, plan, cover_path, reading_plan_id, created_at, web_slug, logo_path, logo_hidden, web_cover_path, web_cover_hidden, web_bio, web_show_schedule',
+      )
+      .eq('id', cellId)
+      .single(),
     db.rpc('cell_member_cards', { p_cell: cellId }),
     db.from('cell_schedule').select('id, role_name, member_id').eq('cell_id', cellId).is('meeting_date', null),
     db.from('cell_meetings').select('id, date, time, extra, cancelled').eq('cell_id', cellId).order('date', { ascending: true }),
@@ -375,10 +411,17 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
   // Presença: últimas 4 reuniões que já aconteceram e não foram canceladas.
   const past = (meetings.data ?? []).filter((m) => !m.cancelled && m.date <= today).slice(-4)
   const att = past.length
-    ? await db.from('cell_attendance').select('meeting_id, user_id, present').in('meeting_id', past.map((m) => m.id))
+    ? await db
+        .from('cell_attendance')
+        .select('meeting_id, user_id, present')
+        .in(
+          'meeting_id',
+          past.map((m) => m.id),
+        )
     : { data: [] as { meeting_id: string; user_id: string; present: boolean }[], error: null }
   if (att.error) return null
-  const lastAttendance = (userId: string) => past.filter((m) => (att.data ?? []).some((a) => a.meeting_id === m.id && a.user_id === userId)).map((m) => !!(att.data ?? []).find((a) => a.meeting_id === m.id && a.user_id === userId)?.present)
+  const lastAttendance = (userId: string) =>
+    past.filter((m) => (att.data ?? []).some((a) => a.meeting_id === m.id && a.user_id === userId)).map((m) => !!(att.data ?? []).find((a) => a.meeting_id === m.id && a.user_id === userId)?.present)
 
   const localMember = (id: string) => local?.members.find((x) => x.id === id)
   // Fotos privadas: link de 1 hora, só de quem deixa mostrar (o banco já esconde as outras). Refeito a cada leitura.
@@ -409,9 +452,11 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
 
   const plan = (c.plan ?? {}) as { title?: string; ref?: string; sections?: Cell['plan'] }
   const meetingsData = meetings.data ?? []
+  const slots = ((c.meeting_slots ?? []) as { weekday: number; time: string }[]).map((x) => ({ day: x.weekday, time: x.time }))
   const cellBase = {
     day: c.weekday ?? 0,
     time: c.time ?? '',
+    slots,
     cancelledDates: meetingsData.filter((m) => m.cancelled).map((m) => m.date),
     extraMeetings: meetingsData.filter((m) => m.extra && !m.cancelled).map((m) => ({ date: m.date, time: m.time ?? c.time ?? '' })),
   }
@@ -458,7 +503,14 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
     members,
     pendingJoins: list
       .filter((x) => x.status === 'pending')
-      .map((x) => ({ id: x.user_id, name: x.name || 'Sem nome', phone: x.phone ?? '', requestedAt: iso(dateOf.get(x.user_id) ?? ''), message: noteOf.get(x.user_id)?.message ?? '', church: noteOf.get(x.user_id)?.church ?? '' })),
+      .map((x) => ({
+        id: x.user_id,
+        name: x.name || 'Sem nome',
+        phone: x.phone ?? '',
+        requestedAt: iso(dateOf.get(x.user_id) ?? ''),
+        message: noteOf.get(x.user_id)?.message ?? '',
+        church: noteOf.get(x.user_id)?.church ?? '',
+      })),
     visitors: (leads.data ?? []).map((v) => ({ id: v.id, name: v.name, phone: v.phone, date: iso(v.created_at), notes: v.notes ?? '', followUpAt: v.follow_up_at ?? '' })),
     schedule: schedRows,
     plan: plan.sections ?? [],
@@ -481,7 +533,15 @@ async function pullOne(db: NonNullable<typeof supabase>, uid: string, cellId: st
       options: (q.options as string[]).map((label, i) => ({ label, votes: voteRows.find((v) => v.poll_id === q.id && v.option === i)?.votes ?? 0 })),
       ...(myVotes.has(q.id) ? { myVote: myVotes.get(q.id) } : {}),
     })),
-    materials: files.map((f) => ({ id: f.id, name: f.name, kind: f.kind === 'PDF' ? ('PDF' as const) : ('Imagem' as const), size: local?.materials.find((m) => m.id === f.id)?.size ?? '', date: longDay(f.created_at), path: f.path, ...(f.url ? { uri: f.url } : {}) })),
+    materials: files.map((f) => ({
+      id: f.id,
+      name: f.name,
+      kind: f.kind === 'PDF' ? ('PDF' as const) : ('Imagem' as const),
+      size: local?.materials.find((m) => m.id === f.id)?.size ?? '',
+      date: longDay(f.created_at),
+      path: f.path,
+      ...(f.url ? { uri: f.url } : {}),
+    })),
     playlist: (playlist.data ?? []).map((s) => ({ id: s.id, title: s.title, artist: s.artist, ...(s.url ? { url: s.url } : {}) })),
     prayers: (prayers.data ?? []).map((p) => ({ id: p.id, memberId: p.user_id, text: p.text, prayedCount: 0, iPrayed: prayedSet.has(p.id), at: iso(p.created_at) })),
     rides: (rides.data ?? []).map((r) => ({
@@ -520,10 +580,21 @@ export async function findCellByCode(code: string): Promise<FoundCell | 'invalid
   if (!supabase) return 'failed'
   const { data, error } = await supabase.rpc('invite_preview', { p_code: code })
   if (error) return 'failed'
-  const c = (data ?? [])[0] as { name: string; weekday: number | null; time: string | null; neighborhood: string | null; leader_first_name: string | null; archived: boolean } | undefined
+  const c = (data ?? [])[0] as
+    | {
+        name: string
+        weekday: number | null
+        time: string | null
+        meeting_slots?: { weekday: number; time: string }[] | null
+        neighborhood: string | null
+        leader_first_name: string | null
+        archived: boolean
+      }
+    | undefined
   if (!c || c.archived) return 'invalid'
-  const days = ['Domingos', 'Segundas', 'Terças', 'Quartas', 'Quintas', 'Sextas', 'Sábados']
-  return { name: c.name, leader: c.leader_first_name ?? '', when: [c.weekday != null ? days[c.weekday] : '', c.time ?? ''].filter(Boolean).join(', '), neighborhood: c.neighborhood ?? '' }
+  const slots = (c.meeting_slots ?? []).map((x) => ({ day: x.weekday, time: x.time }))
+  const when = slots.length || (c.weekday != null && c.time) ? scheduleLabel({ day: c.weekday ?? slots[0].day, time: c.time ?? slots[0].time, slots }) : ''
+  return { name: c.name, leader: c.leader_first_name ?? '', when, neighborhood: c.neighborhood ?? '' }
 }
 
 /** Pede para entrar. Sempre fica pendente até o líder aprovar. */

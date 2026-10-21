@@ -39,7 +39,21 @@ export type CellAction =
   | 'vote'
   | 'participate'
 
-const LEADER_ONLY: CellAction[] = ['editCell', 'invite', 'approveJoin', 'manageMembers', 'seePhones', 'editPlan', 'manageAgenda', 'approveSwaps', 'postBoard', 'manageMaterials', 'managePlaylist', 'multiply', 'seeHistory']
+const LEADER_ONLY: CellAction[] = [
+  'editCell',
+  'invite',
+  'approveJoin',
+  'manageMembers',
+  'seePhones',
+  'editPlan',
+  'manageAgenda',
+  'approveSwaps',
+  'postBoard',
+  'manageMaterials',
+  'managePlaylist',
+  'multiply',
+  'seeHistory',
+]
 const LEADER_AND_AUX: CellAction[] = ['markAttendance', 'editSchedule']
 const MEMBERS: CellAction[] = ['seePrayers', 'askSwap', 'vote', 'participate']
 

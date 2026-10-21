@@ -283,3 +283,36 @@ select tests.ok('ninguém escreve direto na tabela', tests.denied($$insert into 
 update public.cell_members set status = 'approved' where cell_id = '10000000-0000-0000-0000-000000000031' and user_id = '00000000-0000-0000-0000-000000000039';
 reset role;
 select tests.ok('pedido aprovado: a mensagem sai', not exists (select 1 from public.join_request_notes where user_id = '00000000-0000-0000-0000-000000000039'));
+
+-- ─── Vários dias e horários (21/10) ──────────────────────────────────────────
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+update public.cells set meeting_slots = '[{"weekday":2,"time":"20:00"},{"weekday":6,"time":"16:00"}]', web_show_schedule = true where id = '10000000-0000-0000-0000-000000000031';
+reset role;
+select tests.ok('o líder guarda dois dias com horários diferentes', (select jsonb_array_length(meeting_slots) from public.cells where id = '10000000-0000-0000-0000-000000000031') = 2);
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+select tests.ok('dia da semana fora de 0 a 6 não vale', tests.denied($$update public.cells set meeting_slots = '[{"weekday":7,"time":"20:00"}]' where id = '10000000-0000-0000-0000-000000000031'$$));
+select tests.ok('horário inválido não vale', tests.denied($$update public.cells set meeting_slots = '[{"weekday":2,"time":"25:00"}]' where id = '10000000-0000-0000-0000-000000000031'$$));
+select tests.ok('o mesmo dia duas vezes não vale', tests.denied($$update public.cells set meeting_slots = '[{"weekday":2,"time":"20:00"},{"weekday":2,"time":"21:00"}]' where id = '10000000-0000-0000-0000-000000000031'$$));
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000032');
+update public.cells set meeting_slots = '[]' where id = '10000000-0000-0000-0000-000000000031';
+reset role;
+select tests.ok('quem não é líder não muda a agenda', (select jsonb_array_length(meeting_slots) from public.cells where id = '10000000-0000-0000-0000-000000000031') = 2);
+select tests.as_anon();
+select tests.ok('a página mostra os dois dias', (select jsonb_array_length(meeting_slots) from public.public_cell_page('celula-viva')) = 2);
+reset role;
+update public.cells set web_show_schedule = false where id = '10000000-0000-0000-0000-000000000031';
+select tests.as_anon();
+select tests.ok('com o horário escondido, a página não mostra a agenda', (select meeting_slots from public.public_cell_page('celula-viva')) = '[]'::jsonb);
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000033');
+select tests.ok('a prévia do convite mostra a agenda', (select jsonb_array_length(meeting_slots) from public.invite_preview(:'rui_code')) = 2);
+reset role;
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+update public.cells set weekday = 4, time = '19:00' where id = '10000000-0000-0000-0000-000000000031';
+reset role;
+select tests.ok('a versão anterior do app muda só o dia: a agenda volta para o dia único', (select meeting_slots = '[]'::jsonb and weekday = 4 from public.cells where id = '10000000-0000-0000-0000-000000000031'));
+select tests.as_user('00000000-0000-0000-0000-000000000031');
+update public.cells set weekday = 2, time = '20:00', meeting_slots = '[{"weekday":2,"time":"20:00"},{"weekday":6,"time":"16:00"}]' where id = '10000000-0000-0000-0000-000000000031';
+reset role;
+select tests.ok('o app novo muda o dia e a agenda juntos', (select jsonb_array_length(meeting_slots) from public.cells where id = '10000000-0000-0000-0000-000000000031') = 2);

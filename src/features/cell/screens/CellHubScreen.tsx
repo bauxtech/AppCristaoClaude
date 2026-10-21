@@ -12,7 +12,7 @@ import { fonts } from '../../../theme/typography'
 import { memberName, useCell } from '../CellContext'
 import { useBlockedIds } from '../../settings/SettingsContext'
 import { WEEKDAYS_PLURAL, type Cell } from '../data'
-import { formatMeeting, formatTime, missedTwoWeeks, nextMeeting } from '../meetings'
+import { formatMeeting, formatTime, missedTwoWeeks, nextMeeting, scheduleLabel } from '../meetings'
 import { can, ROLE_LABEL } from '../permissions'
 import { SEATLESS_LINE } from './Guard'
 import { TileGrid } from './parts'
@@ -37,7 +37,17 @@ export function CellHubScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
       {cell && !cell.archived ? <CellPlanNotice cellId={cell.id} leader={cell.myRole === 'lider'} /> : null}
-      {cellStatus === 'pending' && !cell ? <Awaiting /> : !cell ? <Empty /> : cell.archived ? <Archived cell={cell} /> : cell.myRole === 'lider' ? <LeaderView cell={cell} /> : <MemberView cell={cell} />}
+      {cellStatus === 'pending' && !cell ? (
+        <Awaiting />
+      ) : !cell ? (
+        <Empty />
+      ) : cell.archived ? (
+        <Archived cell={cell} />
+      ) : cell.myRole === 'lider' ? (
+        <LeaderView cell={cell} />
+      ) : (
+        <MemberView cell={cell} />
+      )}
     </ScrollView>
   )
 }
@@ -51,7 +61,11 @@ function CellPlanNotice({ cellId, leader }: { cellId: string; leader: boolean })
   const sub = useSubscription()
   if (!sub.cellActive(cellId)) {
     return (
-      <AlertCard tone="danger" title="Célula parada" action={leader ? { label: 'Ver plano Líder', onPress: () => router.push('/assinatura?plano=lider&origem=celula-lider' as '/assinatura') } : undefined}>
+      <AlertCard
+        tone="danger"
+        title="Célula parada"
+        action={leader ? { label: 'Ver plano Líder', onPress: () => router.push('/assinatura?plano=lider&origem=celula-lider' as '/assinatura') } : undefined}
+      >
         {leader
           ? 'Sem o plano Líder, a célula fica só para leitura: nada de reunião, escala, presença, avisos ou página web. Nada foi apagado. Assine de novo ou passe a liderança para alguém com o plano Líder.'
           : 'O líder está sem o plano Líder. A célula fica só para leitura até ele voltar a assinar. Nada foi apagado.'}
@@ -60,7 +74,11 @@ function CellPlanNotice({ cellId, leader }: { cellId: string; leader: boolean })
   }
   if (sub.cellSeatless(cellId)) {
     return (
-      <AlertCard tone="info" title="Você está sem vaga nesta célula" action={{ label: 'Ver plano Essencial', onPress: () => router.push('/assinatura?plano=essencial&origem=celula-vaga' as '/assinatura') }}>
+      <AlertCard
+        tone="info"
+        title="Você está sem vaga nesta célula"
+        action={{ label: 'Ver plano Essencial', onPress: () => router.push('/assinatura?plano=essencial&origem=celula-vaga' as '/assinatura') }}
+      >
         Você vê a reunião, o horário, o endereço e o roteiro e confirma presença. O resto da célula aparece quando o líder te der uma vaga ou com o plano Essencial.
       </AlertCard>
     )
@@ -120,7 +138,9 @@ function Awaiting() {
         <Icon name="clock" size={28} color={colors.primary} />
         <AppText variant="title">Aguardando aprovação do líder</AppText>
         <AppText variant="body" tone="secondary">
-          {IS_REMOTE ? 'Seu pedido foi enviado para o líder da célula. Avisamos quando o líder aprovar.' : 'Seu pedido para entrar em Jovens da Central foi enviado para o líder. Avisamos quando o líder aprovar.'}
+          {IS_REMOTE
+            ? 'Seu pedido foi enviado para o líder da célula. Avisamos quando o líder aprovar.'
+            : 'Seu pedido para entrar em Jovens da Central foi enviado para o líder. Avisamos quando o líder aprovar.'}
         </AppText>
       </Card>
       {/* Quem chega pelo código da página da célula costuma estar no começo do teste: mostrar o que ele libera. */}
@@ -267,7 +287,11 @@ function LeaderView({ cell }: { cell: Cell }) {
         <Card style={{ gap: 6 }}>
           <AppText variant="bodyStrong">Falta preparar a semana</AppText>
           <AppText variant="body" tone="secondary">
-            {[cell.plan.length === 0 ? 'o roteiro' : '', scheduleEmpty ? 'a escala' : ''].filter(Boolean).join(' e ').replace(/^./, (x) => x.toUpperCase())} desta semana ainda não foi montado.
+            {[cell.plan.length === 0 ? 'o roteiro' : '', scheduleEmpty ? 'a escala' : '']
+              .filter(Boolean)
+              .join(' e ')
+              .replace(/^./, (x) => x.toUpperCase())}{' '}
+            desta semana ainda não foi montado.
           </AppText>
         </Card>
       ) : null}
@@ -277,7 +301,13 @@ function LeaderView({ cell }: { cell: Cell }) {
           <Icon name="alert" size={18} color={colors.accent} />
           <View style={{ flex: 1, gap: 4 }}>
             <AppText variant="bodyStrong">{`${m.name} faltou nas últimas 2 semanas`}</AppText>
-            <Button label={`Ver ${m.name.split(' ')[0]}`} variant="text" size="sm" onPress={() => router.push({ pathname: '/celula/membro/[id]', params: { id: m.id } })} style={{ alignSelf: 'flex-start' }} />
+            <Button
+              label={`Ver ${m.name.split(' ')[0]}`}
+              variant="text"
+              size="sm"
+              onPress={() => router.push({ pathname: '/celula/membro/[id]', params: { id: m.id } })}
+              style={{ alignSelf: 'flex-start' }}
+            />
           </View>
         </Card>
       ))}
@@ -317,7 +347,10 @@ function LeaderView({ cell }: { cell: Cell }) {
             <AppText variant="bodyStrong">Pedidos de troca de escala</AppText>
             <Tag label={`${pendingSwaps.length} ${pendingSwaps.length === 1 ? 'novo' : 'novos'}`} tone="accent" />
           </View>
-          <AppText variant="small" tone="secondary">{`${memberName(cell, pendingSwaps[0].fromId)} para ${memberName(cell, pendingSwaps[0].toId)}, ${pendingSwaps[0].role}, ${pendingSwaps[0].date}`}</AppText>
+          <AppText
+            variant="small"
+            tone="secondary"
+          >{`${memberName(cell, pendingSwaps[0].fromId)} para ${memberName(cell, pendingSwaps[0].toId)}, ${pendingSwaps[0].role}, ${pendingSwaps[0].date}`}</AppText>
           <Button label="Ver pedidos de troca" variant="outline" size="sm" onPress={() => router.push('/celula/trocas')} style={{ alignSelf: 'flex-start' }} />
         </Card>
       ) : null}
@@ -389,7 +422,7 @@ function MemberView({ cell }: { cell: Cell }) {
     <>
       <Header
         title="Célula"
-        sub={`${cell.name} · ${leader ? `${leader.name} lidera` : ''} · ${WEEKDAYS_PLURAL[cell.day]}, ${formatTime(cell.time)}`}
+        sub={`${cell.name} · ${leader ? `${leader.name} lidera` : ''} · ${scheduleLabel(cell)}`}
         right={<IconButton icon="more" label="Opções da célula" onPress={() => router.push('/celula/opcoes')} />}
       />
       {role !== 'membro' ? (
@@ -428,7 +461,13 @@ function MemberView({ cell }: { cell: Cell }) {
       {!isVisitor ? (
         <TileGrid
           items={[
-            { label: 'Pedidos', sub: `${cell.prayers.filter((p) => !cell.hidden.includes(p.id) && !blockedIds.has(p.memberId)).length} na célula`, icon: 'chat', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/pedidos') },
+            {
+              label: 'Pedidos',
+              sub: `${cell.prayers.filter((p) => !cell.hidden.includes(p.id) && !blockedIds.has(p.memberId)).length} na célula`,
+              icon: 'chat',
+              locked: lock,
+              onPress: lock ? toPlans : () => router.push('/celula/pedidos'),
+            },
             { label: 'Carona', sub: 'Pedir ou oferecer', icon: 'car', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/carona') },
             { label: 'Minha escala', sub: myNext ? myNext.role : 'Sem função esta semana', icon: 'calendarCheck', locked: lock, onPress: lock ? toPlans : () => router.push('/celula/escala') },
             { label: 'Membros', sub: `${cell.members.length} pessoas`, icon: 'people', onPress: () => router.push('/celula/membros') },

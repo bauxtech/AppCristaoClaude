@@ -136,7 +136,10 @@ export const removeLogoRemote = (cellId: string, oldPath?: string | null) => rem
 
 /** Iniciais do nome da célula para quando não há logo (QA de 20/10): "Jovens da Central" vira "JC"; uma palavra, a primeira letra. */
 export function cellInitials(name: string) {
-  const words = name.trim().split(/\s+/).filter((w) => w && !/^(da|de|do|das|dos|e)$/i.test(w))
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w && !/^(da|de|do|das|dos|e)$/i.test(w))
   if (!words.length) return '?'
   if (words.length === 1) return words[0].charAt(0).toUpperCase()
   return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase()

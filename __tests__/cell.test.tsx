@@ -3,11 +3,11 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { HomeScreen } from '../src/features/home/HomeScreen'
 import { sampleCell, type Cell } from '../src/features/cell/data'
 import { checkInviteCode, codeFromQr } from '../src/features/cell/join'
-import { missedTwoWeeks, nextMeeting, upcomingMeetings } from '../src/features/cell/meetings'
+import { lastMeeting, missedTwoWeeks, nextMeeting, scheduleLabel, slotsOf, upcomingMeetings } from '../src/features/cell/meetings'
 import { can, type CellRole } from '../src/features/cell/permissions'
 import { CellHubScreen } from '../src/features/cell/screens/CellHubScreen'
 import { BoardScreen } from '../src/features/cell/screens/CommunityScreens'
-import { CreateCellScreen } from '../src/features/cell/screens/CreateCellScreen'
+import { CellForm, CreateCellScreen } from '../src/features/cell/screens/CreateCellScreen'
 import { EditCellScreen } from '../src/features/cell/screens/EditCellScreen'
 import { CarpoolScreen, CellPrayersScreen } from '../src/features/cell/screens/GroupScreens'
 import { JoinRequestsScreen } from '../src/features/cell/screens/JoinRequestsScreen'
@@ -38,7 +38,22 @@ describe('regras de permissão', () => {
   })
 
   test('o anfitrião não tem permissão a mais que o membro', () => {
-    const actions = ['editCell', 'invite', 'approveJoin', 'manageMembers', 'seePhones', 'editPlan', 'markAttendance', 'editSchedule', 'postBoard', 'multiply', 'seePrayers', 'askSwap', 'vote', 'participate'] as const
+    const actions = [
+      'editCell',
+      'invite',
+      'approveJoin',
+      'manageMembers',
+      'seePhones',
+      'editPlan',
+      'markAttendance',
+      'editSchedule',
+      'postBoard',
+      'multiply',
+      'seePrayers',
+      'askSwap',
+      'vote',
+      'participate',
+    ] as const
     for (const a of actions) expect(can('anfitriao', a)).toBe(can('membro', a))
   })
 
@@ -175,6 +190,32 @@ describe('criar e editar', () => {
     expect(router.replace).toHaveBeenCalledWith({ pathname: '/celula/convidar', params: { nova: '1' } })
   })
 
+  test('vários dias, cada um com o seu horário', async () => {
+    const onSubmit = jest.fn()
+    await renderApp(<CellForm initial={{ name: 'Célula', type: null, slots: [], address: '', reference: '', neighborhood: '' }} submitLabel={() => 'Salvar'} onSubmit={onSubmit} />, {
+      onboarded: true,
+    })
+    await fireEvent.press(screen.getByRole('button', { name: 'Sáb' }))
+    await fireEvent.press(screen.getByRole('button', { name: 'Ter' }))
+    await fireEvent.changeText(screen.getByLabelText('Horário de sábado (obrigatório)'), '1600')
+    await fireEvent.changeText(screen.getByLabelText('Horário de terça-feira (obrigatório)'), '19')
+    await fireEvent.press(screen.getByRole('button', { name: 'Salvar' }))
+    expect(screen.getByText('Falta preencher o horário.')).toBeTruthy()
+    expect(onSubmit).not.toHaveBeenCalled()
+    await fireEvent.changeText(screen.getByLabelText('Horário de terça-feira (obrigatório)'), '1930')
+    await fireEvent.press(screen.getByRole('button', { name: 'Salvar' }))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        day: 2,
+        time: '19:30',
+        slots: [
+          { day: 2, time: '19:30' },
+          { day: 6, time: '16:00' },
+        ],
+      }),
+    )
+  })
+
   test('mudar o dia pede confirmação e avisa todos', async () => {
     await renderApp(<EditCellScreen />, asRole('lider'))
     await fireEvent.press(screen.getByRole('button', { name: 'Qui' }))
@@ -228,6 +269,36 @@ describe('reuniões', () => {
   test('reunião cancelada pula para a seguinte', () => {
     const cell = { day: 3, time: '20:00', cancelledDates: ['2026-10-07'], extraMeetings: [] }
     expect(nextMeeting(cell, new Date(2026, 9, 3))?.date).toBe('2026-10-14')
+  })
+
+  test('terça e sábado: as reuniões dos dois dias, em ordem', () => {
+    const cell = {
+      day: 2,
+      time: '20:00',
+      slots: [
+        { day: 6, time: '16:00' },
+        { day: 2, time: '20:00' },
+      ],
+      cancelledDates: ['2026-10-10'],
+      extraMeetings: [],
+    }
+    expect(slotsOf(cell)).toEqual([
+      { day: 2, time: '20:00' },
+      { day: 6, time: '16:00' },
+    ])
+    expect(scheduleLabel(cell)).toBe('Terças, 20h · Sábados, 16h')
+    // Segunda, 5 de outubro.
+    const list = upcomingMeetings(cell, new Date(2026, 9, 5, 10), 2)
+    expect(list.map((m) => `${m.date} ${m.time}${m.cancelled ? ' cancelada' : ''}`)).toEqual(['2026-10-06 20:00', '2026-10-10 16:00 cancelada', '2026-10-13 20:00', '2026-10-17 16:00'])
+    expect(nextMeeting(cell, new Date(2026, 9, 7))?.date).toBe('2026-10-13')
+    // Domingo, 11: a última reunião que aconteceu é a de terça, porque a de sábado foi cancelada.
+    expect(lastMeeting(cell, new Date(2026, 9, 11, 10))).toEqual({ date: '2026-10-06', time: '20:00', extra: false, cancelled: false })
+    // Sábado, 17, às 17h: a reunião das 16h já começou.
+    expect(lastMeeting(cell, new Date(2026, 9, 17, 17))?.date).toBe('2026-10-17')
+  })
+
+  test('célula sem agenda salva usa o dia e o horário únicos', () => {
+    expect(scheduleLabel({ day: 3, time: '19:30' })).toBe('Quartas, 19h30')
   })
 
   test('faltou duas semanas seguidas', () => {

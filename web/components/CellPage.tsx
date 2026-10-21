@@ -50,7 +50,8 @@ export function CellPage({ code }: { code: string }) {
   if (load.state === 'missing') return <Unavailable title="Este convite não vale mais" text="O link está errado ou a célula mudou de código. Peça um novo convite para quem te chamou." />
   const cell = load.cell
   if (cell.status === 'archived') return <Unavailable title={`${cell.name} não está mais se reunindo`} text="A célula foi arquivada pelo líder. Peça a quem te convidou o convite de outra célula." />
-  if (cell.status === 'paused') return <Unavailable title={`${cell.name} está com as reuniões paradas`} text="Por enquanto, a célula não recebe novos contatos pela página. Fale com quem te convidou para saber quando volta." />
+  if (cell.status === 'paused')
+    return <Unavailable title={`${cell.name} está com as reuniões paradas`} text="Por enquanto, a célula não recebe novos contatos pela página. Fale com quem te convidou para saber quando volta." />
   return <ActiveCell cell={cell} />
 }
 
@@ -128,7 +129,9 @@ function ActiveCell({ cell }: { cell: PublicCell }) {
             {place ? <p className="sub">{place}</p> : null}
             {cell.schedule ? (
               <ul className="facts" aria-label="Quando se encontra">
-                <li>{weekly(cell.schedule.day, cell.schedule.time)}</li>
+                {cell.schedule.map((x) => (
+                  <li key={x.day}>{weekly(x.day, x.time)}</li>
+                ))}
               </ul>
             ) : null}
           </div>
@@ -177,7 +180,10 @@ function ActiveCell({ cell }: { cell: PublicCell }) {
 
 /** Sem logo: as iniciais do nome, como no app. "Jovens da Central" vira "JC"; uma palavra, a primeira letra. */
 function initials(name: string) {
-  const words = name.trim().split(/\s+/).filter((w) => w && !/^(da|de|do|das|dos|e)$/i.test(w))
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w && !/^(da|de|do|das|dos|e)$/i.test(w))
   if (!words.length) return '?'
   return (words.length === 1 ? words[0].charAt(0) : words[0].charAt(0) + words[1].charAt(0)).toUpperCase()
 }

@@ -75,13 +75,21 @@ export interface Poll {
   myVote?: number
 }
 
+/** Um dia da semana (0 = domingo) com o horário da reunião nesse dia. */
+export interface MeetingSlot {
+  day: number
+  time: string
+}
+
 export interface Cell {
   id: string
   name: string
   type: CellType | null
-  /** 0 = domingo */
+  /** 0 = domingo. É o primeiro dia da agenda (slots), guardado também para versões antigas do app. */
   day: number
   time: string
+  /** Dias e horários das reuniões (21/10): cada dia com o seu horário. Vazio nas células antigas: vale day e time. */
+  slots?: MeetingSlot[]
   address: string
   reference: string
   neighborhood: string
@@ -163,7 +171,12 @@ export function sampleCell(myRole: CellRole, myName: string): Cell {
   const members: Member[] = [
     leader,
     ...(myRole === 'lider' ? [] : [me]),
-    m('u2', 'Ana Souza', myRole === 'auxiliar' ? 'membro' : 'auxiliar', '11992223333', { lastAttendance: [true, true, false, false], birthday: '08-21', showReadingProgress: true, readingProgress: 60 }),
+    m('u2', 'Ana Souza', myRole === 'auxiliar' ? 'membro' : 'auxiliar', '11992223333', {
+      lastAttendance: [true, true, false, false],
+      birthday: '08-21',
+      showReadingProgress: true,
+      readingProgress: 60,
+    }),
     m('u3', 'Maria Santos', 'anfitriao', '11993334444', { birthday: '01-30', showReadingProgress: true, readingProgress: 40 }),
     m('u4', 'Carlos Lima', 'membro', '11994445555', { birthday: '10-12', birthYear: 2000 }),
     m('u5', 'Paula Rocha', 'membro', '11995556666', { birthday: '10-27', birthYear: 1995 }),
@@ -191,7 +204,10 @@ export function sampleCell(myRole: CellRole, myName: string): Cell {
     foundedAt: '2023-03-01',
     myRole,
     members,
-    pendingJoins: myRole === 'lider' ? [{ id: 'j1', name: 'Fernanda Reis', phone: '11983334444', requestedAt: '2026-10-02', message: 'Sou amiga da Maria, vim no culto de domingo.', church: 'Igreja Batista Central' }] : [],
+    pendingJoins:
+      myRole === 'lider'
+        ? [{ id: 'j1', name: 'Fernanda Reis', phone: '11983334444', requestedAt: '2026-10-02', message: 'Sou amiga da Maria, vim no culto de domingo.', church: 'Igreja Batista Central' }]
+        : [],
     visitors: [],
     schedule: [
       { role: 'Recebe em casa', memberId: 'u3' },
@@ -212,7 +228,16 @@ export function sampleCell(myRole: CellRole, myName: string): Cell {
       { id: 'b1', authorId: leaderId, text: 'Retiro da célula: 22 de outubro. Confirmar presença até sexta.', at: '2026-10-03' },
       { id: 'b2', authorId: leaderId, text: 'Parabéns ao Pedro pela nova faculdade!', at: '2026-09-30' },
     ],
-    polls: [{ id: 'q1', question: 'Preferem reunião às 19h ou 20h?', options: [{ label: '19h', votes: 4 }, { label: '20h', votes: 7 }] }],
+    polls: [
+      {
+        id: 'q1',
+        question: 'Preferem reunião às 19h ou 20h?',
+        options: [
+          { label: '19h', votes: 4 },
+          { label: '20h', votes: 7 },
+        ],
+      },
+    ],
     materials: [
       { id: 'mt1', name: 'Estudo: Vivendo com propósito.pdf', kind: 'PDF', size: '1,2 MB', date: '1 de outubro' },
       { id: 'mt2', name: 'Louvor outubro.pdf', kind: 'PDF', size: '0,8 MB', date: '28 de setembro' },
@@ -243,8 +268,15 @@ export function sampleCell(myRole: CellRole, myName: string): Cell {
 }
 
 /** Célula recém-criada, só com o líder. */
-export function newCell(input: { name: string; type: CellType | null; day: number; time: string; address: string; reference: string; neighborhood: string; webSlug?: string }, myName: string): Cell {
-  const code = Math.random().toString(36).slice(2, 8).toUpperCase().replace(/[^A-Z0-9]/g, 'X')
+export function newCell(
+  input: { name: string; type: CellType | null; day: number; time: string; slots?: MeetingSlot[]; address: string; reference: string; neighborhood: string; webSlug?: string },
+  myName: string,
+): Cell {
+  const code = Math.random()
+    .toString(36)
+    .slice(2, 8)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, 'X')
   return {
     id: `c${Date.now().toString(36)}`,
     ...input,

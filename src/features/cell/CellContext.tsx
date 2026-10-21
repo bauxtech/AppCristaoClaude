@@ -8,7 +8,7 @@ import { setCurrentCellId } from './current'
 import { cellDiffOps, createCellOps, multiplyOps, pullCells, requestJoinRemote, withIds } from './sync'
 import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
-import { newCell, sampleCell, type Cell, type CellType } from './data'
+import { newCell, sampleCell, type Cell, type CellType, type MeetingSlot } from './data'
 import type { CellRole } from './permissions'
 
 interface CellState {
@@ -22,7 +22,7 @@ interface CellValue {
   cell: Cell | null
   /** Muda a célula aberta com uma função que recebe a célula e devolve a nova. */
   update: (fn: (c: Cell) => Cell) => void
-  createCell: (input: { name: string; type: CellType | null; day: number; time: string; address: string; reference: string; neighborhood: string; webSlug?: string }) => Cell
+  createCell: (input: { name: string; type: CellType | null; day: number; time: string; slots?: MeetingSlot[]; address: string; reference: string; neighborhood: string; webSlug?: string }) => Cell
   /** Pede para entrar com um código. A entrada depende do líder. Com servidor, devolve o resultado do pedido. */
   requestJoin: (code?: string, extra?: { message?: string; church?: string }) => Promise<'ok' | 'invalid' | 'failed'>
   /** Traz a célula de novo do banco (ao abrir a aba). Sem servidor, não faz nada. */

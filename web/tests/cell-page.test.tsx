@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, test } from 'vitest'
 import { CellPage } from '../components/CellPage'
-import { getPublicCell, leaveContact } from '../lib/api'
+import { getPublicCell, leaveContact, scheduleOf } from '../lib/api'
 import { maskPhone } from '../lib/format'
 
 describe('dados públicos', () => {
@@ -31,6 +31,24 @@ describe('dados públicos', () => {
     await expect(leaveContact('ARQ001', 'Maria', '11987654321')).rejects.toThrow()
   })
 
+  test('agenda com vários dias, de segunda a domingo; célula antiga usa o dia único', () => {
+    expect(
+      scheduleOf({
+        weekday: 0,
+        time: '18:00',
+        meeting_slots: [
+          { weekday: 0, time: '18:00' },
+          { weekday: 2, time: '20:00' },
+        ],
+      }),
+    ).toEqual([
+      { day: 2, time: '20:00' },
+      { day: 0, time: '18:00' },
+    ])
+    expect(scheduleOf({ weekday: 3, time: '20:00', meeting_slots: [] })).toEqual([{ day: 3, time: '20:00' }])
+    expect(scheduleOf({ weekday: null, time: null, meeting_slots: [] })).toBeNull()
+  })
+
   test('máscara do telefone', () => {
     expect(maskPhone('11987654321')).toBe('(11) 98765-4321')
   })
@@ -45,6 +63,7 @@ describe('página da célula', () => {
     expect(screen.getByText(/se encontram em casa para ler a Bíblia/)).toBeInTheDocument()
     expect(screen.getByText('Pinheiros, São Paulo, SP')).toBeInTheDocument()
     expect(screen.getByText('Quartas, 20h')).toBeInTheDocument()
+    expect(screen.getByText('Sábados, 16h')).toBeInTheDocument()
     expect(screen.queryByText(/Líder:/)).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /Roteiro|Materiais|pedido de oração/i })).not.toBeInTheDocument()
     expect(screen.queryByText(/whatsapp/i)).not.toBeInTheDocument()

@@ -31,7 +31,10 @@ const DEMO: Record<string, PublicCell> = {
     bio: 'Jovens de 18 a 30 anos que se encontram em casa para ler a Bíblia, orar e comer juntos.',
     neighborhood: 'Pinheiros',
     city: 'São Paulo, SP',
-    schedule: { day: 3, time: '20:00' },
+    schedule: [
+      { day: 3, time: '20:00' },
+      { day: 6, time: '16:00' },
+    ],
     status: 'active',
   },
   NOVA01: {
@@ -57,7 +60,7 @@ const DEMO: Record<string, PublicCell> = {
     bio: null,
     neighborhood: 'Centro',
     city: 'Salvador, BA',
-    schedule: { day: 2, time: '20:00' },
+    schedule: [{ day: 2, time: '20:00' }],
     status: 'paused',
   },
   ARQ001: {
@@ -70,7 +73,7 @@ const DEMO: Record<string, PublicCell> = {
     bio: null,
     neighborhood: 'Boa Viagem',
     city: 'Recife, PE',
-    schedule: { day: 6, time: '19:00' },
+    schedule: [{ day: 6, time: '19:00' }],
     status: 'archived',
   },
 }
@@ -84,7 +87,10 @@ function demoCell(key: string) {
 }
 
 export function normalizeCode(raw: string) {
-  return raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+  return raw
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 6)
 }
 
 /** Endereço do site → como achar a célula. /celulas/jovens-da-central/ vira "jovens-da-central"; o link antigo /c/ABC123/ vira "c:ABC123". */
@@ -115,10 +121,32 @@ function logoUrl(path: string | null) {
   return path && SUPABASE_URL ? `${SUPABASE_URL}/storage/v1/object/public/cell-logos/${path.split('/').map(encodeURIComponent).join('/')}` : null
 }
 
+/** Agenda da página: a lista de dias e horários; célula antiga usa o dia e o horário únicos. De segunda a domingo. */
+export function scheduleOf(r: { weekday: number | null; time: string | null; meeting_slots: { weekday: number; time: string }[] | null }) {
+  const list = r.meeting_slots?.length ? r.meeting_slots.map((x) => ({ day: x.weekday, time: x.time })) : r.weekday != null && r.time ? [{ day: r.weekday, time: r.time }] : []
+  const order = (d: number) => (d + 6) % 7
+  return list.length ? list.sort((a, b) => order(a.day) - order(b.day)) : null
+}
+
 /** Dados públicos. Nunca inclui endereço, membros, telefones, pedidos ou nome do líder. */
 export async function getPublicCell(key: string): Promise<PublicCell | null> {
   if (REMOTE) {
-    const rows = await rpc<{ name: string; type: string | null; bio: string | null; weekday: number | null; time: string | null; neighborhood: string | null; archived: boolean; paused: boolean; slug: string | null; logo_path: string | null; cover_path: string | null }[]>('public_cell_page', { p_code: key })
+    const rows = await rpc<
+      {
+        name: string
+        type: string | null
+        bio: string | null
+        weekday: number | null
+        time: string | null
+        meeting_slots: { weekday: number; time: string }[] | null
+        neighborhood: string | null
+        archived: boolean
+        paused: boolean
+        slug: string | null
+        logo_path: string | null
+        cover_path: string | null
+      }[]
+    >('public_cell_page', { p_code: key })
     const r = rows[0]
     if (!r) return null
     const status = r.archived ? 'archived' : r.paused ? 'paused' : 'active'
@@ -132,7 +160,7 @@ export async function getPublicCell(key: string): Promise<PublicCell | null> {
       bio: r.bio,
       neighborhood: r.neighborhood ?? '',
       city: '',
-      schedule: r.weekday != null && r.time ? { day: r.weekday, time: r.time } : null,
+      schedule: scheduleOf(r),
       status,
     }
   }

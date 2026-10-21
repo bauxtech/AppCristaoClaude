@@ -1,4 +1,4 @@
-import { WEEKDAYS_LONG, type Cell } from './data'
+import { WEEKDAYS_LONG, WEEKDAYS_PLURAL, type Cell, type MeetingSlot } from './data'
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 
@@ -35,47 +35,69 @@ export function formatMeeting(m: { date: string; time: string }) {
   return `${formatMeetingDay(m.date)} · ${formatTime(m.time)}`
 }
 
-/** Próximas reuniões: as semanais e os encontros extras, em ordem de data. */
-export function upcomingMeetings(cell: Pick<Cell, 'day' | 'time' | 'cancelledDates' | 'extraMeetings'>, now = new Date(), count = 4): Meeting[] {
+type Schedule = Pick<Cell, 'day' | 'time' | 'slots' | 'cancelledDates' | 'extraMeetings'>
+
+/** Dias e horários da célula, de segunda a domingo. Célula antiga, sem agenda, usa o dia e o horário únicos. */
+export function slotsOf(cell: Pick<Cell, 'day' | 'time' | 'slots'>): MeetingSlot[] {
+  const list = cell.slots?.length ? cell.slots : [{ day: cell.day, time: cell.time }]
+  const order = (d: number) => (d + 6) % 7
+  return [...list].sort((a, b) => order(a.day) - order(b.day) || a.time.localeCompare(b.time))
+}
+
+/** "Terças, 20h · Sábados, 16h" */
+export function scheduleLabel(cell: Pick<Cell, 'day' | 'time' | 'slots'>) {
+  return slotsOf(cell)
+    .map((s) => `${WEEKDAYS_PLURAL[s.day]}, ${formatTime(s.time)}`)
+    .join(' · ')
+}
+
+/** Próximas reuniões: as de cada dia da agenda e os encontros extras, em ordem de data. count é o número de semanas. */
+export function upcomingMeetings(cell: Schedule, now = new Date(), count = 4): Meeting[] {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const [h, min] = cell.time.split(':').map(Number)
-  let first = new Date(today)
-  first.setDate(today.getDate() + ((cell.day - today.getDay() + 7) % 7))
-  // Se a reunião de hoje já passou, começa na semana seguinte.
-  if (first.getTime() === today.getTime() && (now.getHours() > h || (now.getHours() === h && now.getMinutes() > min))) {
-    first = new Date(first.getFullYear(), first.getMonth(), first.getDate() + 7)
+  const regular: Meeting[] = []
+  for (const slot of slotsOf(cell)) {
+    const [h, min] = slot.time.split(':').map(Number)
+    let first = new Date(today)
+    first.setDate(today.getDate() + ((slot.day - today.getDay() + 7) % 7))
+    // Se a reunião de hoje já passou, começa na semana seguinte.
+    if (first.getTime() === today.getTime() && (now.getHours() > h || (now.getHours() === h && now.getMinutes() > min))) {
+      first = new Date(first.getFullYear(), first.getMonth(), first.getDate() + 7)
+    }
+    for (let i = 0; i < count; i++) {
+      const date = iso(new Date(first.getFullYear(), first.getMonth(), first.getDate() + i * 7))
+      regular.push({ date, time: slot.time, extra: false, cancelled: cell.cancelledDates.includes(date) })
+    }
   }
-  const regular: Meeting[] = Array.from({ length: count }, (_, i) => {
-    const d = new Date(first.getFullYear(), first.getMonth(), first.getDate() + i * 7)
-    const date = iso(d)
-    return { date, time: cell.time, extra: false, cancelled: cell.cancelledDates.includes(date) }
-  })
-  const last = regular[regular.length - 1].date
+  regular.sort((a, b) => (a.date + a.time > b.date + b.time ? 1 : -1))
+  const last = regular[regular.length - 1]?.date ?? iso(today)
+  // Encontro extra no mesmo dia de uma reunião da agenda toma o lugar dela.
   const extras = cell.extraMeetings.filter((e) => e.date >= iso(today) && e.date <= last).map((e) => ({ ...e, extra: true, cancelled: cell.cancelledDates.includes(e.date) }))
-  return [...regular, ...extras].sort((a, b) => (a.date + a.time > b.date + b.time ? 1 : -1))
+  const merged = [...regular.filter((r) => !extras.some((e) => e.date === r.date)), ...extras]
+  return merged.sort((a, b) => (a.date + a.time > b.date + b.time ? 1 : -1))
 }
 
 /** Reunião mais recente que já começou (hoje ou antes, até 3 semanas), não cancelada. É a da tela de presença. */
-export function lastMeeting(cell: Pick<Cell, 'day' | 'time' | 'cancelledDates' | 'extraMeetings'>, now = new Date()): Meeting | null {
+export function lastMeeting(cell: Schedule, now = new Date()): Meeting | null {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const [h, min] = cell.time.split(':').map(Number)
   const started = (d: Date, time: string) => {
     if (d.getTime() < today.getTime()) return true
-    const [th, tm] = (time || cell.time).split(':').map(Number)
-    return now.getHours() > (th ?? h) || (now.getHours() === (th ?? h) && now.getMinutes() >= (tm ?? min))
+    const [th, tm] = time.split(':').map(Number)
+    return now.getHours() > th || (now.getHours() === th && now.getMinutes() >= tm)
   }
+  const slots = slotsOf(cell)
   for (let i = 0; i <= 21; i++) {
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
     const date = iso(d)
     if (cell.cancelledDates.includes(date)) continue
     const extra = cell.extraMeetings.find((e) => e.date === date)
-    if (extra && started(d, extra.time)) return { date, time: extra.time, extra: true, cancelled: false }
-    if (d.getDay() === cell.day && started(d, cell.time)) return { date, time: cell.time, extra: false, cancelled: false }
+    if (extra && started(d, extra.time || slots[0].time)) return { date, time: extra.time || slots[0].time, extra: true, cancelled: false }
+    const slot = slots.find((s) => s.day === d.getDay() && started(d, s.time))
+    if (slot) return { date, time: slot.time, extra: false, cancelled: false }
   }
   return null
 }
 
-export function nextMeeting(cell: Pick<Cell, 'day' | 'time' | 'cancelledDates' | 'extraMeetings'>, now = new Date()) {
+export function nextMeeting(cell: Schedule, now = new Date()) {
   return upcomingMeetings(cell, now, 8).find((m) => !m.cancelled) ?? null
 }
 
