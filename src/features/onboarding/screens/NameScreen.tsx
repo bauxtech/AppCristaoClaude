@@ -1,12 +1,14 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { Image, Pressable, View } from 'react-native'
 import { Button, Icon, SelectCard, Sheet, TextField, useToast } from '../../../components'
 import { useSession } from '../../../state/session'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { OnboardingScaffold } from '../OnboardingScaffold'
 import { useSettings } from '../../settings/SettingsContext'
 import { isValidEmail } from '../validation'
+import { useImagePicker } from '../../../lib/useImagePicker'
+import { useProfile } from '../../profile/ProfileContext'
 
 export function NameScreen() {
   const { colors } = useTheme()
@@ -29,9 +31,18 @@ export function NameScreen() {
     router.push('/objetivo')
   }
 
-  function photoAction(msg: string) {
+  // A mesma foto de perfil do Eu > Editar perfil.
+  const photo = useProfile()
+  const { pickImage, permissionSheet } = useImagePicker()
+  async function pick(camera: boolean) {
     setSheet(false)
-    toast(msg)
+    // No Android, abrir a galeria enquanto o painel ainda fecha não abre nada: espera o painel sair.
+    await new Promise((r) => setTimeout(r, 400))
+    const uri = await pickImage(camera ? 'camera' : 'library', 'para a sua foto de perfil', { allowsEditing: true, aspect: [1, 1], quality: 0.6 })
+    if (uri) {
+      photo.setPhoto(uri)
+      toast('Foto adicionada')
+    }
   }
 
   return (
@@ -64,9 +75,9 @@ export function NameScreen() {
             justifyContent: 'center',
           }}
         >
-          <Icon name="camera" size={28} color={colors.primary} />
+          {photo.photoUri ? <Image source={{ uri: photo.photoUri }} style={{ width: 92, height: 92, borderRadius: 46 }} accessible={false} /> : <Icon name="camera" size={28} color={colors.primary} />}
         </Pressable>
-        <Button label="Adicionar foto" variant="text" size="sm" onPress={() => setSheet(true)} />
+        <Button label={photo.photoUri ? 'Trocar foto' : 'Adicionar foto'} variant="text" size="sm" onPress={() => setSheet(true)} />
       </View>
       <TextField label="Seu nome" value={name} onChangeText={setName} placeholder="Como você gosta de ser chamado" autoComplete="name" textContentType="name" />
       <TextField
@@ -88,10 +99,11 @@ export function NameScreen() {
         onPress={() => setOffers((v) => !v)}
       />
 
+      {permissionSheet}
       <Sheet visible={sheet} onClose={() => setSheet(false)} title="Foto de perfil">
-        <Button label="Tirar foto" icon="camera" variant="soft" onPress={() => photoAction('A câmera entra quando o app estiver no celular')} />
-        <Button label="Escolher da galeria" icon="image" variant="soft" onPress={() => photoAction('A galeria entra quando o app estiver no celular')} />
-        <Button label="Remover foto" icon="trash" variant="outline" onPress={() => photoAction('Foto removida')} />
+        <Button label="Tirar foto" icon="camera" variant="soft" onPress={() => void pick(true)} />
+        <Button label="Escolher da galeria" icon="image" variant="soft" onPress={() => void pick(false)} />
+        {photo.photoUri ? <Button label="Remover foto" icon="trash" variant="outline" onPress={() => (photo.setPhoto(undefined), setSheet(false), toast('Foto removida'))} /> : null}
         <Button label="Cancelar" variant="text" onPress={() => setSheet(false)} style={{ alignSelf: 'center' }} />
       </Sheet>
     </OnboardingScaffold>

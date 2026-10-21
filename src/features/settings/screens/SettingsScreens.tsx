@@ -2,7 +2,7 @@ import * as LocalAuthentication from 'expo-local-authentication'
 import * as Speech from 'expo-speech'
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Platform, Pressable, View } from 'react-native'
+import { Linking, Platform, Pressable, View } from 'react-native'
 import { AppText, Button, Card, Chip, Icon, ListRow, Page, SectionLabel, Segmented, SelectCard, Switch, Tag, TextField, useToast } from '../../../components'
 import { MIN_TOUCH } from '../../../components/Button'
 import { IS_PREVIEW } from '../../../lib/preview'
@@ -519,39 +519,32 @@ export function HelpScreen() {
   )
 }
 
+/** Suporte por e-mail (oi@acasa.app.br): abre o app de e-mail do celular com a mensagem pronta. */
+export const SUPPORT_EMAIL = 'oi@acasa.app.br'
+
 export function SupportScreen() {
-  const toast = useToast()
   const [text, setText] = useState('')
-  const [sent, setSent] = useState(false)
-  if (sent) {
-    return (
-      <Page title="Falar com suporte">
-        <Card style={{ gap: 6 }} accessibilityLiveRegion="polite">
-          <AppText variant="bodyStrong">Mensagem enviada</AppText>
-          <AppText variant="body" tone="secondary">
-            A equipe do app recebeu sua mensagem.
-          </AppText>
-        </Card>
-        <Button label="Voltar" variant="outline" onPress={() => router.back()} />
-      </Page>
+  const [failed, setFailed] = useState(false)
+  async function send() {
+    const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Suporte acasa')}&body=${encodeURIComponent(`${text.trim()}\n\nacasa ${APP_VERSION}, ${Platform.OS}`)}`
+    // Sem app de e-mail no celular, mostra o endereço para a pessoa escrever de onde preferir.
+    await Linking.openURL(url).then(
+      () => setFailed(false),
+      () => setFailed(true),
     )
   }
   return (
     <Page title="Falar com suporte">
       <TextField label="Como podemos ajudar?" value={text} onChangeText={setText} multiline placeholder="Conte o que aconteceu" />
-      {IS_PREVIEW ? (
-        <AppText variant="small" tone="secondary">
-          Na prévia, a mensagem não sai do aparelho.
+      <AppText variant="small" tone="secondary">
+        {`Ao tocar em Escrever, abrimos o seu app de e-mail com a mensagem para ${SUPPORT_EMAIL}. É só enviar.`}
+      </AppText>
+      {failed ? (
+        <AppText variant="small" accessibilityLiveRegion="polite">
+          {`Não achamos um app de e-mail neste celular. Escreva para ${SUPPORT_EMAIL}.`}
         </AppText>
       ) : null}
-      <Button
-        label="Enviar"
-        disabled={!text.trim()}
-        onPress={() => {
-          setSent(true)
-          toast('Mensagem enviada')
-        }}
-      />
+      <Button label="Escrever" disabled={!text.trim()} onPress={() => void send()} />
     </Page>
   )
 }

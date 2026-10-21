@@ -1,4 +1,5 @@
 import * as Speech from 'expo-speech'
+import { speechChunks } from './speechChunks'
 import { useSettings } from '../settings/SettingsContext'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
@@ -38,15 +39,20 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const speak = useCallback((t: Track, rate: Speed) => {
     Speech.stop()
-    Speech.speak(t.text, {
-      language: 'pt-BR',
-      voice: voiceRef.current ?? undefined,
-      rate: rate * BASE_RATE,
-      onDone: () => setPlaying(false),
-      onStopped: () => setPlaying(false),
-      onError: () => setPlaying(false),
-    })
-    setPlaying(true)
+    // Capítulo longo vai em partes: a voz do celular enfileira uma depois da outra.
+    const limit = Math.min(Speech.maxSpeechInputLength || 4000, 4000) - 500
+    const parts = speechChunks(t.text, limit)
+    parts.forEach((part, i) =>
+      Speech.speak(part, {
+        language: 'pt-BR',
+        voice: voiceRef.current ?? undefined,
+        rate: rate * BASE_RATE,
+        onDone: i === parts.length - 1 ? () => setPlaying(false) : undefined,
+        onStopped: () => setPlaying(false),
+        onError: () => (Speech.stop(), setPlaying(false)),
+      }),
+    )
+    setPlaying(parts.length > 0)
   }, [])
 
   useEffect(() => () => {
