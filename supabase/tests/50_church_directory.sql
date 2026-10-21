@@ -28,3 +28,7 @@ select tests.as_anon();
 select tests.ok('sem login, ninguém busca', tests.denied($$select * from public.search_churches('batista')$$));
 select tests.ok('sem login, ninguém cria igreja pela lista', tests.denied($$select public.church_from_directory('22222222000122')$$));
 reset role;
+select tests.ok('"igreja" sai da busca quando há outras palavras', public.church_search_terms('igreja batista salvador') = public.church_search_words('batista salvador'));
+select tests.as_user('00000000-0000-0000-0000-000000000041');
+select tests.ok('só "igreja": a busca usa a palavra', (select count(*) from public.search_churches('igreja')) >= 1);
+reset role;

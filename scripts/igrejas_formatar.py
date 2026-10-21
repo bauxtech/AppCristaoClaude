@@ -25,7 +25,10 @@ def linha(r):
     lugar = ', '.join(x for x in (titulo(logradouro), numero.strip() if numero.strip() not in ('', 'S/N', 'SN') else '') if x)
     cidade_uf = ', '.join(x for x in (titulo(cidade), uf.strip().upper()) if x)
     endereco = ', '.join(x for x in (lugar, titulo(bairro), cidade_uf) if x)
-    nome_final = titulo(nome or razao)[:120] or 'Igreja'
+    # Nome fantasia vazio ou sem nome de verdade ("-", "9", "Ef"): vale o nome de registro.
+    if len(re.findall(r'[A-Za-zÀ-ÿ]', nome or '')) < 3:
+        nome = razao
+    nome_final = titulo(nome)[:120] or 'Igreja'
     return [cnpj, nome_final, titulo(razao)[:160], endereco[:200], titulo(bairro)[:80], cidade_uf[:80]]
 
 
