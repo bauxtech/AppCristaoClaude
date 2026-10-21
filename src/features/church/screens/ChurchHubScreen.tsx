@@ -9,6 +9,7 @@ import { useSermons } from '../../sermon/SermonContext'
 import { useChurch } from '../ChurchContext'
 import { ACCESS_ITEMS, servicesByDay } from './format'
 import { PlanButton } from '../../subscription/PlanLock'
+import { useTabScrollTop } from '../../../lib/tabScroll'
 
 /** Culto em destaque no topo da Igreja (QA de 20/10): gravar e abrir os cultos gravados lado a lado, e o último culto. */
 function RecordCard() {
@@ -55,6 +56,7 @@ function RecordCard() {
 }
 
 export function ChurchHubScreen() {
+  const scrollRef = useTabScrollTop('igreja')
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const toast = useToast()
@@ -63,7 +65,7 @@ export function ChurchHubScreen() {
 
   if (!main) {
     return (
-      <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
+      <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
         <AppText variant="screenTitle" accessibilityRole="header" style={{ paddingHorizontal: 4 }}>
           Igreja
         </AppText>
@@ -90,7 +92,7 @@ export function ChurchHubScreen() {
   const activeCourses = courses.filter((c) => !c.completedAt).length
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
+    <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 }}>
         <View style={{ flex: 1 }}>
           <AppText variant="screenTitle" accessibilityRole="header">

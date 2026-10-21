@@ -21,10 +21,12 @@ import { longDate } from '../../settings/screens/AccountScreens'
 import { useSubscription } from '../../subscription/SubscriptionContext'
 import { PreviewSubTools, TrialBanner } from '../../subscription/screens/SubscriptionScreens'
 import { jumpTo } from '../../../lib/nav'
+import { useTabScrollTop } from '../../../lib/tabScroll'
 
 export const TOTAL_CHAPTERS = BOOKS.reduce((a, b) => a + b.chapters, 0)
 
 export function ProfileHome() {
+  const scrollRef = useTabScrollTop('eu')
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const toast = useToast()
@@ -43,7 +45,7 @@ export function ProfileHome() {
   const name = session.profile.name || 'Seu nome'
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
+    <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
       {settings.deletionAt ? (
         <Card style={{ gap: 8, borderColor: colors.danger }}>
           <AppText variant="bodyStrong">Conta marcada para exclusão</AppText>
@@ -57,9 +59,28 @@ export function ProfileHome() {
       {/* Foto com lápis (trocar foto) e Ajustes na mesma linha; o nome embaixo, com o lápis para editar. */}
       <View style={{ gap: 10, paddingHorizontal: 4, paddingBottom: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Pressable onPress={() => router.push('/eu/editar')} accessibilityRole="button" accessibilityLabel={profile.photoUri ? 'Trocar foto' : 'Adicionar foto'} style={{ width: 72, height: 72, justifyContent: 'center' }}>
+          <Pressable
+            onPress={() => router.push('/eu/editar')}
+            accessibilityRole="button"
+            accessibilityLabel={profile.photoUri ? 'Trocar foto' : 'Adicionar foto'}
+            style={{ width: 72, height: 72, justifyContent: 'center' }}
+          >
             {profile.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: 64, height: 64, borderRadius: 32 }} accessible={false} /> : <Avatar name={name} size={64} />}
-            <View style={{ position: 'absolute', right: 2, bottom: 2, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+            <View
+              style={{
+                position: 'absolute',
+                right: 2,
+                bottom: 2,
+                width: 26,
+                height: 26,
+                borderRadius: 13,
+                backgroundColor: colors.primary,
+                borderWidth: 2,
+                borderColor: colors.bg,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <Icon name="pencil" size={12} color={colors.primaryText} strokeWidth={2.5} />
             </View>
           </Pressable>
@@ -85,7 +106,13 @@ export function ProfileHome() {
           { val: `${pct}%`, lbl: 'da Bíblia lida', go: '/eu/mapa' },
           { val: String(booksDone), lbl: booksDone === 1 ? 'livro concluído' : 'livros concluídos', go: '/eu/mapa' },
         ].map((x) => (
-          <Pressable key={x.lbl} onPress={() => router.push(x.go as '/eu/mapa')} accessibilityRole="button" accessibilityLabel={`${x.val} ${x.lbl}`} style={{ flex: 1, padding: 12, borderRadius: 16, backgroundColor: colors.primarySoft, alignItems: 'center', gap: 2 }}>
+          <Pressable
+            key={x.lbl}
+            onPress={() => router.push(x.go as '/eu/mapa')}
+            accessibilityRole="button"
+            accessibilityLabel={`${x.val} ${x.lbl}`}
+            style={{ flex: 1, padding: 12, borderRadius: 16, backgroundColor: colors.primarySoft, alignItems: 'center', gap: 2 }}
+          >
             <AppText style={{ fontFamily: fonts.semibold, fontSize: 20, color: colors.primary }}>{x.val}</AppText>
             <AppText variant="label" tone="secondary" style={{ textAlign: 'center' }}>
               {x.lbl}
@@ -150,7 +177,13 @@ export function ProfileHome() {
           <Card style={{ gap: 8 }}>
             <AppText variant="bodyStrong">Estados gerais</AppText>
             <AppText variant="small" tone="secondary">
-              {connection.demo === 'offline' ? 'Agora: sem internet.' : connection.demo === 'error' ? 'Agora: erro ao carregar.' : connection.demo === 'loading' ? 'Agora: carregando.' : 'Agora: normal.'}
+              {connection.demo === 'offline'
+                ? 'Agora: sem internet.'
+                : connection.demo === 'error'
+                  ? 'Agora: erro ao carregar.'
+                  : connection.demo === 'loading'
+                    ? 'Agora: carregando.'
+                    : 'Agora: normal.'}
             </AppText>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Button label="Sem internet" variant="outline" size="sm" onPress={() => connection.setDemo('offline')} />

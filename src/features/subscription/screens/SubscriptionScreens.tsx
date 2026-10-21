@@ -58,7 +58,16 @@ function PlanCard({ id, billing, selected, current, onSelect }: { id: PlanId; bi
       accessibilityRole="radio"
       accessibilityState={{ checked: selected }}
       accessibilityLabel={`Plano ${p.name}${recommended ? ', recomendado' : ''}, ${price.amount} ${price.per}. ${other}${saving ? `. ${saving}` : ''}${current ? '. Seu plano atual' : ''}`}
-      style={{ borderWidth: selected ? 2 : 1, borderColor: selected ? colors.primary : colors.lineStrong, borderRadius: 20, padding: 18, paddingTop: recommended ? 24 : 18, gap: 10, backgroundColor: colors.card, marginTop: recommended ? 12 : 0 }}
+      style={{
+        borderWidth: selected ? 2 : 1,
+        borderColor: selected ? colors.primary : colors.lineStrong,
+        borderRadius: 20,
+        padding: 18,
+        paddingTop: recommended ? 24 : 18,
+        gap: 10,
+        backgroundColor: colors.card,
+        marginTop: recommended ? 12 : 0,
+      }}
     >
       {recommended ? (
         <View style={{ position: 'absolute', top: -13, left: 18, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: colors.primary }}>

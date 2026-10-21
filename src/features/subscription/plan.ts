@@ -78,7 +78,17 @@ const DEFAULTS: Record<AccessPlan, { features: Feature[]; chat: number; sermon: 
   lider: { features: ['reading_plans', 'prayer', 'church', 'music', 'cell', 'chat', 'sermon', 'cell_lead', 'course_photo'], chat: 10, sermon: 8 },
   trial: { features: ['reading_plans', 'prayer', 'church', 'music', 'cell', 'chat', 'sermon', 'cell_lead', 'course_photo'], chat: 10, sermon: 2 },
 }
-const DEFAULT_MIN: Record<Feature, PlanId> = { reading_plans: 'essencial', prayer: 'essencial', church: 'essencial', music: 'essencial', cell: 'essencial', chat: 'essencial', sermon: 'completo', cell_lead: 'lider', course_photo: 'completo' }
+const DEFAULT_MIN: Record<Feature, PlanId> = {
+  reading_plans: 'essencial',
+  prayer: 'essencial',
+  church: 'essencial',
+  music: 'essencial',
+  cell: 'essencial',
+  chat: 'essencial',
+  sermon: 'completo',
+  cell_lead: 'lider',
+  course_photo: 'completo',
+}
 
 export type StoreStatus = 'active' | 'canceledActive' | 'paymentFailed' | 'expired' | null
 
@@ -188,7 +198,8 @@ export function nextCharge(billing: Billing, from = new Date()) {
 
 export function localAccess(s: LocalSub, now = new Date()): Access {
   const p = s.plan
-  const storeActive = !!p && (p.status === 'active' || (p.status === 'canceledActive' && new Date(p.renewsAt) > now) || (p.status === 'paymentFailed' && (!p.graceUntil || new Date(p.graceUntil) > now)))
+  const storeActive =
+    !!p && (p.status === 'active' || (p.status === 'canceledActive' && new Date(p.renewsAt) > now) || (p.status === 'paymentFailed' && (!p.graceUntil || new Date(p.graceUntil) > now)))
   const trialEndsAt = s.trialStart ? trialEnd(s.trialStart).toISOString() : null
   const plan: AccessPlan = storeActive ? p!.id : trialEndsAt && now < new Date(trialEndsAt) ? 'trial' : 'free'
   const d = DEFAULTS[plan]

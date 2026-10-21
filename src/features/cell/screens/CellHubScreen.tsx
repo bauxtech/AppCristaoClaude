@@ -19,8 +19,10 @@ import { TileGrid } from './parts'
 import { cellInitials, publicUrl } from '../webPage'
 import { PlanButton } from '../../subscription/PlanLock'
 import { useSubscription } from '../../subscription/SubscriptionContext'
+import { useTabScrollTop } from '../../../lib/tabScroll'
 
 export function CellHubScreen() {
+  const scrollRef = useTabScrollTop('celula')
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const { cellStatus } = useSession()
@@ -35,7 +37,7 @@ export function CellHubScreen() {
   )
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
+    <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + 24, paddingHorizontal: 20, paddingBottom: 120, gap: 20 }}>
       {cell && !cell.archived ? <CellPlanNotice cellId={cell.id} leader={cell.myRole === 'lider'} /> : null}
       {cellStatus === 'pending' && !cell ? (
         <Awaiting />

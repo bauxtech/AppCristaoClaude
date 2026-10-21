@@ -9,6 +9,7 @@ import { useSession } from '../../state/session'
 import { useSubscription } from '../../features/subscription/SubscriptionContext'
 import { TrialIntroSheet } from '../../features/subscription/screens/SubscriptionScreens'
 import { useTheme } from '../../theme/ThemeProvider'
+import { scrollTabToTop } from '../../lib/tabScroll'
 import { fonts } from '../../theme/typography'
 
 const TAB_HEIGHT = 64
@@ -59,6 +60,8 @@ export default function TabsLayout() {
           <Tabs.Screen
             key={t.name}
             name={t.name}
+            // Tocar numa aba abre a tela dela no início; a Bíblia guarda onde a pessoa estava.
+            listeners={{ tabPress: () => (t.name === 'biblia' ? undefined : scrollTabToTop(t.name)) }}
             options={{
               title: t.title,
               tabBarAccessibilityLabel: t.title,

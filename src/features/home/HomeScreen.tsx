@@ -26,8 +26,10 @@ import { verseText } from '../bible/text'
 import { moods, passage, reflection, wordForNow } from './data'
 import { PrayerMomentsSection, ReadingPlansSection } from './HomeSections'
 import { jumpTo } from '../../lib/nav'
+import { useTabScrollTop } from '../../lib/tabScroll'
 
 export function HomeScreen() {
+  const scrollRef = useTabScrollTop('index')
   const { colors } = useTheme()
   const songOfDay = songForDay()
   const insets = useSafeAreaInsets()
@@ -62,6 +64,7 @@ export function HomeScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{
         paddingTop: insets.top + 24,
