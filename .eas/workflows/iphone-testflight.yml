@@ -1,0 +1,18 @@
+# Compila o app para iPhone e iPad e envia para o TestFlight.
+# Usa os certificados e a chave do App Store Connect guardados no EAS (criados uma vez no iMac do Thiago).
+name: iPhone para o TestFlight
+on:
+  workflow_dispatch: {}
+jobs:
+  compilar:
+    name: Compilar para iPhone
+    type: build
+    params:
+      platform: ios
+      profile: production
+  enviar:
+    name: Enviar para o TestFlight
+    needs: [compilar]
+    type: testflight
+    params:
+      build_id: ${{ needs.compilar.outputs.build_id }}
