@@ -24,7 +24,7 @@ describe('versão nova do app', () => {
 
   test('diz qual versão está no celular', () => {
     expect(currentVersionLabel(new Date(2026, 9, 19, 22, 5), false)).toBe('atualização de 19/10, 22:05')
-    expect(currentVersionLabel(null, true)).toBe('versão do APK')
+    expect(currentVersionLabel(null, true)).toBe('versão instalada')
   })
 })
 
@@ -54,6 +54,6 @@ describe('procurar atualização nas Configurações', () => {
     ;(Updates.checkForUpdateAsync as jest.Mock).mockRejectedValueOnce(new Error('sem internet'))
     await renderApp(<SettingsHome />, { onboarded: true })
     await fireEvent.press(screen.getByRole('button', { name: 'Procurar atualização' }))
-    expect(await screen.findByText('Não deu para procurar: sem internet')).toBeTruthy()
+    expect(await screen.findByText('Não deu para procurar a versão nova agora. Confira a internet e tente mais tarde.')).toBeTruthy()
   })
 })

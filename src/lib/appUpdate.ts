@@ -24,7 +24,7 @@ export function applyNewVersion() {
 
 /** "19/10, 22:05": quando a versão em uso foi publicada. Vazio na versão que veio dentro do APK. */
 export function currentVersionLabel(createdAt: Date | null = Updates.createdAt, embedded = Updates.isEmbeddedLaunch) {
-  if (embedded || !createdAt) return 'versão do APK'
+  if (embedded || !createdAt) return 'versão instalada'
   const p = (n: number) => String(n).padStart(2, '0')
   return `atualização de ${p(createdAt.getDate())}/${p(createdAt.getMonth() + 1)}, ${p(createdAt.getHours())}:${p(createdAt.getMinutes())}`
 }
@@ -40,6 +40,8 @@ export async function checkUpdateNow(): Promise<UpdateCheck> {
     await Updates.fetchUpdateAsync()
     return { kind: 'ready', message: 'Versão nova baixada.' }
   } catch (e) {
-    return { kind: 'error', message: `Não deu para procurar: ${e instanceof Error ? e.message : String(e)}` }
+    // O detalhe técnico fica no registro, não na tela: a pessoa só precisa saber que pode tentar depois.
+    console.warn('Atualização:', e instanceof Error ? e.message : String(e))
+    return { kind: 'error', message: 'Não deu para procurar a versão nova agora. Confira a internet e tente mais tarde.' }
   }
 }

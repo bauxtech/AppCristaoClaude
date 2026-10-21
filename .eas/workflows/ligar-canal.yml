@@ -1,0 +1,21 @@
+# Liga o canal production ao branch production, de onde saem as atualizações da loja.
+# Sem essa ligação, o app pergunta por versão nova e o servidor responde que o canal não tem branch.
+name: Ligar o canal da loja
+on:
+  workflow_dispatch: {}
+jobs:
+  canal:
+    name: Ligar o canal production
+    steps:
+      - uses: eas/checkout
+      - name: Ver os canais
+        run: npx -y eas-cli@latest channel:list --non-interactive --json || true
+      - name: Ligar ao branch production
+        run: |
+          if npx -y eas-cli@latest channel:view production --non-interactive --json >/dev/null 2>&1; then
+            npx -y eas-cli@latest channel:edit production --branch production --non-interactive --json
+          else
+            npx -y eas-cli@latest channel:create production --non-interactive --json
+          fi
+      - name: Conferir
+        run: npx -y eas-cli@latest channel:view production --non-interactive --json
