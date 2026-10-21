@@ -115,7 +115,7 @@ export function LoginScreen() {
     <OnboardingScaffold title={login ? 'Entrar' : 'Criar conta'} subtitle={login ? 'Como você quer acessar sua conta?' : 'Como você quer criar sua conta?'} onBack={() => router.back()}>
       <View style={{ gap: 12 }}>
         <LoginOption
-          label="Número de celular, por SMS ou WhatsApp"
+          label="Número de celular, por SMS"
           icon={<Icon name="phone" size={22} color={colors.primary} />}
           onPress={() => {
             if (noAccount) cancelSocial()

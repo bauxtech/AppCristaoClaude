@@ -2,8 +2,7 @@ import { router } from 'expo-router'
 import { IS_REMOTE, sendLoginCode } from '../../../lib/supabase'
 import { useRef, useState } from 'react'
 import { TextInput, View } from 'react-native'
-import { AppText, Button, Chip, TextField } from '../../../components'
-import { fonts } from '../../../theme/typography'
+import { AppText, Button, TextField } from '../../../components'
 import { useOnboarding } from '../OnboardingContext'
 import { OnboardingScaffold } from '../OnboardingScaffold'
 import { formatPhoneNumber, isValidPhone, onlyDigits } from '../validation'
@@ -12,7 +11,8 @@ export function PhoneScreen() {
   const { draft, setDraft } = useOnboarding()
   const [ddd, setDdd] = useState(draft.ddd)
   const [number, setNumber] = useState(formatPhoneNumber(draft.number))
-  const [channel, setChannel] = useState(draft.channel)
+  // Só SMS por enquanto: o WhatsApp precisa de um remetente aprovado pela Meta no Twilio (21/10).
+  const channel = 'sms' as const
   const [error, setError] = useState('')
   const numberRef = useRef<TextInput>(null)
 
@@ -28,7 +28,7 @@ export function PhoneScreen() {
     if (IS_REMOTE) {
       setSending(true)
       try {
-        await sendLoginCode(`+55${onlyDigits(ddd)}${onlyDigits(number)}`, channel === 'whatsapp' ? 'whatsapp' : 'sms')
+        await sendLoginCode(`+55${onlyDigits(ddd)}${onlyDigits(number)}`, 'sms')
       } catch {
         setError('Não foi possível enviar o código. Confira a internet e tente de novo.')
         return
@@ -42,7 +42,7 @@ export function PhoneScreen() {
   return (
     <OnboardingScaffold
       title="Seu celular"
-      subtitle="Enviamos um código de verificação pelo canal que você escolher."
+      subtitle="Enviamos um código de verificação por SMS."
       step="celular"
       onBack={() => router.back()}
       footer={<Button label={sending ? 'Enviando' : 'Enviar código'} disabled={sending} onPress={send} />}
@@ -86,15 +86,6 @@ export function PhoneScreen() {
           {error}
         </AppText>
       ) : null}
-      <View style={{ gap: 8 }}>
-        <AppText variant="body" style={{ fontFamily: fonts.semibold }}>
-          Receber o código por
-        </AppText>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Chip label="SMS" selected={channel === 'sms'} onPress={() => setChannel('sms')} />
-          <Chip label="WhatsApp" selected={channel === 'whatsapp'} onPress={() => setChannel('whatsapp')} />
-        </View>
-      </View>
       {draft.mode === 'login' && !IS_REMOTE ? (
         <AppText variant="small" tone="secondary">
           Na prévia, a conta de exemplo é (11) 98765-4321.
