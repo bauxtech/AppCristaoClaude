@@ -53,18 +53,25 @@ export function ProfileHome() {
         </Card>
       ) : null}
       <TrialBanner />
-      {/* Foto e botões numa linha; o nome embaixo, com a largura toda, para nomes longos não quebrarem. */}
+      {/* Foto com lápis (trocar foto) e Ajustes na mesma linha; o nome embaixo, com o lápis para editar. */}
       <View style={{ gap: 10, paddingHorizontal: 4, paddingBottom: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {profile.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: 64, height: 64, borderRadius: 32 }} accessible={false} /> : <Avatar name={name} size={64} />}
+          <Pressable onPress={() => router.push('/eu/editar')} accessibilityRole="button" accessibilityLabel={profile.photoUri ? 'Trocar foto' : 'Adicionar foto'} style={{ width: 72, height: 72, justifyContent: 'center' }}>
+            {profile.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: 64, height: 64, borderRadius: 32 }} accessible={false} /> : <Avatar name={name} size={64} />}
+            <View style={{ position: 'absolute', right: 2, bottom: 2, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="pencil" size={12} color={colors.primaryText} strokeWidth={2.5} />
+            </View>
+          </Pressable>
           <View style={{ flex: 1 }} />
-          <Button label="Editar" variant="outline" size="sm" onPress={() => router.push('/eu/editar')} accessibilityHint="Editar nome, foto e aniversário" />
-          <IconButton icon="settings" label="Configurações" onPress={() => router.push('/configuracoes')} />
+          <Button label="Ajustes" icon="settings" variant="outline" size="sm" onPress={() => router.push('/configuracoes')} accessibilityHint="Abre as configurações do app" />
         </View>
         <View>
-          <AppText variant="screenTitle" accessibilityRole="header">
-            {name}
-          </AppText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <AppText variant="screenTitle" accessibilityRole="header" style={{ flexShrink: 1 }}>
+              {name}
+            </AppText>
+            <IconButton icon="pencil" label="Editar nome e aniversário" onPress={() => router.push('/eu/editar')} color={colors.primary} />
+          </View>
           <AppText variant="small" tone="secondary">
             {main?.name ?? 'Sem igreja vinculada'}
           </AppText>
