@@ -254,7 +254,7 @@ export function sampleCell(myRole: CellRole, myName: string): Cell {
     ],
     prayers: [
       { id: 'cp1', memberId: leaderId === 'me' ? 'u4' : 'u1', text: 'Emprego novo para o meu irmão', prayedCount: 5, at: '2026-10-01' },
-      { id: 'cp2', memberId: 'u2', text: 'Saúde da minha mãe, ela está internada', prayedCount: 8, at: '2026-10-02' },
+      { id: 'cp2', memberId: 'u2', text: 'Direção para a família na mudança de cidade', prayedCount: 8, at: '2026-10-02' },
       { id: 'cp3', memberId: 'u4', text: 'Sabedoria na faculdade, prova importante esta semana', prayedCount: 3, at: '2026-09-29' },
     ],
     rides: [

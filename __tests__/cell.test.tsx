@@ -75,7 +75,7 @@ describe('visitante', () => {
   test('não abre os pedidos da célula', async () => {
     await renderApp(<CellPrayersScreen />, asRole('visitante'))
     expect(screen.getByText('Os pedidos de oração da célula aparecem só para os membros.')).toBeTruthy()
-    expect(screen.queryByText(/Saúde da minha mãe/)).toBeNull()
+    expect(screen.queryByText(/Mudança de cidade da família|Direção para a família/)).toBeNull()
   })
 
   test('vê reunião, endereço e roteiro, sem os atalhos de membro', async () => {
@@ -239,10 +239,10 @@ describe('carona', () => {
 describe('denúncia', () => {
   test('o pedido denunciado some na hora para quem denunciou', async () => {
     await renderApp(<CellPrayersScreen />, asRole('membro'))
-    expect(screen.getByText('Saúde da minha mãe, ela está internada')).toBeTruthy()
+    expect(screen.getByText('Direção para a família na mudança de cidade')).toBeTruthy()
     const buttons = screen.getAllByRole('button', { name: 'Denunciar' })
     await fireEvent.press(buttons[1])
-    expect(screen.queryByText('Saúde da minha mãe, ela está internada')).toBeNull()
+    expect(screen.queryByText('Direção para a família na mudança de cidade')).toBeNull()
   })
 })
 

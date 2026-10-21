@@ -211,7 +211,7 @@ describe('bloquear e denunciar', () => {
 
   test('permissão: pedido de quem foi bloqueado some para quem bloqueou', async () => {
     await renderApp(<CellPrayersScreen />, { ...withCell('membro'), settings: { blocked: [{ id: 'u2', name: 'Ana Souza' }] } })
-    expect(screen.queryByText(/Saúde da minha mãe/)).toBeNull()
+    expect(screen.queryByText(/Mudança de cidade da família|Direção para a família/)).toBeNull()
     expect(screen.getByText(/Sabedoria na faculdade/)).toBeTruthy()
   })
 })

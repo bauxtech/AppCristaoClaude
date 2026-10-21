@@ -84,11 +84,11 @@ export function sampleData(now: Date) {
   ]
   const requests: PrayerRequest[] = [
     { id: 'r1', title: 'Emprego para o João', createdAt: isoDaysAgo(now, 12), text: 'Senhor, abra as portas certas para o João encontrar um emprego digno e que ele possa usar seus dons para sua glória.', shared: false, prayedBy: ['João', 'Ana'] },
-    { id: 'r2', title: 'Saúde da minha mãe', createdAt: isoDaysAgo(now, 5), text: 'Pai, cura minha mãe completamente. Que ela tenha saúde plena e possa ver tua glória em sua vida.', shared: true, prayedBy: ['Maria'] },
-    { id: 'r3', title: 'Paz no meu casamento', createdAt: isoDaysAgo(now, 3), text: 'Senhor, restaura a paz e o amor no meu casamento. Que a tua presença seja o fundamento da nossa família.', shared: false, prayedBy: [] },
+    { id: 'r2', title: 'Mudança de cidade da família', createdAt: isoDaysAgo(now, 5), text: 'Pai, guia nossa família na mudança de cidade. Que a gente encontre uma igreja e amigos no novo lugar.', shared: true, prayedBy: ['Maria'] },
+    { id: 'r3', title: 'Tempo em família', createdAt: isoDaysAgo(now, 3), text: 'Senhor, ajuda a gente a separar tempo para estar juntos e para ler a Bíblia em casa.', shared: false, prayedBy: [] },
     { id: 'r4', title: 'Sabedoria na faculdade', createdAt: isoDaysAgo(now, 1), text: 'Pai, dá-me sabedoria e foco nos estudos. Que eu honre a ti com minha dedicação.', shared: false, prayedBy: [] },
     { id: 'r5', title: 'Vaga no novo emprego', createdAt: '2026-08-20', text: 'Consegui a vaga. Deus respondeu este pedido.', shared: false, prayedBy: [], answeredAt: '2026-09-15', testimony: 'Fui chamado para a entrevista inesperadamente e fui aprovado.' },
-    { id: 'r6', title: 'Cura da gripe do filho', createdAt: '2026-08-30', text: 'Meu filho se recuperou rapidamente.', shared: true, prayedBy: [], answeredAt: '2026-09-02', testimony: 'Em três dias ele estava completamente bem, graças a Deus.' },
+    { id: 'r6', title: 'Aprovação no curso técnico', createdAt: '2026-08-30', text: 'Meu filho foi aprovado no curso técnico.', shared: true, prayedBy: [], answeredAt: '2026-09-02', testimony: 'O resultado saiu antes do esperado e ele começa as aulas no mês que vem.' },
   ]
   const startFamily = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6)
   const campaigns: Campaign[] = [
