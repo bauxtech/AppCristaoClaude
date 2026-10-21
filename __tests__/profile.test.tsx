@@ -39,7 +39,7 @@ describe('mapa dos livros', () => {
     expect(screen.getByRole('button', { name: 'Gênesis, concluído' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Números, não iniciado' })).toBeTruthy()
     await fireEvent.press(screen.getByRole('button', { name: 'Gênesis, concluído' }))
-    expect(router.push).toHaveBeenCalledWith('/biblia/genesis')
+    expect(router.push).toHaveBeenCalledWith('/biblia/genesis', { withAnchor: true })
   })
 })
 

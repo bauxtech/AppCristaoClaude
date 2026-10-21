@@ -64,7 +64,7 @@ describe('central de avisos', () => {
   test('cada aviso abre o item dele e pode ser dispensado', async () => {
     await renderApp(<NoticesScreen />, { onboarded: true, settings: { notices: sampleNotices() } })
     await fireEvent.press(screen.getByRole('button', { name: /^Não lido\. Célula\. Encontro da célula hoje/ }))
-    expect(router.push).toHaveBeenCalledWith('/celula')
+    expect(router.push).toHaveBeenCalledWith('/celula', { withAnchor: true })
     expect(screen.getByText('Avisos (2)')).toBeTruthy()
     await fireEvent.press(screen.getByRole('button', { name: 'Dispensar aviso: Plano bíblico' }))
     expect(screen.queryByText('Plano bíblico')).toBeNull()

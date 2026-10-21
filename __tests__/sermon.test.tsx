@@ -114,7 +114,7 @@ describe('resultado', () => {
     params.mockReturnValue({ id: 's1' })
     await renderApp(<ResultScreen />, { onboarded: true, sermons: samples })
     await fireEvent.press(screen.getByRole('button', { name: 'Filipenses 4:13' }))
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: 'filipenses', capitulo: '4', v: '13' } })
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: 'filipenses', capitulo: '4', v: '13' } }, { withAnchor: true })
   })
 
   test('só o líder transforma em roteiro da célula', async () => {
@@ -130,7 +130,7 @@ describe('resultado', () => {
     const leader = sampleCell('lider', 'T')
     await renderApp(<ResultScreen />, { onboarded: true, sermons: samples, cellStatus: 'leader', cells: { cells: [leader], currentId: leader.id } })
     await fireEvent.press(screen.getByRole('button', { name: 'Transformar em roteiro da célula' }))
-    expect(router.push).toHaveBeenCalledWith('/celula/roteiro-editar')
+    expect(router.push).toHaveBeenCalledWith('/celula/roteiro-editar', { withAnchor: true })
   })
 
   test('aba de notas mostra o que a pessoa anotou', async () => {

@@ -65,7 +65,7 @@ describe('tela do chat', () => {
     const links = await waitFor(() => screen.getAllByRole('link', { name: /^[\p{L}0-9 ]+ \d+:\d+\./u }), { timeout: 3000 })
     expect(links[0].props.accessibilityLabel).toMatch(/ansi/i)
     await fireEvent.press(links[0])
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/biblia/[livro]/[capitulo]', params: expect.objectContaining({ livro: expect.any(String), capitulo: expect.any(String), v: expect.any(String) }) })
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/biblia/[livro]/[capitulo]', params: expect.objectContaining({ livro: expect.any(String), capitulo: expect.any(String), v: expect.any(String) }) }, { withAnchor: true })
   })
 
   test('aberto da Bíblia mostra a passagem no topo', async () => {

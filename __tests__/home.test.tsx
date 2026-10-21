@@ -41,7 +41,7 @@ test('Planos de leitura: Meus planos mostra o dia e Em destaque a duração', as
 test('Ler capítulo abre a Bíblia', async () => {
   await renderHome()
   await fireEvent.press(screen.getByRole('button', { name: 'Ler capítulo' }))
-  expect(router.push).toHaveBeenCalledWith({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: 'salmos', capitulo: '23', v: '1' } })
+  expect(router.push).toHaveBeenCalledWith({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: 'salmos', capitulo: '23', v: '1' } }, { withAnchor: true })
 })
 
 test('quem ainda não tem célula nem igreja vê os atalhos para começar', async () => {
