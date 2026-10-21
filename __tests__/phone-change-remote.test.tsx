@@ -44,9 +44,9 @@ describe('trocar número com o servidor', () => {
   })
 
   test('número que já tem conta: não avança e explica', async () => {
-    mockSend.mockRejectedValue(new Error('Phone already registered'))
+    mockSend.mockRejectedValue({ code: 'phone_exists', status: 422, message: 'Phone number already registered' })
     await openCode()
-    expect(await screen.findByText(/Se ele já tem conta no app, use outro número/)).toBeTruthy()
+    expect(await screen.findByText(/Este número já é de outra conta no acasa. Use outro número./)).toBeTruthy()
     expect(screen.queryByLabelText('Código de 6 números')).toBeNull()
   })
 })

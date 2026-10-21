@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 import type { ReactElement } from 'react'
-import { Button, Chip, IconButton, ListRow, Switch, Tag, TopBar } from '../src/components'
+import { AppText, Button, Chip, IconButton, ListRow, Switch, Tag, TopBar } from '../src/components'
 import { ThemeProvider } from '../src/theme/ThemeProvider'
 
 function renderThemed(ui: ReactElement) {
@@ -74,4 +74,19 @@ test('barra de topo tem título como cabeçalho e botão voltar', async () => {
 test('etiqueta mostra o texto', async () => {
   await renderThemed(<Tag label="Inativo" tone="neutral" />)
   expect(screen.getByText('Inativo')).toBeTruthy()
+})
+
+test('letra grande ganha linha do tamanho dela e não sai cortada em cima', async () => {
+  await renderThemed(
+    <>
+      <AppText style={{ fontSize: 26 }}>R$ 159,90</AppText>
+      <AppText variant="screenTitle">Planos</AppText>
+      <AppText style={{ fontSize: 12 }}>pequeno</AppText>
+    </>,
+  )
+  const price = minSize(screen.getByText('R$ 159,90'))
+  expect(price.lineHeight).toBeGreaterThanOrEqual(26 * 1.2)
+  expect(minSize(screen.getByText('Planos')).lineHeight).toBeGreaterThanOrEqual(34 * 1.2)
+  // Letra menor que a da variante continua com a linha da variante.
+  expect(minSize(screen.getByText('pequeno')).lineHeight).toBe(24)
 })

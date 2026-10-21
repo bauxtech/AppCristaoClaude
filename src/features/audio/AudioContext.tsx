@@ -1,5 +1,6 @@
 import * as Speech from 'expo-speech'
 import { speechChunks } from './speechChunks'
+import { prepareSpeech } from './speechMode'
 import { useSettings } from '../settings/SettingsContext'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
@@ -37,27 +38,42 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const voiceRef = useRef(voice)
   voiceRef.current = voice
 
+  // Cada pedido de leitura ganha um número: se a pessoa parar ou trocar antes de o áudio ficar pronto, o antigo não toca.
+  const turn = useRef(0)
+
   const speak = useCallback((t: Track, rate: Speed) => {
     Speech.stop()
     // Capítulo longo vai em partes: a voz do celular enfileira uma depois da outra.
     const limit = Math.min(Speech.maxSpeechInputLength || 4000, 4000) - 500
     const parts = speechChunks(t.text, limit)
-    parts.forEach((part, i) =>
-      Speech.speak(part, {
-        language: 'pt-BR',
-        voice: voiceRef.current ?? undefined,
-        rate: rate * BASE_RATE,
-        onDone: i === parts.length - 1 ? () => setPlaying(false) : undefined,
-        onStopped: () => setPlaying(false),
-        onError: () => (Speech.stop(), setPlaying(false)),
-      }),
-    )
+    const mine = ++turn.current
     setPlaying(parts.length > 0)
+    void prepareSpeech().then(() => {
+      if (mine !== turn.current) return
+      parts.forEach((part, i) =>
+        Speech.speak(part, {
+          language: 'pt-BR',
+          voice: voiceRef.current ?? undefined,
+          rate: rate * BASE_RATE,
+          onDone: i === parts.length - 1 ? () => setPlaying(false) : undefined,
+          onStopped: () => setPlaying(false),
+          onError: () => (Speech.stop(), setPlaying(false)),
+        }),
+      )
+    })
   }, [])
 
-  useEffect(() => () => {
+  const silence = useCallback(() => {
+    turn.current++
     Speech.stop()
   }, [])
+
+  useEffect(
+    () => () => {
+      Speech.stop()
+    },
+    [],
+  )
 
   const value = useMemo<AudioValue>(
     () => ({
@@ -71,7 +87,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       toggle: () => {
         if (!track) return
         if (playing) {
-          Speech.stop()
+          silence()
           setPlaying(false)
         } else speak(track, speedRef.current)
       },
@@ -82,12 +98,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         if (track && playing) speak(track, next)
       },
       close: () => {
-        Speech.stop()
+        silence()
         setPlaying(false)
         setTrack(null)
       },
     }),
-    [track, playing, speed, speak],
+    [track, playing, speed, speak, silence],
   )
 
   return <AudioContext.Provider value={value}>{children}</AudioContext.Provider>

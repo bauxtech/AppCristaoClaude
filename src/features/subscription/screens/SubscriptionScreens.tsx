@@ -4,7 +4,7 @@ import { Pressable, ScrollView, View } from 'react-native'
 import { AlertCard, AppText, Button, Card, Icon, MIN_TOUCH, Page, Segmented, Sheet, TextField, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { openStoreSubscriptions, purchase, simulateStorePurchase, STORE_ENABLED, STORE_NAME, syncSubscription } from '../../../lib/store'
-import { sendPhoneChangeCode, supabase, verifyPhoneChange } from '../../../lib/supabase'
+import { phoneCodeProblem, sendPhoneChangeCode, supabase, verifyPhoneChange, type PhoneCodeProblem } from '../../../lib/supabase'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { longDate } from '../../settings/screens/AccountScreens'
@@ -245,7 +245,10 @@ export function PlansScreen() {
       {current === plan && currentBilling === billing ? (
         <Button label="Este é o seu plano" disabled onPress={() => {}} />
       ) : (
-        <Button label={current === plan ? `Trocar para o ${billing === 'annual' ? 'anual' : 'mensal'}` : `Assinar ${p.name} ${billing === 'annual' ? 'anual' : 'mensal'}`} onPress={() => buy(plan, billing)} />
+        <Button
+          label={current === plan ? `Trocar para o ${billing === 'annual' ? 'anual' : 'mensal'}` : `Assinar ${p.name} ${billing === 'annual' ? 'anual' : 'mensal'}`}
+          onPress={() => buy(plan, billing)}
+        />
       )}
       {endOfTrial ? <Button label="Agora não, seguir só com a Bíblia" variant="outline" onPress={close} /> : null}
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
@@ -293,7 +296,12 @@ export function ConfirmedScreen() {
       </View>
       <Card style={{ paddingVertical: 4 }}>
         {rows.map(([k, v], i) => (
-          <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 10, borderBottomWidth: i < rows.length - 1 ? 1 : 0, borderBottomColor: colors.line }} accessible accessibilityLabel={`${k}: ${v}`}>
+          <View
+            key={k}
+            style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 10, borderBottomWidth: i < rows.length - 1 ? 1 : 0, borderBottomColor: colors.line }}
+            accessible
+            accessibilityLabel={`${k}: ${v}`}
+          >
             <AppText variant="body" tone="secondary">
               {k}
             </AppText>
@@ -387,7 +395,12 @@ export function MyPlanScreen() {
             ...(a.sermon.limit > 0 ? [['Cultos', `${a.sermon.used} de ${a.sermon.limit} neste período`]] : []),
           ] as [string, string][]
         ).map(([k, v]) => (
-          <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line }} accessible accessibilityLabel={`${k}: ${v}`}>
+          <View
+            key={k}
+            style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line }}
+            accessible
+            accessibilityLabel={`${k}: ${v}`}
+          >
             <AppText variant="body" tone="secondary">
               {k}
             </AppText>
@@ -430,7 +443,16 @@ export function TrialBanner() {
       onPress={() => router.push('/assinatura')}
       accessibilityRole="button"
       accessibilityLabel={`${text}. Ver planos`}
-      style={{ minHeight: MIN_TOUCH, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 14, borderRadius: 12, backgroundColor: last ? colors.dangerSoft : colors.primarySoft }}
+      style={{
+        minHeight: MIN_TOUCH,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+        paddingHorizontal: 14,
+        borderRadius: 12,
+        backgroundColor: last ? colors.dangerSoft : colors.primarySoft,
+      }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
         {last ? <Icon name="alert" size={14} color={colors.danger} /> : <Icon name="clock" size={14} color={colors.primary} />}
@@ -482,6 +504,13 @@ export function ConfirmPhoneCard() {
   )
 }
 
+// QA de 21/10: com o número de uma conta que já existe, o servidor não manda o código e a pessoa ficava sem saída.
+const PHONE_CODE_MESSAGE: Record<PhoneCodeProblem, string> = {
+  exists: 'Este número já tem uma conta no acasa. Para usar essa conta, saia e entre pelo celular, com este número.',
+  wait: 'Muitos pedidos de código em pouco tempo. Espere alguns minutos e tente de novo.',
+  failed: 'Não foi possível enviar o código agora. Confira o número e a internet e tente de novo.',
+}
+
 /** Confirma o celular de quem entrou pelo Google e começa o teste. */
 export function ConfirmPhoneScreen() {
   const toast = useToast()
@@ -491,6 +520,7 @@ export function ConfirmPhoneScreen() {
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [problem, setProblem] = useState<PhoneCodeProblem | null>(null)
   const digits = phone.replace(/\D/g, '')
   const e164 = `+55${digits}`
   return (
@@ -505,6 +535,7 @@ export function ConfirmPhoneScreen() {
           {error}
         </AppText>
       ) : null}
+      {problem === 'exists' ? <Button label="Sair e entrar pelo celular" variant="outline" onPress={() => router.push('/configuracoes/sair')} /> : null}
       {!sent ? (
         <Button
           label={busy ? 'Enviando' : 'Enviar código'}
@@ -513,11 +544,14 @@ export function ConfirmPhoneScreen() {
           onPress={async () => {
             setBusy(true)
             setError(null)
+            setProblem(null)
             try {
               await sendPhoneChangeCode(e164)
               setSent(true)
-            } catch {
-              setError('Não foi possível enviar o código. Confira o número. Se ele já tem conta no app, entre pelo celular.')
+            } catch (e) {
+              const p = phoneCodeProblem(e)
+              setProblem(p)
+              setError(PHONE_CODE_MESSAGE[p])
             }
             setBusy(false)
           }}

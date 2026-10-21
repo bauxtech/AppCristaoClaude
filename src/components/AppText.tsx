@@ -21,6 +21,10 @@ const variants: Record<Variant, TextStyle> = {
   bibleRef: { fontFamily: fonts.bible, fontSize: size.small, lineHeight: 20 },
 }
 
+/** Abaixo desta proporção entre altura da linha e tamanho da letra, o topo das letras é cortado. */
+const MIN_LINE_RATIO = 1.2
+const SAFE_LINE_RATIO = 1.25
+
 /** Quanto a opção "Fonte grande" do app aumenta o texto. */
 export const LARGE_TEXT_FACTOR = 1.125
 
@@ -35,6 +39,9 @@ export function AppText({ variant = 'body', tone = 'primary', style, ...rest }: 
     onPrimary: colors.primaryText,
   }[tone]
   const flat = StyleSheet.flatten([variants[variant], { color }, style]) as TextStyle
+  // Quem aumenta a fonte sem dar a altura da linha herdava a da variante (ex.: 26 numa linha de 24) e a letra
+  // saía cortada em cima, no iPhone e no Android. A linha cresce junto com a letra.
+  if (flat.fontSize && flat.lineHeight && flat.lineHeight < flat.fontSize * MIN_LINE_RATIO) flat.lineHeight = Math.ceil(flat.fontSize * SAFE_LINE_RATIO)
   const scaled: TextStyle = largeText
     ? {
         ...flat,

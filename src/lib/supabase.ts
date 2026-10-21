@@ -60,6 +60,16 @@ export async function sendPhoneChangeCode(phoneE164: string) {
   if (error) throw error
 }
 
+/** Por que o código do celular não saiu. "exists": o número já é de outra conta (o servidor responde phone_exists). */
+export type PhoneCodeProblem = 'exists' | 'wait' | 'failed'
+
+export function phoneCodeProblem(e: unknown): PhoneCodeProblem {
+  const err = e as { code?: string; status?: number; message?: string } | null
+  if (err?.code === 'phone_exists' || /already (been )?registered|already exists/i.test(err?.message ?? '')) return 'exists'
+  if (err?.status === 429 || /rate limit|too many/i.test(`${err?.code ?? ''} ${err?.message ?? ''}`)) return 'wait'
+  return 'failed'
+}
+
 export async function verifyPhoneChange(phoneE164: string, code: string) {
   if (!supabase) throw new Error('Servidor não configurado')
   const { error } = await supabase.auth.verifyOtp({ phone: phoneE164, token: code, type: 'phone_change' })

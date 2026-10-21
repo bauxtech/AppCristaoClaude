@@ -1,4 +1,4 @@
-# Publica uma atualização para quem instalou pelo Google Play (canal production).
+# Publica uma atualização para quem instalou pela loja, no Android e no iPhone (canal production).
 # Só para correções em código do app. Mudança nativa (biblioteca nova, permissão, ícone) pede arquivo novo na loja.
 name: Atualizar o app da loja
 on:
@@ -10,5 +10,5 @@ jobs:
     environment: production
     params:
       branch: production
-      platform: android
+      platform: all
       message: Atualização do app da loja

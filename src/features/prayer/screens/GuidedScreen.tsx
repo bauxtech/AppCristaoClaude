@@ -1,4 +1,5 @@
 import * as Speech from 'expo-speech'
+import { prepareSpeech } from '../../audio/speechMode'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { Pressable, View } from 'react-native'
@@ -59,6 +60,11 @@ export function GuidedScreen() {
     Speech.stop()
     Speech.speak(steps[step], { language: 'pt-BR', rate: BASE_RATE })
   }, [audio, active, step, steps])
+
+  // Toca mesmo com o iPhone no silencioso: a pessoa ligou a voz.
+  useEffect(() => {
+    if (audio) void prepareSpeech()
+  }, [audio])
 
   useEffect(() => {
     if (!active || !audio) Speech.stop()

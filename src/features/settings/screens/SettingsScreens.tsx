@@ -1,5 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication'
 import * as Speech from 'expo-speech'
+import { prepareSpeech } from '../../audio/speechMode'
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Linking, Platform, Pressable, View } from 'react-native'
@@ -8,7 +9,7 @@ import { MIN_TOUCH } from '../../../components/Button'
 import { IS_PREVIEW } from '../../../lib/preview'
 import { applyNewVersion, checkUpdateNow, currentVersionLabel, type UpdateCheck } from '../../../lib/appUpdate'
 import Constants from 'expo-constants'
-import { IS_REMOTE, sendPhoneChangeCode, verifyPhoneChange } from '../../../lib/supabase'
+import { IS_REMOTE, phoneCodeProblem, sendPhoneChangeCode, verifyPhoneChange } from '../../../lib/supabase'
 import { useSession } from '../../../state/session'
 import { useTheme, type AppearancePreference } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -124,9 +125,16 @@ export function AccountScreen() {
       setBusy(true)
       try {
         await sendPhoneChangeCode(newE164)
-      } catch {
+      } catch (e) {
         setBusy(false)
-        return setError('Não foi possível enviar o código. Confira o número. Se ele já tem conta no app, use outro número.')
+        const p = phoneCodeProblem(e)
+        return setError(
+          p === 'exists'
+            ? 'Este número já é de outra conta no acasa. Use outro número.'
+            : p === 'wait'
+              ? 'Muitos pedidos de código em pouco tempo. Espere alguns minutos e tente de novo.'
+              : 'Não foi possível enviar o código agora. Confira o número e a internet e tente de novo.',
+        )
       }
       setBusy(false)
     }
@@ -197,7 +205,16 @@ export function AccountScreen() {
 
       {emailOpen ? (
         <Card style={{ gap: 12 }}>
-          <TextField label="E-mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} placeholder="nome@email.com" error={emailError ?? undefined} />
+          <TextField
+            label="E-mail"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="nome@email.com"
+            error={emailError ?? undefined}
+          />
           <AppText variant="small" tone="secondary">
             Usado para enviar o arquivo de Meus dados.
           </AppText>
@@ -221,7 +238,14 @@ export function AccountScreen() {
               <TextField label="DDD" value={ddd} onChangeText={(v) => setDdd(onlyDigits(v).slice(0, 2))} keyboardType="number-pad" placeholder="11" />
             </View>
             <View style={{ flex: 1 }}>
-              <TextField label="Celular" value={formatPhoneNumber(number)} onChangeText={(v) => setNumber(onlyDigits(v).slice(0, 9))} keyboardType="number-pad" placeholder="99999-0000" error={error ?? undefined} />
+              <TextField
+                label="Celular"
+                value={formatPhoneNumber(number)}
+                onChangeText={(v) => setNumber(onlyDigits(v).slice(0, 9))}
+                keyboardType="number-pad"
+                placeholder="99999-0000"
+                error={error ?? undefined}
+              />
             </View>
           </View>
           <Button label={busy ? 'Enviando' : 'Enviar código'} busy={busy} onPress={() => void sendCode()} />
@@ -276,7 +300,12 @@ export function BibleSettingsScreen() {
       <Card style={{ gap: 4 }}>
         <SectionLabel>Tradução padrão</SectionLabel>
         {TRANSLATIONS.map((t) => (
-          <View key={t.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: MIN_TOUCH }} accessible accessibilityLabel={t.available ? `${t.label}, selecionada` : `${t.label}, em breve`}>
+          <View
+            key={t.id}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: MIN_TOUCH }}
+            accessible
+            accessibilityLabel={t.available ? `${t.label}, selecionada` : `${t.label}, em breve`}
+          >
             <AppText variant="body" style={{ fontFamily: fonts.medium, color: t.available ? colors.text : colors.textSecondary }}>
               {t.label}
             </AppText>
@@ -289,7 +318,10 @@ export function BibleSettingsScreen() {
         <SectionLabel>Tamanho do texto bíblico</SectionLabel>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Button label="A-" variant="outline" size="sm" onPress={() => bible.setFontSize(bible.fontSize - 1)} disabled={bible.fontSize <= FONT_MIN} accessibilityHint="Diminuir o texto bíblico" />
-          <AppText style={{ flex: 1, textAlign: 'center', fontFamily: s.bibleFont === 'sans' ? fonts.regular : fonts.bible, fontSize: bible.fontSize, color: colors.text }} accessibilityLiveRegion="polite">
+          <AppText
+            style={{ flex: 1, textAlign: 'center', fontFamily: s.bibleFont === 'sans' ? fonts.regular : fonts.bible, fontSize: bible.fontSize, color: colors.text }}
+            accessibilityLiveRegion="polite"
+          >
             {`${bible.fontSize}`}
           </AppText>
           <Button label="A+" variant="outline" size="sm" onPress={() => bible.setFontSize(bible.fontSize + 1)} disabled={bible.fontSize >= FONT_MAX} accessibilityHint="Aumentar o texto bíblico" />
@@ -326,7 +358,13 @@ export function BibleSettingsScreen() {
             ))}
           </View>
         )}
-        <Button label="Ouvir um trecho" variant="outline" size="sm" icon="volume" onPress={() => Speech.speak(verseText('Salmos', 23, 1), { language: 'pt-BR', voice: s.voice ?? undefined })} />
+        <Button
+          label="Ouvir um trecho"
+          variant="outline"
+          size="sm"
+          icon="volume"
+          onPress={() => void prepareSpeech().then(() => Speech.speak(verseText('Salmos', 23, 1), { language: 'pt-BR', voice: s.voice ?? undefined }))}
+        />
       </Card>
     </Page>
   )
@@ -390,8 +428,20 @@ export function RecordingsSettingsScreen() {
         Escolha o padrão ao gravar um culto. Você ainda pode mudar antes de cada gravação.
       </AppText>
       <View accessibilityRole="radiogroup" accessibilityLabel="Como guardar" style={{ gap: 12 }}>
-        <SelectCard kind="radio" label="Guardar só o texto" description="Somente o texto e o resumo ficam salvos. O áudio é apagado depois da transcrição." selected={s.recordingDefault === 'text'} onPress={() => s.update({ recordingDefault: 'text' })} />
-        <SelectCard kind="radio" label="Guardar áudio" description={`O áudio fica salvo por ${AUDIO_DAYS} dias para você ouvir de novo. Depois é apagado e fica só o texto.`} selected={s.recordingDefault === 'audio'} onPress={() => s.update({ recordingDefault: 'audio' })} />
+        <SelectCard
+          kind="radio"
+          label="Guardar só o texto"
+          description="Somente o texto e o resumo ficam salvos. O áudio é apagado depois da transcrição."
+          selected={s.recordingDefault === 'text'}
+          onPress={() => s.update({ recordingDefault: 'text' })}
+        />
+        <SelectCard
+          kind="radio"
+          label="Guardar áudio"
+          description={`O áudio fica salvo por ${AUDIO_DAYS} dias para você ouvir de novo. Depois é apagado e fica só o texto.`}
+          selected={s.recordingDefault === 'audio'}
+          onPress={() => s.update({ recordingDefault: 'audio' })}
+        />
       </View>
     </Page>
   )
