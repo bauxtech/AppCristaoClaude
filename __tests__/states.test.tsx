@@ -52,7 +52,7 @@ describe('sem internet', () => {
 
   test('busca de igreja sem internet mostra erro com tentar de novo e cadastrar à mão', async () => {
     await renderApp(<SearchChurchScreen />, { onboarded: true, demo: 'offline' })
-    await fireEvent.changeText(screen.getByLabelText('Nome, cidade ou CNPJ'), 'Batista')
+    await fireEvent.changeText(screen.getByLabelText('Nome da igreja e cidade'), 'Batista')
     expect(screen.getByText('A busca precisa de internet.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Cadastrar à mão' })).toBeTruthy()
   })

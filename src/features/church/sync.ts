@@ -33,7 +33,8 @@ type AccessRow = { libras: boolean | null; ramp: boolean | null; audio_descripti
 /** O que a pessoa guardou para ela no vínculo com a igreja. */
 type OwnInfo = { services?: { day: number; time: string }[] | null; accessibility?: Accessibility | null }
 
-const SELECT = 'id, cnpj, name, address, neighborhood, city, denomination, created_by, church_services(id, weekday, time), church_accessibility(libras, ramp, audio_description, reserved, libras_services, updated_at)'
+const SELECT =
+  'id, cnpj, name, address, neighborhood, city, denomination, created_by, church_services(id, weekday, time), church_accessibility(libras, ramp, audio_description, reserved, libras_services, updated_at)'
 
 export function formatCnpj(d: string) {
   return d.length === 14 ? `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}` : d
@@ -77,32 +78,55 @@ export function rowToChurch(r: Row, uid: string | null): Church {
 
 export type SearchResult = { kind: 'ok'; list: Church[] } | { kind: 'invalid' | 'not_found' | 'not_religious' | 'inactive' | 'limit' | 'failed' }
 
-/** CNPJ completo: busca nos dados da Receita pelo servidor. Texto: procura entre as igrejas já no app. */
+/** Igreja da lista da Receita que ainda não está no app: o id vira o da linha de churches quando a pessoa escolhe. */
+export const DIRECTORY_ID = 'rf-'
+type FoundRow = { id: string | null; cnpj: string | null; name: string; address: string | null; neighborhood: string | null; city: string | null }
+
+/**
+ * Busca pelo nome, bairro e cidade (todas as palavras) nas igrejas do app e na lista da Receita (21/10).
+ * CNPJ completo que não está na lista: busca nos dados da Receita pelo servidor, como antes.
+ */
 export async function searchChurches(q: string, uid: string | null): Promise<SearchResult> {
   if (!supabase) return { kind: 'failed' }
   const digits = q.replace(/\D/g, '')
-  if (digits.length === 14) {
-    try {
-      const r = await callFunction<{ kind: string; church?: Row }>('church-lookup', { cnpj: digits })
-      if (r.kind === 'found' && r.church) return { kind: 'ok', list: [rowToChurch({ ...r.church }, uid)] }
-      if (r.kind === 'invalid' || r.kind === 'not_found' || r.kind === 'not_religious' || r.kind === 'inactive' || r.kind === 'limit') return { kind: r.kind }
-      return { kind: 'failed' }
-    } catch {
-      return { kind: 'failed' }
-    }
-  }
-  // Só letras, números, espaço, ponto e hífen: o texto entra no filtro do banco sem mudar o sentido dele.
-  const text = q.replace(/[^\p{L}\p{N} .-]/gu, ' ').replace(/\s+/g, ' ').trim()
-  if (text.length < 2) return { kind: 'ok', list: [] }
-  const { data, error } = await supabase.from('churches').select(SELECT).or(`name.ilike.%${text}%,city.ilike.%${text}%`).limit(20)
+  if (q.trim().length < 2) return { kind: 'ok', list: [] }
+  const { data, error } = await supabase.rpc('search_churches', { p_q: q.slice(0, 80) })
   if (error) return { kind: 'failed' }
-  return { kind: 'ok', list: ((data ?? []) as unknown as Row[]).map((r) => rowToChurch(r, uid)) }
+  const rows = (data ?? []) as FoundRow[]
+  const ids = rows.flatMap((r) => (r.id ? [r.id] : []))
+  let inApp = new Map<string, Church>()
+  if (ids.length) {
+    const full = await supabase.from('churches').select(SELECT).in('id', ids)
+    if (full.error) return { kind: 'failed' }
+    inApp = new Map(((full.data ?? []) as unknown as Row[]).map((r) => [r.id, rowToChurch(r, uid)]))
+  }
+  const list = rows.flatMap((r): Church[] => {
+    if (r.id) return inApp.has(r.id) ? [inApp.get(r.id)!] : []
+    if (!r.cnpj) return []
+    return [rowToChurch({ ...r, id: `${DIRECTORY_ID}${r.cnpj}` }, uid)]
+  })
+  if (list.length || digits.length !== 14) return { kind: 'ok', list }
+  try {
+    const r = await callFunction<{ kind: string; church?: Row }>('church-lookup', { cnpj: digits })
+    if (r.kind === 'found' && r.church) return { kind: 'ok', list: [rowToChurch({ ...r.church }, uid)] }
+    if (r.kind === 'invalid' || r.kind === 'not_found' || r.kind === 'not_religious' || r.kind === 'inactive' || r.kind === 'limit') return { kind: r.kind }
+    return { kind: 'failed' }
+  } catch {
+    return { kind: 'failed' }
+  }
 }
 
-/** Uma igreja pelo id, para a tela de confirmar. */
+/** Uma igreja pelo id, para a tela de confirmar. Igreja da lista da Receita entra no app primeiro. */
 export async function fetchChurch(id: string, uid: string | null): Promise<Church | null> {
-  if (!supabase || !isUuid(id)) return null
-  const { data, error } = await supabase.from('churches').select(SELECT).eq('id', id).maybeSingle()
+  if (!supabase) return null
+  let realId = id
+  if (id.startsWith(DIRECTORY_ID)) {
+    const { data, error } = await supabase.rpc('church_from_directory', { p_cnpj: id.slice(DIRECTORY_ID.length) })
+    if (error || typeof data !== 'string') return null
+    realId = data
+  }
+  if (!isUuid(realId)) return null
+  const { data, error } = await supabase.from('churches').select(SELECT).eq('id', realId).maybeSingle()
   return error || !data ? null : rowToChurch(data as unknown as Row, uid)
 }
 
@@ -134,15 +158,38 @@ export function churchDiffOps(prev: SyncedChurch, next: SyncedChurch): SyncOp[] 
     const old = before.get(c.id)
     // Igreja cadastrada à mão por esta pessoa: vai inteira (a regra do banco confere quem cadastrou).
     if (c.source === 'manual' && c.mine && (!old || old.church !== c)) {
-      if (!old || old.church.name !== c.name || old.church.city !== c.city || old.church.address !== c.address || old.church.neighborhood !== c.neighborhood || old.church.denomination !== c.denomination)
-        ops.push({ kind: 'upsert', table: 'churches', row: { id: c.id, name: c.name, city: c.city || null, neighborhood: c.neighborhood || null, address: c.address || null, denomination: c.denomination ?? null, created_by: '$uid' } })
+      if (
+        !old ||
+        old.church.name !== c.name ||
+        old.church.city !== c.city ||
+        old.church.address !== c.address ||
+        old.church.neighborhood !== c.neighborhood ||
+        old.church.denomination !== c.denomination
+      )
+        ops.push({
+          kind: 'upsert',
+          table: 'churches',
+          row: { id: c.id, name: c.name, city: c.city || null, neighborhood: c.neighborhood || null, address: c.address || null, denomination: c.denomination ?? null, created_by: '$uid' },
+        })
       if (!old || servicesKey(old.church.services) !== servicesKey(c.services)) {
         ops.push({ kind: 'delete', table: 'church_services', match: { church_id: c.id } })
         if (c.services.length) ops.push({ kind: 'upsert', table: 'church_services', row: c.services.map((s) => ({ church_id: c.id, weekday: s.day, time: s.time, created_by: '$uid' })) })
       }
       if (!old || accessKey(old.church.accessibility) !== accessKey(c.accessibility)) {
         const a = c.accessibility
-        ops.push({ kind: 'upsert', table: 'church_accessibility', row: { church_id: c.id, libras: a.libras ?? null, ramp: a.ramp ?? null, reserved: a.reserved ?? null, audio_description: a.audiodesc ?? null, libras_services: a.librasServices ?? null, updated_by: '$uid' } })
+        ops.push({
+          kind: 'upsert',
+          table: 'church_accessibility',
+          row: {
+            church_id: c.id,
+            libras: a.libras ?? null,
+            ramp: a.ramp ?? null,
+            reserved: a.reserved ?? null,
+            audio_description: a.audiodesc ?? null,
+            libras_services: a.librasServices ?? null,
+            updated_by: '$uid',
+          },
+        })
       }
     }
     // Igreja que não foi cadastrada por esta pessoa: horários e acessibilidade ficam no vínculo dela, só para ela.
@@ -182,7 +229,9 @@ export function mergeChurch(local: SyncedChurch, remote: SyncedChurch): SyncedCh
       ...remote.churches.map((x) => {
         const l = local.churches.find((y) => y.church.id === x.church.id)?.church
         // Igreja do CNPJ sem nada guardado no servidor: horários informados no aparelho antes desta versão continuam.
-        return l && x.church.source === 'cnpj' && !x.church.services.length && l.services.length ? { ...x, church: { ...x.church, services: l.services, accessibility: { ...l.accessibility, ...x.church.accessibility }, events: l.events } } : { ...x, church: { ...x.church, events: l?.events ?? [] } }
+        return l && x.church.source === 'cnpj' && !x.church.services.length && l.services.length
+          ? { ...x, church: { ...x.church, services: l.services, accessibility: { ...l.accessibility, ...x.church.accessibility }, events: l.events } }
+          : { ...x, church: { ...x.church, events: l?.events ?? [] } }
       }),
       ...local.churches.filter((x) => !isUuid(x.church.id) && !ids.has(x.church.id)),
     ],
@@ -192,7 +241,11 @@ export function mergeChurch(local: SyncedChurch, remote: SyncedChurch): SyncedCh
         const l = localCourse.get(c.id)
         if (!l) return c
         const uriOf = new Map(l.lessons.flatMap((x) => x.materials.map((m) => [m.id, m.uri] as const)))
-        return { ...c, ...(l.certificate ? { certificate: l.certificate } : {}), lessons: c.lessons.map((x) => ({ ...x, materials: x.materials.map((m) => ({ ...m, uri: uriOf.get(m.id) ?? m.uri })) })) }
+        return {
+          ...c,
+          ...(l.certificate ? { certificate: l.certificate } : {}),
+          lessons: c.lessons.map((x) => ({ ...x, materials: x.materials.map((m) => ({ ...m, uri: uriOf.get(m.id) ?? m.uri })) })),
+        }
       }),
       ...local.courses.filter((c) => !isUuid(c.id)),
     ],

@@ -32,7 +32,7 @@ describe('busca de igreja', () => {
 
   test('busca sem resultado mostra o aviso e o cadastro à mão', async () => {
     await renderApp(<SearchChurchScreen />, { onboarded: true })
-    await fireEvent.changeText(screen.getByLabelText('Nome, cidade ou CNPJ'), 'xyzxyz')
+    await fireEvent.changeText(screen.getByLabelText('Nome da igreja e cidade'), 'xyzxyz')
     expect(screen.getByText('Nenhuma igreja encontrada para "xyzxyz"')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Cadastrar à mão' })).toBeTruthy()
   })

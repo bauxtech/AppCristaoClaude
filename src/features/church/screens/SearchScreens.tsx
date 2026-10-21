@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { IS_REMOTE } from '../../../lib/supabase'
 import { currentUserId } from '../../../lib/sync'
 import { uuid } from '../../../lib/uuid'
-import { fetchChurch, searchChurches, type SearchResult } from '../sync'
+import { DIRECTORY_ID, fetchChurch, searchChurches, type SearchResult } from '../sync'
 import type { Church } from '../data'
 import { Pressable, View } from 'react-native'
 import { AppText, Button, Card, Chip, EmptyState, Page, SelectCard, Tag, TextField, useToast } from '../../../components'
@@ -72,7 +72,7 @@ export function SearchChurchScreen() {
   if (q.trim() && (!remote.online || remote.loading || remote.error)) {
     return (
       <Page title="Buscar igreja">
-        <TextField label="Nome, cidade ou CNPJ" value={q} onChangeText={setQ} placeholder="Ex.: Batista Central" autoCorrect={false} />
+        <TextField label="Nome da igreja e cidade" value={q} onChangeText={setQ} placeholder="Ex.: Batista Central Salvador" autoCorrect={false} />
         {remote.loading ? (
           <>
             <SkeletonCard lines={2} />
@@ -87,7 +87,7 @@ export function SearchChurchScreen() {
   }
   return (
     <Page title="Buscar igreja">
-      <TextField label="Nome, cidade ou CNPJ" value={q} onChangeText={setQ} placeholder="Ex.: Batista Central" autoFocus autoCorrect={false} />
+      <TextField label="Nome da igreja e cidade" value={q} onChangeText={setQ} placeholder="Ex.: Batista Central Salvador" autoFocus autoCorrect={false} />
       <View style={{ flexDirection: 'row' }}>
         <Chip label="Tem intérprete de Libras" selected={libras} onPress={() => setLibras((v) => !v)} />
       </View>
@@ -126,12 +126,14 @@ export function SearchChurchScreen() {
           <AppText variant="small" tone="secondary">
             {c.city}
           </AppText>
-          <AppText variant="small" tone="secondary" style={{ fontFamily: fonts.medium }}>{c.cnpj ? `CNPJ ${c.cnpj}` : 'Cadastrada à mão'}</AppText>
+          <AppText variant="small" tone="secondary" style={{ fontFamily: fonts.medium }}>
+            {c.cnpj ? `CNPJ ${c.cnpj}` : 'Cadastrada à mão'}
+          </AppText>
         </Pressable>
       ))}
       <PlanButton feature="church" label="Cadastrar à mão" variant="outline" onPress={() => router.push('/igreja/cadastrar')} />
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-        {IS_REMOTE ? 'Digite o nome, a cidade ou o CNPJ completo. Pelo CNPJ, nome e endereço vêm dos dados públicos da Receita.' : 'Nome e endereço vêm dos dados públicos do CNPJ.'}
+        {IS_REMOTE ? 'Digite parte do nome e a cidade, ou o CNPJ. A lista vem dos dados públicos da Receita e das igrejas cadastradas no app.' : 'Nome e endereço vêm dos dados públicos do CNPJ.'}
       </AppText>
     </Page>
   )
@@ -153,6 +155,7 @@ export function ConfirmChurchScreen() {
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
   const c = loaded
   const [relation, setRelation] = useState<'frequento' | 'visito'>(churches.length ? 'visito' : 'frequento')
+  const [linking, setLinking] = useState(false)
   if (loading) {
     return (
       <Page title="Confirmar igreja">
@@ -174,7 +177,9 @@ export function ConfirmChurchScreen() {
         <AppText variant="body" tone="secondary">
           {c.address}
         </AppText>
-        <AppText variant="small" tone="secondary">{c.cnpj ? `CNPJ ${c.cnpj}` : 'Cadastrada à mão'}</AppText>
+        <AppText variant="small" tone="secondary">
+          {c.cnpj ? `CNPJ ${c.cnpj}` : 'Cadastrada à mão'}
+        </AppText>
         <View style={{ borderRadius: 12, backgroundColor: colors.primarySoft, padding: 12, gap: 6 }}>
           <AppText variant="small" style={{ fontFamily: fonts.semibold, color: colors.primary }}>
             Acessibilidade
@@ -192,9 +197,18 @@ export function ConfirmChurchScreen() {
         <SelectCard kind="radio" label="Visito" description="Fica em Minhas igrejas" selected={relation === 'visito'} onPress={() => setRelation('visito')} />
       </View>
       <Button
-        label="Vincular igreja"
-        onPress={() => {
-          addChurch(c, relation)
+        label={linking ? 'Vinculando' : 'Vincular igreja'}
+        busy={linking}
+        onPress={async () => {
+          // Igreja da lista da Receita: entra no app agora e ganha o id de verdade.
+          let church: Church | null = c
+          if (c.id.startsWith(DIRECTORY_ID)) {
+            setLinking(true)
+            church = await fetchChurch(c.id, currentUserId())
+            setLinking(false)
+            if (!church) return toast('Não foi possível vincular agora. Confira a internet e tente de novo.')
+          }
+          addChurch(church, relation)
           toast('Igreja vinculada')
           router.dismissTo('/igreja')
         }}
@@ -232,7 +246,19 @@ export function ManualChurchScreen() {
         onPress={() => {
           const full = [address.trim(), neighborhood.trim(), city.trim()].filter(Boolean).join(', ')
           addChurch(
-            { id: IS_REMOTE ? uuid() : `manual-${Date.now()}`, ...(IS_REMOTE ? { mine: true } : {}), name: name.trim(), city: city.trim(), neighborhood: neighborhood.trim(), address: full, denomination: denom ?? undefined, source: 'manual', services: [], accessibility: {}, events: [] },
+            {
+              id: IS_REMOTE ? uuid() : `manual-${Date.now()}`,
+              ...(IS_REMOTE ? { mine: true } : {}),
+              name: name.trim(),
+              city: city.trim(),
+              neighborhood: neighborhood.trim(),
+              address: full,
+              denomination: denom ?? undefined,
+              source: 'manual',
+              services: [],
+              accessibility: {},
+              events: [],
+            },
             churches.length ? 'visito' : 'frequento',
           )
           toast('Igreja cadastrada')
