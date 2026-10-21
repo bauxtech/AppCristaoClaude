@@ -16,6 +16,7 @@ import { formatBR } from '../../prayer/dates'
 import { verseLabel, type Sermon } from '../data'
 import { useSermons } from '../SermonContext'
 import { SuggestedSong } from '../../music/screens/MusicScreens'
+import { jumpTo } from '../../../lib/nav'
 
 const FAIL_TEXT: Record<NonNullable<Sermon['failReason']>, string> = {
   too_big: 'O áudio passou de 50 MB, o limite de envio.',
@@ -100,7 +101,7 @@ function Ready({ s }: { s: Sermon }) {
       ],
     }))
     toast('Roteiro da célula montado. Revise e salve')
-    router.push('/celula/roteiro-editar')
+    jumpTo('/celula/roteiro-editar')
   }
 
   return (
@@ -153,7 +154,7 @@ function Ready({ s }: { s: Sermon }) {
                 key={verseLabel(v)}
                 label={verseLabel(v)}
                 variant="text"
-                onPress={() => router.push({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: slugify(v.book), capitulo: String(v.chapter), v: v.verse ? String(v.verse) : '' } })}
+                onPress={() => jumpTo({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: slugify(v.book), capitulo: String(v.chapter), v: v.verse ? String(v.verse) : '' } })}
                 style={{ alignSelf: 'flex-start' }}
               />
             ))}

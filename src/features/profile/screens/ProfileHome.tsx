@@ -20,6 +20,7 @@ import { useSettings } from '../../settings/SettingsContext'
 import { longDate } from '../../settings/screens/AccountScreens'
 import { useSubscription } from '../../subscription/SubscriptionContext'
 import { PreviewSubTools, TrialBanner } from '../../subscription/screens/SubscriptionScreens'
+import { jumpTo } from '../../../lib/nav'
 
 export const TOTAL_CHAPTERS = BOOKS.reduce((a, b) => a + b.chapters, 0)
 
@@ -133,7 +134,7 @@ export function ProfileHome() {
 
       <Card style={{ paddingVertical: 8 }}>
         <ListRow label="Sair da conta" onPress={() => router.push('/configuracoes/sair')} divider />
-        {cell ? <ListRow label="Sair da célula" sub={cell.name} onPress={() => router.push('/celula/opcoes')} divider /> : null}
+        {cell ? <ListRow label="Sair da célula" sub={cell.name} onPress={() => jumpTo('/celula/opcoes')} divider /> : null}
         <ListRow label="Excluir conta" danger onPress={() => router.push('/configuracoes/excluir')} />
       </Card>
 

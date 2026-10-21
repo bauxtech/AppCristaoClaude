@@ -6,6 +6,7 @@ import { useTheme } from '../../../theme/ThemeProvider'
 import { useCell } from '../../cell/CellContext'
 import { useProfile } from '../../profile/ProfileContext'
 import { MOMENTS, PLAYLISTS, SERVICES, songUrl, type MomentId, type Song } from '../catalog'
+import { jumpTo } from '../../../lib/nav'
 
 /** Cartão de música: favoritar e abrir fora do app, com a confirmação de saída. */
 export function SongCard({ song }: { song: Song }) {
@@ -82,7 +83,7 @@ export function MusicScreen() {
         ))}
       </CoverGrid>
       <Button label={`Minhas favoritas (${favoriteSongs.length})`} icon="heart" variant="outline" onPress={() => router.push('/eu/musica/favoritas')} />
-      {cell ? <Button label="Playlist da semana da célula" icon="people" variant="outline" onPress={() => router.push('/celula/playlist')} /> : null}
+      {cell ? <Button label="Playlist da semana da célula" icon="people" variant="outline" onPress={() => jumpTo('/celula/playlist')} /> : null}
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
         O app só sugere e abre os links. Nada toca aqui dentro. A letra fica no link de cada serviço.
       </AppText>

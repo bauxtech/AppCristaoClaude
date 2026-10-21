@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../theme/ThemeProvider'
 import { AppText } from './AppText'
 import { IconButton } from './IconButton'
+import { backFromJump } from '../lib/nav'
 
 interface Props {
   title: string
@@ -28,7 +29,8 @@ export function TopBar({ title, onBack, right }: Props) {
         backgroundColor: colors.bg,
       }}
     >
-      {onBack ? <IconButton icon="chevronLeft" label="Voltar" onPress={onBack} /> : <View style={{ width: 12 }} />}
+      {/* Depois de um salto de outra aba, o Voltar leva de volta para a tela de origem. */}
+      {onBack ? <IconButton icon="chevronLeft" label="Voltar" onPress={() => backFromJump() || onBack()} /> : <View style={{ width: 12 }} />}
       <AppText variant="title" accessibilityRole="header" style={{ flex: 1, paddingHorizontal: 4 }} numberOfLines={2}>
         {title}
       </AppText>

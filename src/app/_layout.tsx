@@ -6,10 +6,11 @@ import { Literata_400Regular } from '@expo-google-fonts/literata/400Regular'
 import { Literata_400Regular_Italic } from '@expo-google-fonts/literata/400Regular_Italic'
 import { Literata_500Medium } from '@expo-google-fonts/literata/500Medium'
 import { useFonts } from 'expo-font'
-import { router, Stack } from 'expo-router'
+import { router, Stack, usePathname } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useState } from 'react'
+import { BackHandler } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ConnectionFrame, ToastProvider, UpdateBanner } from '../components'
 import { ConnectionProvider } from '../state/connection'
@@ -31,6 +32,7 @@ import { SessionProvider } from '../state/session'
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider'
 import { isInternalRoute } from '../lib/links'
 import { watchPushes } from '../lib/push'
+import { backFromJump, jumpTo, setCurrentRoute } from '../lib/nav'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
@@ -42,7 +44,14 @@ function RootStack() {
   useEffect(() => startSync(), [])
   // Avisos do servidor: atualizam a central e, ao tocar, abrem a tela do aviso.
   const { refreshNotices } = useSettings()
-  useEffect(() => watchPushes(() => void refreshNotices(), (href) => isInternalRoute(href) && router.push(href as '/avisos')), [refreshNotices])
+  useEffect(() => watchPushes(() => void refreshNotices(), (href) => isInternalRoute(href) && jumpTo(href as '/avisos')), [refreshNotices])
+  // Voltar depois de um salto para outra aba: a tela atual vai para o registro, e o voltar do Android também desfaz o salto.
+  const pathname = usePathname()
+  useEffect(() => setCurrentRoute(pathname), [pathname])
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', backFromJump)
+    return () => sub.remove()
+  }, [])
   // Splash de 2 segundos ao abrir. Logado cai no Hoje; sem login, na apresentação.
   const [splash, setSplash] = useState(true)
   const endSplash = useCallback(() => setSplash(false), [])

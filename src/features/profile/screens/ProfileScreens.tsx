@@ -23,6 +23,7 @@ import { NotesGate } from '../../settings/NotesLock'
 import { useSettings } from '../../settings/SettingsContext'
 import { MILESTONE_TYPES, NOTE_SOURCES, useProfile, type NoteSource } from '../ProfileContext'
 import { TOTAL_CHAPTERS } from './ProfileHome'
+import { jumpTo } from '../../../lib/nav'
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 
@@ -126,7 +127,7 @@ export function BooksMapScreen() {
                 return (
                   <View key={b.name} style={{ width: `${100 / 6}%`, padding: 3 }}>
                     <Pressable
-                      onPress={() => router.push(`/biblia/${slugify(b.name)}`)}
+                      onPress={() => jumpTo(`/biblia/${slugify(b.name)}`)}
                       accessibilityRole="button"
                       accessibilityLabel={`${b.name}, ${isDone ? 'concluído' : partial ? `${read} de ${b.chapters} capítulos` : 'não iniciado'}`}
                       style={{ aspectRatio: 1, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: isDone ? colors.primary : partial ? colors.primarySoft : colors.card, borderWidth: partial ? 2 : 1, borderColor: partial ? colors.primary : colors.line }}
@@ -247,13 +248,13 @@ export function useAllNotes(): NoteItem[] {
   for (const [k, text] of Object.entries(bible.notes)) {
     const [slug, ch, v] = k.split(':')
     const book = BOOKS.find((b) => slugify(b.name) === slug)?.name ?? slug
-    items.push({ key: `b${k}`, source: 'Bíblia', ref: `${book} ${ch}:${v}`, text, open: () => router.push({ pathname: '/biblia/nota', params: { livro: slug, capitulo: ch, v } }) })
+    items.push({ key: `b${k}`, source: 'Bíblia', ref: `${book} ${ch}:${v}`, text, open: () => jumpTo({ pathname: '/biblia/nota', params: { livro: slug, capitulo: ch, v } }) })
   }
   for (const s of sermons) {
     for (const [i, n] of s.notes.entries()) items.push({ key: `s${s.id}${i}`, source: 'Culto', ref: s.theme || 'Culto', text: n.text, date: s.date, open: () => router.push({ pathname: '/culto/[id]', params: { id: s.id } }) })
   }
   for (const c of courses) {
-    for (const l of c.lessons.filter((x) => x.notes.trim())) items.push({ key: `c${c.id}${l.id}`, source: 'Curso', ref: `${c.name}, ${l.title}`, text: l.notes, date: l.date, open: () => router.push({ pathname: '/igreja/curso/[id]/aula/[aula]', params: { id: c.id, aula: l.id } }) })
+    for (const l of c.lessons.filter((x) => x.notes.trim())) items.push({ key: `c${c.id}${l.id}`, source: 'Curso', ref: `${c.name}, ${l.title}`, text: l.notes, date: l.date, open: () => jumpTo({ pathname: '/igreja/curso/[id]/aula/[aula]', params: { id: c.id, aula: l.id } }) })
   }
   for (const n of profile.notes) items.push({ key: `n${n.id}`, source: n.source, ref: n.ref || 'Nota', text: n.text, date: n.date, open: () => router.push({ pathname: '/eu/nota', params: { id: n.id } }) })
   return items.sort((a, b) => ((b.date ?? '') > (a.date ?? '') ? 1 : -1))
@@ -366,7 +367,7 @@ export function FavoritesScreen() {
         const v = verseOf(k)
         const color = tab === 'grifo' ? HIGHLIGHTS.find((h) => h.id === bible.highlights[k])?.label : null
         return (
-          <TapCard key={k} label={`${v.ref}${color ? `, grifado em ${color.toLowerCase()}` : ''}. ${v.text}`} onPress={() => router.push({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: v.slug, capitulo: v.ch, v: v.v } })}>
+          <TapCard key={k} label={`${v.ref}${color ? `, grifado em ${color.toLowerCase()}` : ''}. ${v.text}`} onPress={() => jumpTo({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: v.slug, capitulo: v.ch, v: v.v } })}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <AppText variant="small" tone="brand" style={{ fontFamily: fonts.semibold }}>
                 {v.ref}

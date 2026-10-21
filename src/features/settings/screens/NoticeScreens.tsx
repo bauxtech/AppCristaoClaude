@@ -15,6 +15,7 @@ import { hourLabel, inQuietHours, NOTIFICATION_TYPES } from '../prefs'
 import { useSettings } from '../SettingsContext'
 import { useSession } from '../../../state/session'
 import { isValidEmail } from '../../onboarding/validation'
+import { jumpTo } from '../../../lib/nav'
 
 const TYPE_ICON: Record<Notice['type'], IconName> = { cell: 'users', bible: 'book', prayer: 'hand', church: 'church', system: 'info' }
 
@@ -60,7 +61,7 @@ export function NoticesScreen() {
   function open(n: Notice) {
     s.markRead(n.id)
     // Só abre telas do próprio app.
-    if (isInternalRoute(n.href)) router.push(n.href as '/celula')
+    if (isInternalRoute(n.href)) jumpTo(n.href as '/celula')
   }
 
   return (

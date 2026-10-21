@@ -25,6 +25,7 @@ import { SERVICES, songForDay, songUrl } from '../music/catalog'
 import { verseText } from '../bible/text'
 import { moods, passage, reflection, wordForNow } from './data'
 import { PrayerMomentsSection, ReadingPlansSection } from './HomeSections'
+import { jumpTo } from '../../lib/nav'
 
 export function HomeScreen() {
   const { colors } = useTheme()
@@ -150,7 +151,7 @@ export function HomeScreen() {
                 <Button
                   label="Ler capítulo"
                   onPress={() =>
-                    router.push({
+                    jumpTo({
                       pathname: '/biblia/[livro]/[capitulo]',
                       params: { livro: 'salmos', capitulo: '23', v: '1' },
                     })
@@ -277,7 +278,7 @@ export function HomeScreen() {
                   Nenhum compromisso por enquanto. Eles aparecem aqui quando você entra numa célula, vincula a igreja ou cadastra cursos e ministérios.
                 </AppText>
               ) : (
-                commitments.map((c, i) => <ListRow key={c.title} icon={c.icon} label={c.title} sub={c.when} onPress={() => router.push(c.href as '/celula')} divider={i < commitments.length - 1} />)
+                commitments.map((c, i) => <ListRow key={c.title} icon={c.icon} label={c.title} sub={c.when} onPress={() => jumpTo(c.href as '/celula')} divider={i < commitments.length - 1} />)
               )}
             </Card>
 
@@ -298,7 +299,7 @@ export function HomeScreen() {
                       {cellPrayers === 0 ? 'Nenhum pedido na sua célula' : `${cellPrayers} ${cellPrayers === 1 ? 'pedido' : 'pedidos'} na sua célula`}
                     </AppText>
                   </View>
-                  <Button label="Ver pedidos" variant="outline" size="sm" onPress={() => router.push('/celula/pedidos')} />
+                  <Button label="Ver pedidos" variant="outline" size="sm" onPress={() => jumpTo('/celula/pedidos')} />
                 </View>
               </Card>
             ) : null}

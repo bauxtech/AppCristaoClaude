@@ -22,6 +22,7 @@ import { useSettings } from '../SettingsContext'
 import { isValidEmail } from './AccountScreens'
 import { verseText } from '../../bible/text'
 import { openLegal } from '../../../lib/legal'
+import { jumpTo } from '../../../lib/nav'
 
 /** Versão do app (app.json), para conferir no teste qual está no celular. */
 const APP_VERSION = Constants.expoConfig?.version ?? ''
@@ -166,7 +167,7 @@ export function AccountScreen() {
               {profile.name || 'Sem nome'}
             </AppText>
           </View>
-          <Button label="Editar" variant="soft" size="sm" onPress={() => router.push('/eu/editar')} accessibilityHint="Editar nome, foto e aniversário" />
+          <Button label="Editar" variant="soft" size="sm" onPress={() => jumpTo('/eu/editar')} accessibilityHint="Editar nome, foto e aniversário" />
         </View>
         <View style={{ height: 1, backgroundColor: colors.line }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -376,7 +377,7 @@ export function PrivacyScreen() {
           Cada pedido tem a sua escolha: só você ou a sua célula. Você escolhe ao escrever o pedido e pode mudar depois. O diário é sempre só seu.
         </AppText>
       </Card>
-      <ListRow label="O que a célula vê" sub="Prévia do seu perfil para os membros" onPress={() => router.push('/eu/celula-ve')} />
+      <ListRow label="O que a célula vê" sub="Prévia do seu perfil para os membros" onPress={() => jumpTo('/eu/celula-ve')} />
     </Page>
   )
 }

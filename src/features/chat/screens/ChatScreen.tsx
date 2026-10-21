@@ -24,6 +24,7 @@ import { isCrisis } from '../rules'
 import { useSubscription } from '../../subscription/SubscriptionContext'
 import { PlanLockRow } from '../../subscription/PlanLock'
 import { getTranslation } from '../../bible/translations'
+import { jumpTo } from '../../../lib/nav'
 
 const SUGGESTIONS = ['O que significa "O Senhor é meu pastor"?', 'Quais versículos falam sobre ansiedade?', 'O que a Bíblia diz sobre perdão?', 'Quem é o bom pastor em João 10?']
 
@@ -306,7 +307,7 @@ function Bubble({ m, onRetry, onListen, onDivided }: { m: Message; onRetry: () =
         {m.answer?.verses.map((v) => (
           <Pressable
             key={`${v.book}${v.chapter}:${v.verse}`}
-            onPress={() => router.push({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: slugify(v.book), capitulo: String(v.chapter), v: String(v.verse) } })}
+            onPress={() => jumpTo({ pathname: '/biblia/[livro]/[capitulo]', params: { livro: slugify(v.book), capitulo: String(v.chapter), v: String(v.verse) } })}
             accessibilityRole="link"
             accessibilityLabel={`${v.book} ${v.chapter}:${v.verse}. ${v.text}. Abrir na Bíblia`}
             style={{ borderRadius: 12, padding: 12, backgroundColor: colors.primarySoft, gap: 4 }}
@@ -320,7 +321,7 @@ function Bubble({ m, onRetry, onListen, onDivided }: { m: Message; onRetry: () =
             label={`Texto: ${getTranslation().name} · ${getTranslation().licenseShort}`}
             variant="text"
             size="sm"
-            onPress={() => router.push('/biblia/sobre-traducao')}
+            onPress={() => jumpTo('/biblia/sobre-traducao')}
             accessibilityHint={`Licença ${getTranslation().licenseName}. Abre o crédito da tradução`}
             style={{ alignSelf: 'flex-start' }}
           />
