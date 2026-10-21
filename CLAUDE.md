@@ -42,7 +42,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 
 ## REGRAS DO PRODUTO, JÁ DECIDIDAS
 - Entrada na célula: o líder aprova cada pessoa. O pedido leva, opcional, uma mensagem para o líder e a igreja de quem pede (tabela join_request_notes, só o líder lê, apagada ao aprovar ou recusar). A data de nascimento é pedida (opcional) ao entrar na célula, não no cadastro.
-- Cadastro (20/10): celular, código, termos, nome com e-mail e ofertas, objetivos (escolha múltipla) e célula. Tradição, horário dos lembretes e igreja ficam para depois.
+- Cadastro (20/10): celular (código só por SMS desde 21/10; WhatsApp fica para depois, precisa de conta da Meta no Twilio), código, termos, nome com e-mail e ofertas, objetivos (escolha múltipla) e célula. Tradição, horário dos lembretes e igreja ficam para depois.
 - Papéis: o auxiliar marca presença e edita a escala. O anfitrião não tem permissão a mais.
 - Líder: a célula pode ter mais de um. Só o único líder de uma célula com outros membros precisa passar a liderança antes de sair ou excluir a conta.
 - Telefone dos membros: aparece só para o líder.
