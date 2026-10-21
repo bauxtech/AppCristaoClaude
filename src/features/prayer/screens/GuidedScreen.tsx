@@ -1,5 +1,6 @@
 import * as Speech from 'expo-speech'
 import { prepareSpeech } from '../../audio/speechMode'
+import { useSettings } from '../../settings/SettingsContext'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { Pressable, View } from 'react-native'
@@ -30,6 +31,8 @@ export function GuidedScreen() {
   const minutes = Number(params.min) || 5
   // Voz: começa como a pessoa escolheu antes e pode ser ligada ou desligada aqui.
   const [audio, setAudio] = useState(params.formato === 'audio')
+  const { voice: chosenVoice } = useSettings()
+  const [voice, setVoice] = useState<string | undefined>(undefined)
   const total = minutes * 60
   const steps = guidedSteps(theme.id as ThemeId)
 
@@ -58,13 +61,13 @@ export function GuidedScreen() {
     if (!audio || !active || spoken.current === step) return
     spoken.current = step
     Speech.stop()
-    Speech.speak(steps[step], { language: 'pt-BR', rate: BASE_RATE })
+    Speech.speak(steps[step], { language: 'pt-BR', rate: BASE_RATE, voice })
   }, [audio, active, step, steps])
 
   // Toca mesmo com o iPhone no silencioso: a pessoa ligou a voz.
   useEffect(() => {
-    if (audio) void prepareSpeech()
-  }, [audio])
+    if (audio) void prepareSpeech(chosenVoice).then(setVoice)
+  }, [audio, chosenVoice])
 
   useEffect(() => {
     if (!active || !audio) Speech.stop()

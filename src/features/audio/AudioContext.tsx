@@ -48,12 +48,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const parts = speechChunks(t.text, limit)
     const mine = ++turn.current
     setPlaying(parts.length > 0)
-    void prepareSpeech().then(() => {
+    void prepareSpeech(voiceRef.current).then((voice) => {
       if (mine !== turn.current) return
       parts.forEach((part, i) =>
         Speech.speak(part, {
           language: 'pt-BR',
-          voice: voiceRef.current ?? undefined,
+          voice,
           rate: rate * BASE_RATE,
           onDone: i === parts.length - 1 ? () => setPlaying(false) : undefined,
           onStopped: () => setPlaying(false),

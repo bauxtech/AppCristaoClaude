@@ -1,6 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication'
 import * as Speech from 'expo-speech'
-import { prepareSpeech } from '../../audio/speechMode'
+import { deviceVoices, prepareSpeech, voiceOptions, type VoiceOption } from '../../audio/speechMode'
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Linking, Platform, Pressable, View } from 'react-native'
@@ -287,12 +287,11 @@ export function BibleSettingsScreen() {
   const { colors } = useTheme()
   const bible = useBible()
   const s = useSettings()
-  const [voices, setVoices] = useState<{ id: string; name: string }[]>([])
+  const [voices, setVoices] = useState<VoiceOption[]>([])
 
+  // Procura de novo ao abrir: a pessoa pode ter acabado de baixar uma voz nos ajustes do celular.
   useEffect(() => {
-    Speech.getAvailableVoicesAsync?.()
-      .then((list) => setVoices(list.filter((v) => v.language?.toLowerCase().startsWith('pt')).map((v, i) => ({ id: v.identifier, name: `Voz ${i + 1}` }))))
-      .catch(() => setVoices([]))
+    deviceVoices(true).then((list) => setVoices(voiceOptions(list)))
   }, [])
 
   return (
@@ -346,24 +345,25 @@ export function BibleSettingsScreen() {
 
       <Card style={{ gap: 12 }}>
         <SectionLabel>Voz do áudio</SectionLabel>
-        {voices.length === 0 ? (
-          <AppText variant="small" tone="secondary">
-            Usa a voz em português do celular. Para trocar, instale outras vozes nos ajustes do celular.
-          </AppText>
-        ) : (
+        {voices.length > 0 ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }} accessibilityRole="radiogroup" accessibilityLabel="Voz do áudio">
-            <Chip label="Padrão do celular" selected={!s.voice} onPress={() => s.update({ voice: null })} />
+            <Chip label={`Automática: ${voices[0].label}`} selected={!s.voice} onPress={() => s.update({ voice: null })} />
             {voices.map((v) => (
-              <Chip key={v.id} label={v.name} selected={s.voice === v.id} onPress={() => s.update({ voice: v.id })} />
+              <Chip key={v.id} label={v.label} selected={s.voice === v.id} onPress={() => s.update({ voice: v.id })} />
             ))}
           </View>
-        )}
+        ) : null}
+        <AppText variant="small" tone="secondary">
+          {Platform.OS === 'ios'
+            ? 'Para uma voz mais natural, baixe a versão Premium ou Melhorada em Ajustes > Acessibilidade > Conteúdo Falado > Vozes > Português (Brasil). Depois volte aqui: o app passa a usar a melhor voz sozinho.'
+            : 'Para uma voz mais natural, instale as vozes em português nos ajustes do Android: procure por "Saída de texto para voz" e, no mecanismo do Google, baixe os dados de voz de Português (Brasil). O caminho muda um pouco de marca para marca.'}
+        </AppText>
         <Button
           label="Ouvir um trecho"
           variant="outline"
           size="sm"
           icon="volume"
-          onPress={() => void prepareSpeech().then(() => Speech.speak(verseText('Salmos', 23, 1), { language: 'pt-BR', voice: s.voice ?? undefined }))}
+          onPress={() => void prepareSpeech(s.voice).then((voice) => Speech.speak(verseText('Salmos', 23, 1), { language: 'pt-BR', voice }))}
         />
       </Card>
     </Page>
