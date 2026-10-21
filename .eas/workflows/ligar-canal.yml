@@ -8,11 +8,12 @@ jobs:
     name: Ligar o canal production
     steps:
       - uses: eas/checkout
+      - uses: eas/install_node_modules
       - name: Ver os canais
         run: npx -y eas-cli@latest channel:list --non-interactive --json || true
       - name: Ligar ao branch production
         run: |
-          if npx -y eas-cli@latest channel:view production --non-interactive --json >/dev/null 2>&1; then
+          if npx -y eas-cli@latest channel:view production --non-interactive >/dev/null 2>&1; then
             npx -y eas-cli@latest channel:edit production --branch production --non-interactive --json
           else
             npx -y eas-cli@latest channel:create production --non-interactive --json
