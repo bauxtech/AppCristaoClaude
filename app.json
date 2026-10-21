@@ -35,10 +35,7 @@
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
-          "backgroundColor": "#F6F4EE",
-          "dark": {
-            "backgroundColor": "#131915"
-          }
+          "backgroundColor": "#F6F4EE"
         }
       ],
       [
@@ -52,7 +49,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "A câmera é usada para gravar pedidos em Libras, ler o QR code da célula e fotografar a capa e os materiais.",
+          "cameraPermission": "A câmera é usada para tirar a sua foto de perfil, gravar pedidos em Libras, ler o QR code da célula e fotografar o cronograma do curso, a capa e os materiais.",
           "recordAudioAndroid": false
         }
       ],
@@ -65,8 +62,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "As fotos são usadas para a capa da célula e para materiais que você escolher.",
-          "cameraPermission": "A câmera é usada para gravar pedidos em Libras, ler o QR code da célula e fotografar a capa e os materiais."
+          "photosPermission": "As fotos são usadas para a sua foto de perfil, o cronograma do curso, a capa e o logo da célula e os materiais que você escolher.",
+          "cameraPermission": "A câmera é usada para tirar a sua foto de perfil, gravar pedidos em Libras, ler o QR code da célula e fotografar o cronograma do curso, a capa e os materiais."
         }
       ],
       "expo-sharing",

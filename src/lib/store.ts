@@ -33,7 +33,7 @@ function activePlan(info: CustomerInfo): { plan: PlanId; billing: Billing } | nu
 }
 const active = (info: CustomerInfo) => !!activePlan(info)
 
-export type PurchaseResult = 'ok' | 'cancelled' | 'unavailable'
+export type PurchaseResult = 'ok' | 'cancelled' | 'pending' | 'unavailable'
 
 /** Pacote do plano e período na oferta atual do RevenueCat, pelo nome do produto. */
 function findPackage(list: PurchasesPackage[], plan: PlanId, billing: Billing) {
@@ -50,7 +50,10 @@ export async function purchase(plan: PlanId, billing: Billing): Promise<Purchase
     const { customerInfo } = await Purchases.purchasePackage(pkg)
     return active(customerInfo) ? 'ok' : 'unavailable'
   } catch (e) {
-    if ((e as { code?: string }).code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR) return 'cancelled'
+    const code = (e as { code?: string }).code
+    if (code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR) return 'cancelled'
+    // Pagamento que a loja ainda vai confirmar (boleto, por exemplo): o plano libera quando o aviso da loja chegar.
+    if (code === PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR) return 'pending'
     throw e
   }
 }

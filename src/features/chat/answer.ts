@@ -56,8 +56,3 @@ export async function askBible(question: string, ctx: ChatContextRef | null, ser
   )
   return { text: parts.join('\n\n'), verses, divided: isDivided(question), sermonQuote, preview: true }
 }
-
-/** A pergunta por voz vira texto no servidor. Na prévia, ainda não. */
-export async function transcribeQuestion(_uri: string): Promise<string> {
-  throw new Error('preview')
-}

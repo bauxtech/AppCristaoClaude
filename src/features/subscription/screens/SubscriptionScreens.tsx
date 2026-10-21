@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { AlertCard, AppText, Button, Card, Icon, MIN_TOUCH, Page, Segmented, Sheet, TextField, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
@@ -141,8 +141,12 @@ export function StoreSheet({ plan, billing, visible, onCancel, onConfirm }: { pl
 function useBuy(onSample: () => void, from?: { source: string; feature?: string }) {
   const toast = useToast()
   const sub = useSubscription()
+  // Um toque de cada vez: dois toques seguidos não abrem duas compras.
+  const busy = useRef(false)
   return async (plan: PlanId, billing: Billing) => {
     if (!STORE_ENABLED) return onSample()
+    if (busy.current) return
+    busy.current = true
     try {
       const r = await purchase(plan, billing)
       if (r === 'ok') {
@@ -150,9 +154,12 @@ function useBuy(onSample: () => void, from?: { source: string; feature?: string 
         await syncSubscription()
         await sub.refresh()
         router.replace('/assinatura/confirmada')
-      } else if (r === 'unavailable') toast('A loja não está disponível agora. Tente de novo.')
+      } else if (r === 'pending') toast('Pagamento pendente. O plano é liberado quando a loja confirmar.')
+      else if (r === 'unavailable') toast('A loja não está disponível agora. Tente de novo.')
     } catch {
       toast('A compra não foi concluída. Tente de novo.')
+    } finally {
+      busy.current = false
     }
   }
 }
@@ -161,9 +168,13 @@ function useRestore() {
   const toast = useToast()
   const sub = useSubscription()
   return async () => {
-    const ok = await sub.restore()
-    toast(ok ? 'Compra restaurada' : 'Nenhuma compra encontrada para restaurar')
-    if (ok) router.replace('/eu')
+    try {
+      const ok = await sub.restore()
+      toast(ok ? 'Compra restaurada' : 'Nenhuma compra encontrada para restaurar')
+      if (ok) router.replace('/eu')
+    } catch {
+      toast('Não foi possível falar com a loja. Confira a internet e tente de novo.')
+    }
   }
 }
 

@@ -1,4 +1,3 @@
-import { requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from 'expo-audio'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ScreenPlayer } from '../../audio/MiniPlayer'
 import { useRemoteState } from '../../../state/connection'
@@ -7,7 +6,6 @@ import { useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, TextInput, View } from 'react-native'
 import { AppText, Button, Card, IconButton, MIN_TOUCH, Sheet, TopBar, useToast } from '../../../components'
 import { Icon } from '../../../components/Icon'
-import { VOICE_RECORDING } from '../../../lib/recording'
 import { useSession } from '../../../state/session'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts, size } from '../../../theme/typography'
@@ -15,7 +13,7 @@ import { useAudio } from '../../audio/AudioContext'
 import { slugify } from '../../bible/books'
 import { formatMeetingDay } from '../../cell/meetings'
 import { useSermons } from '../../sermon/SermonContext'
-import { askBible, transcribeQuestion, type ChatContextRef } from '../answer'
+import { askBible, type ChatContextRef } from '../answer'
 import { askRemote, ChatBlocked } from '../remote'
 import { IS_REMOTE } from '../../../lib/supabase'
 import { currentUserId } from '../../../lib/sync'
@@ -65,7 +63,6 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
   const [crisis, setCrisis] = useState(false)
-  const [voice, setVoice] = useState(false)
   const [divided, setDivided] = useState(false)
   const scroll = useRef<ScrollView>(null)
   const sub = useSubscription()
@@ -265,7 +262,6 @@ function ChatView({ conv, onConversation }: { conv: Conversation | null; onConve
         )}
       </View>
 
-      <VoiceSheet visible={voice} onClose={() => setVoice(false)} onText={(t) => setInput(t)} />
       <Sheet visible={divided} onClose={() => setDivided(false)} title="Igrejas pensam diferente sobre isso">
         <AppText variant="body">Igrejas cristãs têm leituras diferentes sobre este tema. O chat mostra o que a Bíblia diz e avisa quando há diferença entre as tradições. Converse também com o seu pastor.</AppText>
         <Button label="Entendi" onPress={() => setDivided(false)} />
@@ -341,62 +337,3 @@ function Bubble({ m, onRetry, onListen, onDivided }: { m: Message; onRetry: () =
   )
 }
 
-function VoiceSheet({ visible, onClose, onText }: { visible: boolean; onClose: () => void; onText: (t: string) => void }) {
-  const toast = useToast()
-  const recorder = useAudioRecorder(VOICE_RECORDING)
-  const [state, setState] = useState<'idle' | 'listening' | 'working' | 'unavailable' | 'denied'>('idle')
-
-  useEffect(() => {
-    if (!visible) {
-      setState('idle')
-      return
-    }
-    ;(async () => {
-      const p = await requestRecordingPermissionsAsync()
-      if (!p.granted) return setState('denied')
-      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true })
-      await recorder.prepareToRecordAsync()
-      recorder.record()
-      setState('listening')
-    })().catch(() => setState('unavailable'))
-  }, [visible]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function stop() {
-    setState('working')
-    await recorder.stop().catch(() => {})
-    await setAudioModeAsync({ allowsRecording: false }).catch(() => {})
-    try {
-      onText(await transcribeQuestion(recorder.uri ?? ''))
-      onClose()
-    } catch {
-      setState('unavailable')
-    }
-  }
-
-  return (
-    <Sheet visible={visible} onClose={() => (recorder.stop().catch(() => {}), onClose())} title="Perguntar por voz">
-      {state === 'listening' ? (
-        <>
-          <AppText variant="body" accessibilityLiveRegion="polite">
-            Ouvindo. Faça a sua pergunta e toque em Pronto.
-          </AppText>
-          <Button label="Pronto" icon="stop" onPress={stop} />
-        </>
-      ) : state === 'working' ? (
-        <AppText variant="body">Transformando em texto</AppText>
-      ) : state === 'denied' ? (
-        <>
-          <AppText variant="body">O microfone está desligado para o app. Ligue nos ajustes do celular.</AppText>
-          <Button label="Abrir ajustes do celular" onPress={() => Linking.openSettings()} />
-        </>
-      ) : state === 'unavailable' ? (
-        <>
-          <AppText variant="body">A pergunta por voz chega quando o chat estiver ligado ao servidor. Por enquanto, use o microfone do teclado do celular.</AppText>
-          <Button label="Entendi" onPress={() => (onClose(), toast('Use o microfone do teclado'))} />
-        </>
-      ) : (
-        <AppText variant="body">Preparando o microfone</AppText>
-      )}
-    </Sheet>
-  )
-}

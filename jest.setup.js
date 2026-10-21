@@ -62,7 +62,7 @@ jest.mock('@react-native-community/netinfo', () => ({
 jest.mock('react-native-purchases', () => ({
   __esModule: true,
   default: { configure: jest.fn(), getOfferings: jest.fn(), purchasePackage: jest.fn(), restorePurchases: jest.fn() },
-  PURCHASES_ERROR_CODE: { PURCHASE_CANCELLED_ERROR: '1' },
+  PURCHASES_ERROR_CODE: { PURCHASE_CANCELLED_ERROR: '1', PAYMENT_PENDING_ERROR: '20' },
 }))
 // Armazenamento seguro: os testes que precisam dele põem um objeto em globalThis.__secureStore.
 jest.mock('expo-secure-store', () => ({

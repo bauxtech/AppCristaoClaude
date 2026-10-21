@@ -91,8 +91,8 @@ export function PhoneScreen() {
           Receber o código por
         </AppText>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Chip label="WhatsApp" selected={channel === 'whatsapp'} onPress={() => setChannel('whatsapp')} />
           <Chip label="SMS" selected={channel === 'sms'} onPress={() => setChannel('sms')} />
+          <Chip label="WhatsApp" selected={channel === 'whatsapp'} onPress={() => setChannel('whatsapp')} />
         </View>
       </View>
       {draft.mode === 'login' && !IS_REMOTE ? (

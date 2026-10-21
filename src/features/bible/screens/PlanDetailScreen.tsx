@@ -20,10 +20,11 @@ export function PlanDetailScreen() {
   const { cellStatus } = useSession()
   const [mode, setMode] = useState<'solo' | 'cell'>('solo')
   const [confirm, setConfirm] = useState<'stop' | 'delete' | null>(null)
+  // Todos os hooks antes do retorno antecipado: apagar o plano nesta tela não pode mudar a ordem deles.
+  const sub = useSubscription()
   const plan = bible.planDef(String(id))
   if (!plan) return <NotFound />
   const started = !!bible.progress[plan.id]
-  const sub = useSubscription()
   const s = planState(plan, bible.progress[plan.id])
   const pct = Math.round((s.done / s.total) * 100)
   const hasCell = cellStatus === 'member' || cellStatus === 'leader'
