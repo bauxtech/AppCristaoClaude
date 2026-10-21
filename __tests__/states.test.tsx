@@ -121,7 +121,7 @@ describe('permissão da câmera', () => {
 describe('compra fora da prévia', () => {
   test('a folha de exemplo não libera o plano sem cobrança', async () => {
     await renderApp(<PlansScreen />, { onboarded: true })
-    await fireEvent.press(screen.getByRole('button', { name: 'Assinar Completo anual' }))
+    await fireEvent.press(screen.getByRole('button', { name: 'Assinar Completo mensal' }))
     expect(screen.getByText('A compra pela loja ainda não está ligada neste app.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Confirmar assinatura' })).toBeDisabled()
   })

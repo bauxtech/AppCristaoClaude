@@ -15,34 +15,55 @@ export const GRACE_DAYS = 7
 export interface PlanInfo {
   id: PlanId
   name: string
+  /** Para quem é o plano, igual ao site. */
+  who: string
   prices: Record<Billing, { amount: string; per: string }>
   /** Quanto o anual economiza em relação a 12 meses do mensal. */
   annualSaving: string
+  /** Quanto o anual dá por mês. */
+  annualPerMonth: string
   items: string[]
 }
 
+/** O plano em destaque na tela de planos, igual ao site (21/10). */
+export const RECOMMENDED_PLAN: PlanId = 'completo'
+
 // Preços em real ainda dependem da tabela da App Store. O que vale na compra é o preço que a loja mostra.
+// Textos iguais aos da página de preços do site (acasa.app.br/planos, 21/10).
 export const PLANS: PlanInfo[] = [
   {
     id: 'essencial',
     name: 'Essencial',
+    who: 'Para ler, orar e participar da célula.',
     prices: { monthly: { amount: 'R$ 19,90', per: 'por mês' }, annual: { amount: 'R$ 159,90', per: 'por ano' } },
     annualSaving: '33%',
-    items: ['Bíblia completa, planos de leitura, grifos, notas e busca', 'Oração guiada, diário, pedidos e campanhas', 'Igreja, ministérios, cursos e música', 'Participar de célula', 'Chat bíblico: 5 perguntas por dia'],
+    annualPerMonth: 'R$ 13,33',
+    items: ['Bíblia completa e planos de leitura', 'Oração guiada, diário, pedidos e campanhas', 'Igreja, ministérios, cursos e música', 'Participar de célula', 'Chat bíblico: 5 perguntas por dia'],
   },
   {
     id: 'completo',
     name: 'Completo',
+    who: 'Para guardar o que você ouve no culto.',
     prices: { monthly: { amount: 'R$ 29,90', per: 'por mês' }, annual: { amount: 'R$ 239,90', per: 'por ano' } },
     annualSaving: '33%',
-    items: ['Tudo do Essencial', 'Chat bíblico: 10 perguntas por dia', 'Gravar e transcrever culto: 4 por mês, até 90 minutos cada'],
+    annualPerMonth: 'R$ 19,99',
+    items: ['Tudo do Essencial', 'Chat bíblico: 10 perguntas por dia', '4 cultos por mês, até 90 minutos cada', 'Curso pela foto ou PDF do cronograma'],
   },
   {
     id: 'lider',
     name: 'Líder',
+    who: 'Para quem lidera uma célula.',
     prices: { monthly: { amount: 'R$ 49,90', per: 'por mês' }, annual: { amount: 'R$ 399,90', per: 'por ano' } },
     annualSaving: '33%',
-    items: ['Tudo do Completo', 'Gravar e transcrever culto: 8 por mês, até 90 minutos cada', 'Criar e conduzir célula: escala, roteiro, presença, membros, avisos e página web', 'Até 20 membros da célula entram sem plano, só para as funções da célula'],
+    annualPerMonth: 'R$ 33,33',
+    items: [
+      'Tudo do Completo',
+      'Chat bíblico: 10 perguntas por dia',
+      '8 cultos por mês, até 90 minutos cada',
+      'Criar e organizar a sua célula',
+      'Até 20 membros da célula sem pagar',
+      'Página da célula na internet, com endereço próprio, logo e capa, e o formulário Quero participar',
+    ],
   },
 ]
 

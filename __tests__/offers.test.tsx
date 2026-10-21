@@ -39,7 +39,7 @@ describe('frase da função na tela de planos', () => {
   test('função desconhecida no link não aparece', async () => {
     params.mockReturnValue({ plano: 'completo', funcao: 'qualquer' })
     await renderApp(<PlansScreen />, { onboarded: true })
-    expect(screen.queryByText(/^Para /)).toBeNull()
+    expect(screen.queryByText(/^Para .*escolha o plano/)).toBeNull()
   })
 
   test('origem: a que veio no link, o fim do teste, o cadeado ou outro caminho', () => {

@@ -8,7 +8,7 @@ import { phoneCodeProblem, sendPhoneChangeCode, supabase, verifyPhoneChange, typ
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { longDate } from '../../settings/screens/AccountScreens'
-import { PLAN_NAME, PLANS, planInfo, TRIAL_DAYS, type Billing, type PlanId, type PreviewSub } from '../plan'
+import { PLAN_NAME, PLANS, planInfo, RECOMMENDED_PLAN, TRIAL_DAYS, type Billing, type PlanId, type PreviewSub } from '../plan'
 import { useSubscription } from '../SubscriptionContext'
 import { FEATURE_ACTION, isFeature } from '../PlanLock'
 import { logPaywall, paywallSource } from '../paywallLog'
@@ -34,9 +34,10 @@ function BillingPicker({ value, onChange }: { value: Billing; onChange: (b: Bill
       label="Período"
       value={value}
       onChange={onChange}
+      // Mensal primeiro e marcado, como no site (21/10).
       options={[
-        { id: 'annual', label: 'Anual, mais barato' },
         { id: 'monthly', label: 'Mensal' },
+        { id: 'annual', label: 'Anual, mais barato' },
       ]}
     />
   )
@@ -48,14 +49,24 @@ function PlanCard({ id, billing, selected, current, onSelect }: { id: PlanId; bi
   const p = planInfo(id)
   const price = p.prices[billing]
   const saving = billing === 'annual' ? `Economize ${p.annualSaving} no anual` : null
+  // No mensal, lembra o valor do anual; no anual, mostra quanto dá por mês. Igual ao site.
+  const other = billing === 'monthly' ? `Ou ${p.prices.annual.amount} por ano no plano anual` : `Equivale a ${p.annualPerMonth} por mês`
+  const recommended = id === RECOMMENDED_PLAN
   return (
     <Pressable
       onPress={onSelect}
       accessibilityRole="radio"
       accessibilityState={{ checked: selected }}
-      accessibilityLabel={`Plano ${p.name}, ${price.amount} ${price.per}${saving ? `. ${saving}` : ''}${current ? '. Seu plano atual' : ''}`}
-      style={{ borderWidth: selected ? 2 : 1, borderColor: selected ? colors.primary : colors.lineStrong, borderRadius: 20, padding: 18, gap: 10, backgroundColor: colors.card }}
+      accessibilityLabel={`Plano ${p.name}${recommended ? ', recomendado' : ''}, ${price.amount} ${price.per}. ${other}${saving ? `. ${saving}` : ''}${current ? '. Seu plano atual' : ''}`}
+      style={{ borderWidth: selected ? 2 : 1, borderColor: selected ? colors.primary : colors.lineStrong, borderRadius: 20, padding: 18, paddingTop: recommended ? 24 : 18, gap: 10, backgroundColor: colors.card, marginTop: recommended ? 12 : 0 }}
     >
+      {recommended ? (
+        <View style={{ position: 'absolute', top: -13, left: 18, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: colors.primary }}>
+          <AppText variant="small" style={{ color: colors.primaryText, fontFamily: fonts.semibold }}>
+            Recomendado
+          </AppText>
+        </View>
+      ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
           <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: selected ? colors.primary : colors.lineStrong, alignItems: 'center', justifyContent: 'center' }}>
@@ -71,12 +82,18 @@ function PlanCard({ id, billing, selected, current, onSelect }: { id: PlanId; bi
           </View>
         ) : null}
       </View>
+      <AppText variant="body" tone="secondary">
+        {p.who}
+      </AppText>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
         <AppText style={{ fontFamily: fonts.bold, fontSize: 26, color: colors.text }}>{price.amount}</AppText>
         <AppText variant="body" tone="secondary" style={{ paddingBottom: 3 }}>
           {price.per}
         </AppText>
       </View>
+      <AppText variant="small" tone="secondary">
+        {other}
+      </AppText>
       {saving ? (
         <AppText variant="small" style={{ color: colors.primary, fontFamily: fonts.semibold }}>
           {saving}
@@ -203,8 +220,9 @@ export function PlansScreen() {
   const source = paywallSource(params)
   const current = sub.status !== 'free' && sub.status !== 'trial' ? (sub.plan as PlanId) : null
   const currentBilling = sub.access.billing
-  const [plan, setPlan] = useState<PlanId>(isPlanId(params.plano) ? params.plano : (current ?? 'completo'))
-  const [billing, setBilling] = useState<Billing>('annual')
+  const [plan, setPlan] = useState<PlanId>(isPlanId(params.plano) ? params.plano : (current ?? RECOMMENDED_PLAN))
+  // Abre no mensal (site, 21/10); quem já assina vê o período que já tem.
+  const [billing, setBilling] = useState<Billing>(currentBilling ?? 'monthly')
   const [sheet, setSheet] = useState(false)
   const buy = useBuy(() => setSheet(true), { source, feature: feature ?? undefined })
   useEffect(() => {
@@ -217,7 +235,7 @@ export function PlansScreen() {
   const close = () => router.replace('/')
   const p = planInfo(plan)
   return (
-    <Page title="Planos" onBack={endOfTrial ? close : undefined}>
+    <Page title="Planos e preços" onBack={endOfTrial ? close : undefined}>
       {endOfTrial ? (
         <View style={{ gap: 6 }}>
           <AppText variant="title" accessibilityRole="header">

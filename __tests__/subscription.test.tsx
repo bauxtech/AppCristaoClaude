@@ -95,14 +95,17 @@ describe('contador e avisos do teste', () => {
 })
 
 describe('tela de planos', () => {
-  test('três planos, o anual vem marcado e com a economia', async () => {
+  test('três planos, como no site: abre no mensal, o Completo em destaque', async () => {
     await renderApp(<PlansScreen />, { onboarded: true })
-    expect(screen.getByRole('tab', { name: 'Anual, mais barato' }).props.accessibilityState.selected).toBe(true)
-    expect(screen.getByLabelText('Plano Essencial, R$ 159,90 por ano. Economize 33% no anual')).toBeTruthy()
-    expect(screen.getByLabelText('Plano Completo, R$ 239,90 por ano. Economize 33% no anual')).toBeTruthy()
-    expect(screen.getByLabelText('Plano Líder, R$ 399,90 por ano. Economize 33% no anual')).toBeTruthy()
-    await fireEvent.press(screen.getByRole('tab', { name: 'Mensal' }))
-    expect(screen.getByLabelText('Plano Essencial, R$ 19,90 por mês')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Mensal' }).props.accessibilityState.selected).toBe(true)
+    expect(screen.getByText('Recomendado')).toBeTruthy()
+    expect(screen.getByLabelText('Plano Essencial, R$ 19,90 por mês. Ou R$ 159,90 por ano no plano anual')).toBeTruthy()
+    expect(screen.getByLabelText('Plano Completo, recomendado, R$ 29,90 por mês. Ou R$ 239,90 por ano no plano anual').props.accessibilityState.checked).toBe(true)
+    expect(screen.getByLabelText('Plano Líder, R$ 49,90 por mês. Ou R$ 399,90 por ano no plano anual')).toBeTruthy()
+    expect(screen.getByText('Para guardar o que você ouve no culto.')).toBeTruthy()
+    await fireEvent.press(screen.getByRole('tab', { name: 'Anual, mais barato' }))
+    expect(screen.getByLabelText('Plano Essencial, R$ 159,90 por ano. Equivale a R$ 13,33 por mês. Economize 33% no anual')).toBeTruthy()
+    expect(screen.getByLabelText('Plano Líder, R$ 399,90 por ano. Equivale a R$ 33,33 por mês. Economize 33% no anual')).toBeTruthy()
     for (const l of ['Restaurar compra', 'Termos de Uso', 'Privacidade']) expect(screen.getByRole('button', { name: l })).toBeTruthy()
   })
 
@@ -111,16 +114,16 @@ describe('tela de planos', () => {
     const lider = screen.getByLabelText(/^Plano Líder/)
     await fireEvent.press(lider)
     expect(screen.getByLabelText(/^Plano Líder/).props.accessibilityState.checked).toBe(true)
-    expect(screen.getByRole('button', { name: 'Assinar Líder anual' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Assinar Líder mensal' })).toBeTruthy()
   })
 
   test('cancelar na folha da loja volta sem erro; confirmar leva à confirmação', async () => {
     jest.useFakeTimers()
     await renderApp(<PlansScreen />, { onboarded: true })
-    await fireEvent.press(screen.getByRole('button', { name: 'Assinar Completo anual' }))
+    await fireEvent.press(screen.getByRole('button', { name: 'Assinar Completo mensal' }))
     await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }))
     expect(screen.queryByText(/erro/i)).toBeNull()
-    await fireEvent.press(screen.getByRole('button', { name: 'Assinar Completo anual' }))
+    await fireEvent.press(screen.getByRole('button', { name: 'Assinar Completo mensal' }))
     await fireEvent.press(screen.getByRole('button', { name: 'Confirmar assinatura' }))
     jest.advanceTimersByTime(1000)
     expect(router.replace).toHaveBeenCalledWith('/assinatura/confirmada')
@@ -220,9 +223,9 @@ describe('correções da revisão de segurança', () => {
 
   test('assinante do Completo mensal consegue passar para o anual', async () => {
     await renderApp(<PlansScreen />, { onboarded: true, subscription: previewState('completo') })
-    expect(screen.getByRole('button', { name: 'Trocar para o anual' })).toBeTruthy()
-    await fireEvent.press(screen.getByRole('tab', { name: 'Mensal' }))
     expect(screen.getByRole('button', { name: 'Este é o seu plano' })).toBeDisabled()
+    await fireEvent.press(screen.getByRole('tab', { name: 'Anual, mais barato' }))
+    expect(screen.getByRole('button', { name: 'Trocar para o anual' })).toBeTruthy()
   })
 
   test('último dia do teste diz que termina hoje à meia-noite', async () => {
