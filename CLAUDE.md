@@ -88,7 +88,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 
 ## EM ABERTO, PERGUNTAR ANTES DE CODAR
 - Pagamento por Pix: fora do escopo agora.
-- Preços em real: confirmar na tabela de preços da App Store (R$ 49,90, 249,90 e 149,90 confirmados em 22/10; 19,90, 29,90 e 399,90 ainda não). No Google Play qualquer valor vale.
+- Preços em real: os 6 confirmados na App Store em 22/10 (R$ 19,90, 29,90 e 49,90 por mês; 149,90, 249,90 e 399,90 por ano). No Google Play, usar os mesmos valores.
 
 ## DADOS E PRIVACIDADE
 - Fé e pedido de oração são dado sensível pela LGPD. Consentimento separado no cadastro, exportar e apagar dados.
