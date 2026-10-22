@@ -60,7 +60,7 @@ No Supabase, em **Edge Functions > Secrets**, crie `CRON_SECRET` com uma senha l
    | Plano | Mensal | Anual |
    | --- | --- | --- |
    | Essencial | `acasa_essencial_mensal` (R$ 19,90) | `acasa_essencial_anual` (R$ 159,90) |
-   | Completo | `acasa_completo_mensal` (R$ 29,90) | `acasa_completo_anual` (R$ 239,90) |
+   | Completo | `acasa_completo_mensal` (R$ 29,90) | `acasa_completo_anual` (R$ 249,90) |
    | Líder | `acasa_lider_mensal` (R$ 49,90) | `acasa_lider_anual` (R$ 399,90) |
 
    - **App Store Connect**: um único grupo de assinaturas com os 6 produtos, nesta ordem de nível: Líder no topo, depois Completo, depois Essencial. Assim a Apple cuida da troca de plano (subir vale na hora, descer vale na renovação). Ao escolher o preço, confira se o valor em real existe na tabela da Apple. Se não existir, me avise o valor mais próximo.

@@ -44,9 +44,9 @@ export const PLANS: PlanInfo[] = [
     id: 'completo',
     name: 'Completo',
     who: 'Para guardar o que você ouve no culto.',
-    prices: { monthly: { amount: 'R$ 29,90', per: 'por mês' }, annual: { amount: 'R$ 239,90', per: 'por ano' } },
-    annualSaving: '33%',
-    annualPerMonth: 'R$ 19,99',
+    prices: { monthly: { amount: 'R$ 29,90', per: 'por mês' }, annual: { amount: 'R$ 249,90', per: 'por ano' } },
+    annualSaving: '30%',
+    annualPerMonth: 'R$ 20,83',
     items: ['Tudo do Essencial', 'Chat bíblico: 10 perguntas por dia', '4 cultos por mês, até 90 minutos cada', 'Curso pela foto ou PDF do cronograma'],
   },
   {
