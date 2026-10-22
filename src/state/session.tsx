@@ -119,6 +119,8 @@ export function SessionProvider({
   const finishOnboarding = useCallback(() => {
     setOnboarded(true)
     setItem('onboarded', true)
+    // Conta nova (ou nova entrada neste aparelho): pode ver o passo a passo das abas na primeira semana.
+    setItem('toursEligible', true)
   }, [])
 
   const resetData = useCallback((sample: boolean) => {

@@ -3,23 +3,29 @@ import { useEffect, useState } from 'react'
 import { AccessibilityInfo, View } from 'react-native'
 import { AppText, Button, MIN_TOUCH } from '../../components'
 import { getItem, setItem } from '../../lib/storage'
+import { useSession } from '../../state/session'
 import { useTheme } from '../../theme/ThemeProvider'
-import { TAB_LABEL, TOURS, tabFromPath, type TabName } from './tours'
+import { useCell } from '../cell/CellContext'
+import { useSubscription } from '../subscription/SubscriptionContext'
+import { CELL_TOURS, TAB_LABEL, TOURS, cellVariant, isNewAccount, tabFromPath, type TourStep } from './tours'
 
 const KEY = 'toursSeen'
-const listeners = new Set<(seen: TabName[]) => void>()
+/** Marcado ao terminar o cadastro. Quem já usava o app antes do passo a passo não vê. */
+export const ELIGIBLE_KEY = 'toursEligible'
+const listeners = new Set<(seen: string[]) => void>()
 
-export function toursSeen(): TabName[] {
-  return getItem<TabName[]>(KEY, [])
+export function toursSeen(): string[] {
+  return getItem<string[]>(KEY, [])
 }
 
-function save(seen: TabName[]) {
+function save(seen: string[]) {
   setItem(KEY, seen)
   listeners.forEach((l) => l(seen))
 }
 
-/** Mostra de novo o passo a passo de todas as abas. */
+/** Mostra de novo o passo a passo de todas as abas (pedido pela pessoa, na ajuda do Hoje). */
 export function resetTours() {
+  setItem(ELIGIBLE_KEY, 'always')
   save([])
 }
 
@@ -30,24 +36,44 @@ export function resetTours() {
 export function TabTour({ hidden, bottom }: { hidden: boolean; bottom: number }) {
   const { colors } = useTheme()
   const tab = tabFromPath(usePathname())
-  const [seen, setSeen] = useState<TabName[]>(toursSeen)
+  const { cellStatus } = useSession()
+  const { cell } = useCell()
+  const sub = useSubscription()
+  const [seen, setSeen] = useState<string[]>(toursSeen)
   const [step, setStep] = useState(0)
   useEffect(() => {
     listeners.add(setSeen)
     return () => void listeners.delete(setSeen)
   }, [])
-  useEffect(() => setStep(0), [tab])
 
-  const show = !hidden && !!tab && !seen.includes(tab)
+  const eligible = getItem<boolean | 'always' | null>(ELIGIBLE_KEY, null)
+  const allowed = eligible === 'always' || (eligible === true && isNewAccount(sub.access.trialStart))
+  let key: string | null = tab
+  let steps: TourStep[] = []
+  if (tab === 'celula') {
+    const v = cellVariant({
+      hasCell: !!cell,
+      pending: cellStatus === 'pending',
+      isLeader: cell?.myRole === 'lider',
+      leadPlan: sub.can('cell_lead'),
+      cellActive: cell ? sub.cellActive(cell.id) : true,
+    })
+    key = v ? `celula:${v}` : null
+    steps = v ? CELL_TOURS[v] : []
+  } else if (tab) steps = TOURS[tab]
+  useEffect(() => setStep(0), [key])
+
+  // Antes da resposta do servidor o plano ainda não é conhecido: espera para não mostrar o passo a passo errado.
+  const show = !hidden && sub.ready && allowed && !!key && !!tab && steps.length > 0 && !seen.includes(key)
   useEffect(() => {
     if (show && tab) AccessibilityInfo.announceForAccessibility(`Passo a passo da aba ${TAB_LABEL[tab]}`)
   }, [show, tab])
-  if (!show || !tab) return null
+  if (!show || !tab || !key) return null
 
-  const steps = TOURS[tab]
   const s = steps[Math.min(step, steps.length - 1)]
   const last = step >= steps.length - 1
-  const finish = () => save([...seen, tab])
+  const done = key
+  const finish = () => save([...seen, done])
   return (
     <View
       style={{
@@ -55,7 +81,6 @@ export function TabTour({ hidden, bottom }: { hidden: boolean; bottom: number })
         left: 12,
         right: 12,
         bottom: bottom + MIN_TOUCH + 24,
-        maxHeight: 360,
         backgroundColor: colors.card,
         borderRadius: 20,
         borderWidth: 1,

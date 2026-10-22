@@ -18,6 +18,8 @@ interface SubValue {
   daysLeft: number
   trialEndsAt: string | null
   introSeen: boolean
+  /** Já chegou a resposta do servidor (sem servidor, sempre). */
+  ready: boolean
   /** Pode usar a função agora. */
   can: (f: Feature) => boolean
   /** Plano mais barato que libera a função, para o cadeado ("No plano Completo"). */
@@ -115,6 +117,7 @@ export function SubscriptionProvider({ children, initial, now }: { children: Rea
       daysLeft: a.plan === 'trial' ? trialDaysLeft(a.trialEndsAt, at) : 0,
       trialEndsAt: a.trialEndsAt,
       introSeen: local.introSeen,
+      ready: !loading,
       can,
       minPlan: (f) => a.minPlan[f],
       // Célula que ainda não veio na resposta (acabou de entrar): o servidor decide; a tela não tranca antes.
