@@ -1,3 +1,4 @@
+import { router, usePathname } from 'expo-router'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { AccessibilityInfo, Animated, View } from 'react-native'
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -32,7 +33,16 @@ export function ConnectionFrame({ children }: { children: ReactNode }) {
         <View
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
-          style={{ paddingTop: insets.top + 6, paddingBottom: 6, paddingHorizontal: 16, backgroundColor: online ? colors.primary : colors.darkSurface, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          style={{
+            paddingTop: insets.top + 6,
+            paddingBottom: 6,
+            paddingHorizontal: 16,
+            backgroundColor: online ? colors.primary : colors.darkSurface,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
         >
           {/* Sobre o verde, a cor de texto do verde: no escuro o verde é claro e o branco some. */}
           <Icon name={online ? 'clock' : 'alert'} size={14} color={online ? colors.primaryText : '#FFFFFF'} />
@@ -51,6 +61,7 @@ export function ConnectionFrame({ children }: { children: ReactNode }) {
 /** Mensagem curta de erro com "Tentar de novo". */
 export function ErrorState({ message = 'Não foi possível carregar.', onRetry }: { message?: string; onRetry: () => void }) {
   const { colors } = useTheme()
+  const pathname = usePathname()
   return (
     <Card style={{ gap: 10, alignItems: 'flex-start' }} accessibilityLiveRegion="polite">
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
@@ -60,7 +71,11 @@ export function ErrorState({ message = 'Não foi possível carregar.', onRetry }
       <AppText variant="small" tone="secondary">
         Confira a internet e tente de novo.
       </AppText>
-      <Button label="Tentar de novo" size="sm" onPress={onRetry} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+        <Button label="Tentar de novo" size="sm" onPress={onRetry} />
+        {/* Se o erro continuar, a pessoa conta para a equipe sem sair da tela (22/10). */}
+        <Button label="Reportar um problema" variant="text" size="sm" onPress={() => router.push({ pathname: '/configuracoes/reportar', params: { tela: pathname } })} />
+      </View>
     </Card>
   )
 }
@@ -70,7 +85,9 @@ export function SkeletonBlock({ height = 16, width = '100%', radius = 8 }: { hei
   const { colors } = useTheme()
   const op = useRef(new Animated.Value(0.5)).current
   useEffect(() => {
-    const loop = Animated.loop(Animated.sequence([Animated.timing(op, { toValue: 1, duration: 700, useNativeDriver: true }), Animated.timing(op, { toValue: 0.5, duration: 700, useNativeDriver: true })]))
+    const loop = Animated.loop(
+      Animated.sequence([Animated.timing(op, { toValue: 1, duration: 700, useNativeDriver: true }), Animated.timing(op, { toValue: 0.5, duration: 700, useNativeDriver: true })]),
+    )
     loop.start()
     return () => loop.stop()
   }, [op])

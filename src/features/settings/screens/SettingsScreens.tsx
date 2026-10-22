@@ -538,6 +538,7 @@ export function HelpScreen() {
         <ListRow label="Termos de Uso" onPress={() => router.push('/termos-completos')} divider />
         <ListRow label="Política de privacidade" sub="Abre o site do acasa" onPress={() => openLegal('privacy')} divider />
         <ListRow label="Dados de fé" onPress={() => router.push('/dados-de-fe')} divider />
+        <ListRow label="Reportar um problema" onPress={() => router.push('/configuracoes/reportar')} divider />
         <ListRow label="Falar com suporte" onPress={() => router.push('/configuracoes/suporte')} />
       </Card>
       <SectionLabel>Perguntas frequentes</SectionLabel>

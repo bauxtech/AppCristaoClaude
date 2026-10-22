@@ -21,6 +21,7 @@ import { longDate } from '../../settings/screens/AccountScreens'
 import { useSubscription } from '../../subscription/SubscriptionContext'
 import { PreviewSubTools, TrialBanner } from '../../subscription/screens/SubscriptionScreens'
 import { jumpTo } from '../../../lib/nav'
+import { openReport } from '../../settings/screens/ReportScreen'
 import { useTabScrollTop } from '../../../lib/tabScroll'
 
 export const TOTAL_CHAPTERS = BOOKS.reduce((a, b) => a + b.chapters, 0)
@@ -156,7 +157,14 @@ export function ProfileHome() {
           onPress={() => router.push('/assinatura/meu-plano')}
           divider
         />
-        <ListRow label="Avisos" sub={settings.unreadCount ? `${settings.unreadCount} não ${settings.unreadCount === 1 ? 'lido' : 'lidos'}` : undefined} onPress={() => router.push('/avisos')} />
+        <ListRow
+          label="Avisos"
+          sub={settings.unreadCount ? `${settings.unreadCount} não ${settings.unreadCount === 1 ? 'lido' : 'lidos'}` : undefined}
+          onPress={() => router.push('/avisos')}
+          divider
+        />
+        {/* Em destaque nos primeiros meses depois do lançamento (pedido do Thiago, 22/10). */}
+        <ListRow label="Reportar um problema" sub="Algo não funcionou? Conte para a equipe" onPress={() => openReport('/eu')} />
       </Card>
 
       <Card style={{ paddingVertical: 8 }}>

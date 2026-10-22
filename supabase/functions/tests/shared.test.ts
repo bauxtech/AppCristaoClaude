@@ -67,7 +67,11 @@ describe('chat no servidor', () => {
   })
 
   test('erro na IA devolve a pergunta', async () => {
-    const d = chatDeps({ askJson: vi.fn(async () => { throw new Error('fora do ar') }) })
+    const d = chatDeps({
+      askJson: vi.fn(async () => {
+        throw new Error('fora do ar')
+      }),
+    })
     await expect(answerChat(d, { question: 'o que é graça' })).rejects.toThrow()
     expect(d.calls).toEqual(['consume', 'refund'])
   })
@@ -98,7 +102,11 @@ describe('culto no servidor', () => {
   })
 
   test('limite de cultos do período, com a renovação', async () => {
-    expect(await processSermon(base({ use: async () => ({ ok: false, reason: 'limit', limit: 4, resetsAt: '2026-11-01T03:00:00.000Z' }) }))).toEqual({ kind: 'limit', limit: 4, resetsAt: '2026-11-01T03:00:00.000Z' })
+    expect(await processSermon(base({ use: async () => ({ ok: false, reason: 'limit', limit: 4, resetsAt: '2026-11-01T03:00:00.000Z' }) }))).toEqual({
+      kind: 'limit',
+      limit: 4,
+      resetsAt: '2026-11-01T03:00:00.000Z',
+    })
   })
 
   test('resumo com versículos só do texto do app', async () => {
@@ -133,7 +141,12 @@ describe('conteúdo diário', () => {
 describe('RevenueCat', () => {
   const user = '00000000-0000-0000-0000-00000000000b'
   test('compra e renovação ativam com a próxima cobrança', () => {
-    expect(patchFromEvent({ type: 'INITIAL_PURCHASE', app_user_id: user, product_id: 'plano_anual', store: 'PLAY_STORE', expiration_at_ms: Date.UTC(2027, 9, 4) })).toMatchObject({ status: 'active', billing: 'annual', store: 'play_store', renews_at: '2027-10-04T00:00:00.000Z' })
+    expect(patchFromEvent({ type: 'INITIAL_PURCHASE', app_user_id: user, product_id: 'plano_anual', store: 'PLAY_STORE', expiration_at_ms: Date.UTC(2027, 9, 4) })).toMatchObject({
+      status: 'active',
+      billing: 'annual',
+      store: 'play_store',
+      renews_at: '2027-10-04T00:00:00.000Z',
+    })
   })
   test('cancelada continua ativa até o fim do período', () => {
     expect(patchFromEvent({ type: 'CANCELLATION', app_user_id: user, expiration_at_ms: Date.UTC(2026, 10, 1) })?.status).toBe('canceled_active')
@@ -199,7 +212,13 @@ describe('igreja pelo CNPJ', () => {
       municipio: 'SAO PAULO',
       uf: 'sp',
     })
-    expect(row).toEqual({ cnpj: '11222333000181', name: 'Igreja Evangelica Batista do Bairro', address: 'Rua das Flores, 100, Pinheiros, Sao Paulo, SP', neighborhood: 'Pinheiros', city: 'Sao Paulo, SP' })
+    expect(row).toEqual({
+      cnpj: '11222333000181',
+      name: 'Igreja Evangelica Batista do Bairro',
+      address: 'Rua das Flores, 100, Pinheiros, Sao Paulo, SP',
+      neighborhood: 'Pinheiros',
+      city: 'Sao Paulo, SP',
+    })
   })
 })
 
@@ -231,10 +250,18 @@ describe('limites do plano', () => {
   test('devolve o uso com o contador e o período certos', async () => {
     const { useLimit } = await import('../_shared/usage.ts')
     const calls: unknown[] = []
-    const db = { rpc: async (fn: string, args: Record<string, unknown>) => (calls.push([fn, args]), { data: fn === 'use_limit' ? { ok: true, remaining: 1, limit: 2, counter: 'sermon_period', period: 'p1' } : null, error: null }) }
+    const db = {
+      rpc: async (fn: string, args: Record<string, unknown>) => (
+        calls.push([fn, args]),
+        { data: fn === 'use_limit' ? { ok: true, remaining: 1, limit: 2, counter: 'sermon_period', period: 'p1' } : null, error: null }
+      ),
+    }
     const r = await useLimit(db, 'u1', 'sermon')
     await r.refund()
-    expect(calls).toEqual([['use_limit', { p_user: 'u1', p_kind: 'sermon' }], ['refund_usage', { p_user: 'u1', p_kind: 'sermon_period', p_period: 'p1' }]])
+    expect(calls).toEqual([
+      ['use_limit', { p_user: 'u1', p_kind: 'sermon' }],
+      ['refund_usage', { p_user: 'u1', p_kind: 'sermon_period', p_period: 'p1' }],
+    ])
   })
 })
 
@@ -248,8 +275,21 @@ describe('assinatura pela loja', () => {
   })
   test('compra e renovação marcam o plano e o início do período (zera os cultos)', async () => {
     const { patchFromEvent } = await import('../_shared/revenuecat.ts')
-    expect(patchFromEvent({ type: 'RENEWAL', app_user_id: user, product_id: 'acasa_completo_mensal', entitlement_ids: ['completo'], purchased_at_ms: Date.UTC(2026, 9, 12), expiration_at_ms: Date.UTC(2026, 10, 12) })).toMatchObject({
-      status: 'active', plan: 'completo', billing: 'monthly', period_start: '2026-10-12T00:00:00.000Z', renews_at: '2026-11-12T00:00:00.000Z',
+    expect(
+      patchFromEvent({
+        type: 'RENEWAL',
+        app_user_id: user,
+        product_id: 'acasa_completo_mensal',
+        entitlement_ids: ['completo'],
+        purchased_at_ms: Date.UTC(2026, 9, 12),
+        expiration_at_ms: Date.UTC(2026, 10, 12),
+      }),
+    ).toMatchObject({
+      status: 'active',
+      plan: 'completo',
+      billing: 'monthly',
+      period_start: '2026-10-12T00:00:00.000Z',
+      renews_at: '2026-11-12T00:00:00.000Z',
     })
     // Troca agendada não muda o plano na hora: com a chave secreta, o webhook consulta o RevenueCat.
     expect(patchFromEvent({ type: 'PRODUCT_CHANGE', app_user_id: user, product_id: 'acasa_lider_mensal', new_product_id: 'acasa_completo_mensal' })).toBeNull()
@@ -258,12 +298,20 @@ describe('assinatura pela loja', () => {
     const { patchFromSubscriber } = await import('../_shared/revenuecat.ts')
     const now = new Date('2026-10-12T12:00:00Z')
     const sub = {
-      entitlements: { lider: { expires_date: '2026-11-12T00:00:00Z', product_identifier: 'acasa_lider_mensal', purchase_date: '2026-10-12T00:00:00Z' }, essencial: { expires_date: '2026-01-01T00:00:00Z', product_identifier: 'velho', purchase_date: '2025-12-01T00:00:00Z' } },
+      entitlements: {
+        lider: { expires_date: '2026-11-12T00:00:00Z', product_identifier: 'acasa_lider_mensal', purchase_date: '2026-10-12T00:00:00Z' },
+        essencial: { expires_date: '2026-01-01T00:00:00Z', product_identifier: 'velho', purchase_date: '2025-12-01T00:00:00Z' },
+      },
       subscriptions: { acasa_lider_mensal: { expires_date: '2026-11-12T00:00:00Z', purchase_date: '2026-10-12T00:00:00Z', store: 'app_store' } },
     }
     expect(patchFromSubscriber(user, sub, now)).toMatchObject({ status: 'active', plan: 'lider', store: 'app_store', period_start: '2026-10-12T00:00:00Z', renews_at: '2026-11-12T00:00:00Z' })
-    expect(patchFromSubscriber(user, { ...sub, subscriptions: { acasa_lider_mensal: { ...sub.subscriptions.acasa_lider_mensal, unsubscribe_detected_at: '2026-10-13T00:00:00Z' } } }, now)?.status).toBe('canceled_active')
-    expect(patchFromSubscriber(user, { entitlements: { lider: { expires_date: '2026-10-01T00:00:00Z', product_identifier: 'x', purchase_date: '2026-09-01T00:00:00Z' } } }, now)).toEqual({ user_id: user, status: 'expired' })
+    expect(
+      patchFromSubscriber(user, { ...sub, subscriptions: { acasa_lider_mensal: { ...sub.subscriptions.acasa_lider_mensal, unsubscribe_detected_at: '2026-10-13T00:00:00Z' } } }, now)?.status,
+    ).toBe('canceled_active')
+    expect(patchFromSubscriber(user, { entitlements: { lider: { expires_date: '2026-10-01T00:00:00Z', product_identifier: 'x', purchase_date: '2026-09-01T00:00:00Z' } } }, now)).toEqual({
+      user_id: user,
+      status: 'expired',
+    })
     expect(patchFromSubscriber(user, {}, now)).toBeNull()
     expect(patchFromSubscriber('$RCAnonymousID:x', sub, now)).toBeNull()
   })
@@ -323,5 +371,31 @@ describe('e-mails da régua', () => {
     expect(validToken(token)).toBe(true)
     expect(validToken("1' or '1'='1")).toBe(false)
     expect(validToken(null)).toBe(false)
+  })
+})
+
+describe('reportar um problema', () => {
+  test('confere o texto e corta o resto', async () => {
+    const { parseReport } = await import('../_shared/report.ts')
+    expect(parseReport({ message: '  ' })).toBeNull()
+    expect(parseReport({ message: 'x'.repeat(2001) })).toBeNull()
+    expect(parseReport(null)).toBeNull()
+    expect(parseReport({ message: ' Travou ', screen: '/celula', appVersion: '1.0.0', platform: 'ios', device: 'd'.repeat(300) })).toEqual({
+      message: 'Travou',
+      screen: '/celula',
+      app_version: '1.0.0',
+      platform: 'ios',
+      device: 'd'.repeat(100),
+    })
+  })
+  test('e-mail para a equipe, com resposta para a pessoa quando ela tem e-mail', async () => {
+    const { reportEmail, REPORT_TO } = await import('../_shared/report.ts')
+    const r = { message: 'O culto não transcreveu', screen: '/culto', app_version: '1.0.0', platform: 'android', device: 'Moto' }
+    const e = reportEmail('acasa <oi@acasa.app.br>', r, { id: 'u1', name: 'Ana', email: 'ana@exemplo.com' })
+    expect(e.to).toEqual([REPORT_TO])
+    expect(e.reply_to).toBe('ana@exemplo.com')
+    expect(e.subject).toBe('Problema no app: O culto não transcreveu')
+    expect(e.text).toContain('Tela: /culto')
+    expect(reportEmail('x', r, { id: 'u1', name: '', email: null })).not.toHaveProperty('reply_to')
   })
 })

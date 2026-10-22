@@ -8,7 +8,11 @@ Deno.serve(async (req) => {
   const db = admin()
 
   // 1. Arquivos de quem vai ser apagado (o banco apaga as linhas; os arquivos precisam sair do Storage).
-  const { data: leaving } = await db.from('profiles').select('id').not('deletion_requested_at', 'is', null).lt('deletion_requested_at', new Date(Date.now() - 30 * 86400_000).toISOString())
+  const { data: leaving } = await db
+    .from('profiles')
+    .select('id')
+    .not('deletion_requested_at', 'is', null)
+    .lt('deletion_requested_at', new Date(Date.now() - 30 * 86400_000).toISOString())
   for (const p of leaving ?? []) {
     for (const bucket of ['avatars', 'sermon-audio', 'prayer-videos']) {
       const { data: files } = await db.storage.from(bucket).list(p.id, { limit: 1000 })
@@ -36,5 +40,7 @@ Deno.serve(async (req) => {
   // 4. Linhas do banco.
   const { data, error } = await db.rpc('purge_expired')
   if (error) return json({ error: error.message }, 500)
-  return json({ status: 'ok', result: data })
+  // Relatos de problema com mais de 12 meses.
+  const { data: reports } = await db.rpc('purge_problem_reports')
+  return json({ status: 'ok', result: data, problem_reports: reports })
 })

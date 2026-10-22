@@ -2,6 +2,7 @@ import { router } from 'expo-router'
 import { View } from 'react-native'
 import { AppText, Button, Page } from '../../components'
 import { resetTours } from '../tour/TabTour'
+import { openReport } from '../settings/screens/ReportScreen'
 
 /** Ajuda do Hoje (pedido do Thiago, 22/10): o que é cada parte da tela e como usar, em poucas linhas. */
 export const HELP_TOPICS: { title: string; text: string }[] = [
@@ -61,6 +62,7 @@ export function HelpScreen() {
           router.back()
         }}
       />
+      <Button label="Reportar um problema" variant="text" onPress={() => openReport('/ajuda')} />
     </Page>
   )
 }

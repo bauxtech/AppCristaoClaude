@@ -56,6 +56,8 @@ export const ADMIN_EXPORT_TABLES: [table: string, owner: string][] = [
   ['offer_sends', 'user_id'],
   ['email_outbox', 'user_id'],
   ['paywall_events', 'user_id'],
+  // Problemas que a pessoa reportou pelo app.
+  ['problem_reports', 'user_id'],
 ]
 
 /** Campos que não fazem sentido para a pessoa nem devem sair (endereço técnico do aparelho). */
