@@ -218,7 +218,7 @@ export function ChapterScreen() {
           />
         </View>
         <Button
-          label="Compartilhar como imagem"
+          label="Compartilhar"
           variant="outline"
           onPress={() => {
             setSheet(null)
