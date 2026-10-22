@@ -14,6 +14,7 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
   useLocalSearchParams: jest.fn(() => ({})),
   useSegments: jest.fn(() => []),
+  usePathname: jest.fn(() => '/'),
   // Nos testes a tela já está em foco: roda o efeito uma vez.
   useFocusEffect: (fn) => require('react').useEffect(() => fn(), [fn]),
   Redirect: () => null,

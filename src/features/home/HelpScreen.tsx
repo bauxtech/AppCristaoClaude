@@ -1,5 +1,7 @@
+import { router } from 'expo-router'
 import { View } from 'react-native'
-import { AppText, Page } from '../../components'
+import { AppText, Button, Page } from '../../components'
+import { resetTours } from '../tour/TabTour'
 
 /** Ajuda do Hoje (pedido do Thiago, 22/10): o que é cada parte da tela e como usar, em poucas linhas. */
 export const HELP_TOPICS: { title: string; text: string }[] = [
@@ -51,6 +53,14 @@ export function HelpScreen() {
           </AppText>
         </View>
       ))}
+      <Button
+        label="Ver de novo o passo a passo das abas"
+        variant="outline"
+        onPress={() => {
+          resetTours()
+          router.back()
+        }}
+      />
     </Page>
   )
 }

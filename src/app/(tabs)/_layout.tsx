@@ -11,6 +11,7 @@ import { TrialIntroSheet } from '../../features/subscription/screens/Subscriptio
 import { useTheme } from '../../theme/ThemeProvider'
 import { scrollTabToTop } from '../../lib/tabScroll'
 import { fonts } from '../../theme/typography'
+import { TabTour } from '../../features/tour/TabTour'
 
 const TAB_HEIGHT = 64
 
@@ -114,6 +115,8 @@ export default function TabsLayout() {
         <Icon name="chat" size={20} color={colors.primaryText} />
       </Pressable>
       <TrialIntroSheet />
+      {/* Passo a passo da aba, na primeira vez. Espera o aviso dos 7 dias grátis ser fechado. */}
+      <TabTour hidden={sub.status === 'trial' && !sub.introSeen && !!sub.trialEndsAt} bottom={TAB_HEIGHT + insets.bottom + playerHeight} />
     </View>
   )
 }
