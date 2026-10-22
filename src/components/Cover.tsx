@@ -130,14 +130,17 @@ export function Cover({ label, onPress, caption, info, progress, width, ...art }
   )
 }
 
+// Margem lateral das telas: 20 (CLAUDE.md). Com 16, duas capas não cabiam lado a lado e cada uma ficava sozinha
+// na linha, ocupando só metade (QA de 21/10, Planos de leitura).
+
 /** Largura que deixa a próxima capa aparecendo pela metade na borda. */
-export function useCarouselItemWidth(gutter = 16, gap = 12) {
+export function useCarouselItemWidth(gutter = 20, gap = 12) {
   const { width } = useWindowDimensions()
   return Math.round((width - gutter - gap) / 1.5)
 }
 
 /** Largura de cada capa numa grade de 2 colunas. */
-export function useGridItemWidth(gutter = 16, gap = 12) {
+export function useGridItemWidth(gutter = 20, gap = 12) {
   const { width } = useWindowDimensions()
   return Math.floor((width - gutter * 2 - gap) / 2)
 }

@@ -81,6 +81,9 @@ export default function TabsLayout() {
         ))}
       </Tabs>
 
+      {/* Faixa da barra de status: ao rolar, o título da aba passa por baixo dela e não por cima do relógio (QA de 21/10). */}
+      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: insets.top, backgroundColor: colors.bg }} />
+
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: TAB_HEIGHT + insets.bottom }}>
         <MiniPlayer />
       </View>
