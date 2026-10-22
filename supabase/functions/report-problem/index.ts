@@ -13,8 +13,10 @@ Deno.serve(async (req) => {
   if (!input) return json({ kind: 'invalid' }, 400)
 
   const db = admin()
-  const left = (await db.rpc('consume_usage', { p_user: uid, p_kind: 'report_day', p_period: brDay(), p_limit: REPORT_DAILY_LIMIT })).data as number
-  if (typeof left === 'number' && left < 0) return json({ kind: 'limit' })
+  const used = await db.rpc('consume_usage', { p_user: uid, p_kind: 'report_day', p_period: brDay(), p_limit: REPORT_DAILY_LIMIT })
+  // Sem a resposta do contador, não grava: o limite por dia precisa valer sempre.
+  if (used.error || typeof used.data !== 'number') return json({ kind: 'failed' }, 500)
+  if (used.data < 0) return json({ kind: 'limit' })
 
   const { data: row, error } = await db
     .from('problem_reports')

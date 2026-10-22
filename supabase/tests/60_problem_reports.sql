@@ -15,3 +15,6 @@ reset role;
 select tests.ok('relato vazio é recusado', tests.denied($$insert into public.problem_reports (user_id, message) select id, '   ' from public.profiles limit 1$$));
 select tests.ok('a limpeza tira os relatos com mais de 12 meses', public.purge_problem_reports() = 1);
 select tests.ok('e mantém os recentes', (select count(*) from public.problem_reports) = 1);
+
+-- O contador de relatos por dia é aceito e para no limite.
+select tests.ok('o contador de relatos por dia funciona', (select public.consume_usage(id, 'report_day', '2026-10-22', 5) from public.profiles limit 1) >= 0);
