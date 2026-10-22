@@ -71,6 +71,7 @@ function RootStack() {
           <Stack.Screen name="oracao" options={{ presentation: 'modal' }} />
           <Stack.Screen name="culto" />
           <Stack.Screen name="avisos" />
+          <Stack.Screen name="ajuda" />
           <Stack.Screen name="configuracoes" />
           <Stack.Screen name="assinatura" />
           <Stack.Screen name="componentes" />

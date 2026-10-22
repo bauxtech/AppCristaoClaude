@@ -40,6 +40,7 @@ export function HomeScreen() {
   const { cell } = useCell()
   const church = useChurch()
   const totalDays = activeDays.length
+  const daysLabel = `${totalDays} ${totalDays === 1 ? 'dia' : 'dias'}`
   const settings = useSettings()
   // O modo simplificado saiu do app (20/10). Quem tinha ligado antes volta a ver a tela inteira.
   const simple = false
@@ -94,7 +95,7 @@ export function HomeScreen() {
           <Pressable
             onPress={() => setDaysOpen(true)}
             accessibilityRole="button"
-            accessibilityLabel={`${totalDays} dias com leitura ou oração`}
+            accessibilityLabel={`${daysLabel} com leitura ou oração`}
             style={({ pressed }) => ({
               minHeight: MIN_TOUCH,
               flexDirection: 'row',
@@ -114,9 +115,10 @@ export function HomeScreen() {
                 fontSize: 14,
               }}
             >
-              {totalDays} dias
+              {daysLabel}
             </AppText>
           </Pressable>
+          <IconButton icon="help" label="Como usar o Hoje" onPress={() => router.push('/ajuda')} />
         </View>
       </View>
 
@@ -380,7 +382,7 @@ function TotalDaysSheet({ visible, onClose, activeDays }: { visible: boolean; on
   const cells = [...Array.from({ length: first }, () => 0), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
   const monthName = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'][month]
   return (
-    <Sheet visible={visible} onClose={onClose} title={`${totalDays} dias com leitura ou oração`}>
+    <Sheet visible={visible} onClose={onClose} title={`${totalDays} ${totalDays === 1 ? 'dia' : 'dias'} com leitura ou oração`}>
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
         {totalDays === 0 ? 'Ainda nenhum dia. Um dia conta quando você lê ou ora pelo app.' : 'Um dia conta quando você lê ou ora pelo app.'}
       </AppText>

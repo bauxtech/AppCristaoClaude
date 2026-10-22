@@ -69,3 +69,17 @@ test('não usa emoji em nenhum texto', async () => {
   const texts = screen.getAllByText(/./).map((n) => [n.props.children].flat().join(''))
   expect(texts.filter((t) => emoji.test(t))).toEqual([])
 })
+
+test('o botão de ajuda abre a explicação do Hoje', async () => {
+  await renderHome()
+  await fireEvent.press(screen.getByRole('button', { name: 'Como usar o Hoje' }))
+  expect(router.push).toHaveBeenCalledWith('/ajuda')
+})
+
+test('a ajuda explica cada parte do Hoje', async () => {
+  const { HelpScreen } = require('../src/features/home/HelpScreen')
+  await renderApp(<HelpScreen />, { onboarded: true })
+  for (const t of ['Dias com leitura ou oração', 'Passagem do dia', 'Planos de leitura', 'Criar o seu plano', 'Dia do plano', 'Música do dia']) {
+    expect(screen.getByRole('header', { name: t })).toBeTruthy()
+  }
+})

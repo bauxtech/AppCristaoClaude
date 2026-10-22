@@ -40,6 +40,7 @@ export type IconName =
   | 'heart'
   | 'lock'
   | 'info'
+  | 'help'
   | 'alert'
   | 'plus'
   | 'minus'
@@ -219,7 +220,12 @@ function paths(name: IconName, s: Record<string, unknown>, color: string) {
     case 'check':
       return <Polyline points="20 6 9 17 4 12" {...s} />
     case 'phone':
-      return <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.17 6.17l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" {...s} />
+      return (
+        <Path
+          d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.17 6.17l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"
+          {...s}
+        />
+      )
     case 'mail':
       return (
         <>
@@ -317,6 +323,14 @@ function paths(name: IconName, s: Record<string, unknown>, color: string) {
           <Circle cx="12" cy="12" r="10" {...s} />
           <Line x1="12" y1="16" x2="12" y2="12" {...s} />
           <Line x1="12" y1="8" x2="12.01" y2="8" {...s} />
+        </>
+      )
+    case 'help':
+      return (
+        <>
+          <Circle cx="12" cy="12" r="10" {...s} />
+          <Path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" {...s} />
+          <Line x1="12" y1="17" x2="12.01" y2="17" {...s} />
         </>
       )
     case 'alert':
