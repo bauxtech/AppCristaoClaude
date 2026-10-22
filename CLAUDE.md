@@ -58,7 +58,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Traduções licenciadas, comparar traduções, Bíblia em Libras e versículo como imagem (20/10): no backlog, sem aparecer no app (nada de "Em breve"). Compartilhar versículo vai como texto.
 - Bíblia: Bíblia Livre no lançamento (licença Creative Commons Atribuição, uso comercial permitido, crédito obrigatório no app). Não é domínio público. As licenciadas entram depois. Origem e licença registradas em src/features/bible/translations.ts e na tabela bible_translations.
 - Planos (decididos em 12/10, preços revistos em 19/10 e 22/10), cada um mensal ou anual, com os mesmos limites:
-  - Essencial (R$ 19,90/mês ou R$ 159,90/ano): Bíblia completa, planos de leitura, oração guiada, diário, pedidos, campanhas, igreja, ministérios, cursos (cadastro à mão; aulas, presença, material e notas), música, participar de célula, chat com 5 perguntas por dia. Sem culto. Sem curso pela foto do cronograma (botão com cadeado e "No plano Completo").
+  - Essencial (R$ 19,90/mês ou R$ 149,90/ano; o anual era 159,90 e mudou em 22/10 porque a App Store não tem esse valor): Bíblia completa, planos de leitura, oração guiada, diário, pedidos, campanhas, igreja, ministérios, cursos (cadastro à mão; aulas, presença, material e notas), música, participar de célula, chat com 5 perguntas por dia. Sem culto. Sem curso pela foto do cronograma (botão com cadeado e "No plano Completo").
   - Completo (R$ 29,90/mês ou R$ 249,90/ano; o anual era 239,90 e mudou em 22/10 porque a App Store não tem esse valor): tudo do Essencial, chat com 10 perguntas por dia, 4 cultos por período, curso pela foto ou PDF do cronograma.
   - Líder (R$ 49,90/mês ou R$ 399,90/ano): tudo do Completo, 8 cultos por período, criar e conduzir célula, página da célula na internet. Até 20 vagas para membros sem plano próprio, só para as funções da célula. Quem tem plano próprio e visitante não ocupam vaga. Quem o líder aprova como membro (ou o visitante que vira membro) pega uma vaga livre na hora. Quando uma vaga abre, ela fica livre até o líder dar para alguém. O líder vê na tela de membros quem está sem vaga e pode trocar (tira de um e dá para outro).
   - Funções e limites ficam na tabela plan_config do banco, editável no painel do Supabase sem versão nova do app.
@@ -88,7 +88,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 
 ## EM ABERTO, PERGUNTAR ANTES DE CODAR
 - Pagamento por Pix: fora do escopo agora.
-- Preços em real: confirmar na tabela de preços da App Store (R$ 49,90 e 249,90 confirmados em 22/10; 19,90, 29,90, 159,90 e 399,90 ainda não). No Google Play qualquer valor vale.
+- Preços em real: confirmar na tabela de preços da App Store (R$ 49,90, 249,90 e 149,90 confirmados em 22/10; 19,90, 29,90 e 399,90 ainda não). No Google Play qualquer valor vale.
 
 ## DADOS E PRIVACIDADE
 - Fé e pedido de oração são dado sensível pela LGPD. Consentimento separado no cadastro, exportar e apagar dados.

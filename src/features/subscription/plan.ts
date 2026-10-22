@@ -35,9 +35,9 @@ export const PLANS: PlanInfo[] = [
     id: 'essencial',
     name: 'Essencial',
     who: 'Para ler, orar e participar da célula.',
-    prices: { monthly: { amount: 'R$ 19,90', per: 'por mês' }, annual: { amount: 'R$ 159,90', per: 'por ano' } },
-    annualSaving: '33%',
-    annualPerMonth: 'R$ 13,33',
+    prices: { monthly: { amount: 'R$ 19,90', per: 'por mês' }, annual: { amount: 'R$ 149,90', per: 'por ano' } },
+    annualSaving: '37%',
+    annualPerMonth: 'R$ 12,49',
     items: ['Bíblia completa e planos de leitura', 'Oração guiada, diário, pedidos e campanhas', 'Igreja, ministérios, cursos e música', 'Participar de célula', 'Chat bíblico: 5 perguntas por dia'],
   },
   {

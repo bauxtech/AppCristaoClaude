@@ -59,7 +59,7 @@ No Supabase, em **Edge Functions > Secrets**, crie `CRON_SECRET` com uma senha l
 
    | Plano | Mensal | Anual |
    | --- | --- | --- |
-   | Essencial | `acasa_essencial_mensal` (R$ 19,90) | `acasa_essencial_anual` (R$ 159,90) |
+   | Essencial | `acasa_essencial_mensal` (R$ 19,90) | `acasa_essencial_anual` (R$ 149,90) |
    | Completo | `acasa_completo_mensal` (R$ 29,90) | `acasa_completo_anual` (R$ 249,90) |
    | Líder | `acasa_lider_mensal` (R$ 49,90) | `acasa_lider_anual` (R$ 399,90) |
 
