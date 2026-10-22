@@ -1,21 +1,31 @@
 import { router } from 'expo-router'
 import type { ReactNode } from 'react'
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../theme/ThemeProvider'
 import { AppText } from './AppText'
 import { Button } from './Button'
 import { Card } from './Card'
 import { TopBar } from './TopBar'
 
-/** Tela interna: barra de topo com voltar e conteúdo rolável. */
-export function Page({ title, children, right, onBack }: { title: string; children: ReactNode; right?: ReactNode; onBack?: () => void }) {
+/**
+ * Tela interna: barra de topo com voltar e conteúdo rolável.
+ * footer: fica preso embaixo, acima da faixa do sistema (ex.: o botão de assinar na tela de planos).
+ */
+export function Page({ title, children, right, onBack, footer }: { title: string; children: ReactNode; right?: ReactNode; onBack?: () => void; footer?: ReactNode }) {
   const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <TopBar title={title} onBack={onBack ?? (() => router.back())} right={right} />
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 24, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 24, paddingBottom: footer ? 32 : 120 }} keyboardShouldPersistTaps="handled">
         {children}
       </ScrollView>
+      {footer ? (
+        <View style={{ borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.bg, paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12), gap: 8 }}>
+          {footer}
+        </View>
+      ) : null}
     </KeyboardAvoidingView>
   )
 }

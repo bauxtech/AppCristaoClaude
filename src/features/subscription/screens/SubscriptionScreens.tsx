@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { AlertCard, AppText, Button, Card, Icon, MIN_TOUCH, Page, Segmented, Sheet, TextField, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
-import { openStoreSubscriptions, purchase, simulateStorePurchase, STORE_ENABLED, STORE_NAME, syncSubscription } from '../../../lib/store'
+import { openStoreSubscriptions, purchase, simulateStorePurchase, IN_STORE, STORE_ENABLED, syncSubscription } from '../../../lib/store'
 import { phoneCodeProblem, sendPhoneChangeCode, supabase, verifyPhoneChange, type PhoneCodeProblem } from '../../../lib/supabase'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -13,6 +13,9 @@ import { useSubscription } from '../SubscriptionContext'
 import { FEATURE_ACTION, isFeature } from '../PlanLock'
 import { logPaywall, paywallSource } from '../paywallLog'
 import { openLegal } from '../../../lib/legal'
+
+/** Itens que o cartão do plano mostra antes de "Ver tudo". */
+const SHORT_ITEMS = 3
 
 function Check({ text }: { text: string }) {
   const { colors } = useTheme()
@@ -52,12 +55,12 @@ function PlanCard({ id, billing, selected, current, onSelect }: { id: PlanId; bi
   // No mensal, lembra o valor do anual; no anual, mostra quanto dá por mês. Igual ao site.
   const other = billing === 'monthly' ? `Ou ${p.prices.annual.amount} por ano no plano anual` : `Equivale a ${p.annualPerMonth} por mês`
   const recommended = id === RECOMMENDED_PLAN
+  // Cartão curto (QA de 21/10): os 3 primeiros itens; o resto abre em "Ver tudo".
+  const [open, setOpen] = useState(false)
+  const shown = open ? p.items : p.items.slice(0, SHORT_ITEMS)
+  const hidden = p.items.length - SHORT_ITEMS
   return (
-    <Pressable
-      onPress={onSelect}
-      accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
-      accessibilityLabel={`Plano ${p.name}${recommended ? ', recomendado' : ''}, ${price.amount} ${price.per}. ${other}${saving ? `. ${saving}` : ''}${current ? '. Seu plano atual' : ''}`}
+    <View
       style={{
         borderWidth: selected ? 2 : 1,
         borderColor: selected ? colors.primary : colors.lineStrong,
@@ -69,51 +72,69 @@ function PlanCard({ id, billing, selected, current, onSelect }: { id: PlanId; bi
         marginTop: recommended ? 12 : 0,
       }}
     >
-      {recommended ? (
-        <View style={{ position: 'absolute', top: -13, left: 18, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: colors.primary }}>
-          <AppText variant="small" style={{ color: colors.primaryText, fontFamily: fonts.semibold }}>
-            Recomendado
-          </AppText>
-        </View>
-      ) : null}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-          <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: selected ? colors.primary : colors.lineStrong, alignItems: 'center', justifyContent: 'center' }}>
-            {selected ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} /> : null}
-          </View>
-          <AppText variant="title">{p.name}</AppText>
-        </View>
-        {current ? (
-          <View style={{ borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3, backgroundColor: colors.primarySoft }}>
-            <AppText variant="label" style={{ color: colors.primary, fontFamily: fonts.bold }}>
-              Seu plano
+      <Pressable
+        onPress={onSelect}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: selected }}
+        accessibilityLabel={`Plano ${p.name}${recommended ? ', recomendado' : ''}, ${price.amount} ${price.per}. ${other}${saving ? `. ${saving}` : ''}${current ? '. Seu plano atual' : ''}. ${shown.join('. ')}`}
+        style={{ gap: 10 }}
+      >
+        {recommended ? (
+          <View style={{ position: 'absolute', top: -37, left: 0, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: colors.primary }}>
+            <AppText variant="small" style={{ color: colors.primaryText, fontFamily: fonts.semibold }}>
+              Recomendado
             </AppText>
           </View>
         ) : null}
-      </View>
-      <AppText variant="body" tone="secondary">
-        {p.who}
-      </AppText>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
-        <AppText style={{ fontFamily: fonts.bold, fontSize: 26, color: colors.text }}>{price.amount}</AppText>
-        <AppText variant="body" tone="secondary" style={{ paddingBottom: 3 }}>
-          {price.per}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+            <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: selected ? colors.primary : colors.lineStrong, alignItems: 'center', justifyContent: 'center' }}>
+              {selected ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} /> : null}
+            </View>
+            <AppText variant="title">{p.name}</AppText>
+          </View>
+          {current ? (
+            <View style={{ borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3, backgroundColor: colors.primarySoft }}>
+              <AppText variant="label" style={{ color: colors.primary, fontFamily: fonts.bold }}>
+                Seu plano
+              </AppText>
+            </View>
+          ) : null}
+        </View>
+        <AppText variant="body" tone="secondary">
+          {p.who}
         </AppText>
-      </View>
-      <AppText variant="small" tone="secondary">
-        {other}
-      </AppText>
-      {saving ? (
-        <AppText variant="small" style={{ color: colors.primary, fontFamily: fonts.semibold }}>
-          {saving}
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
+          <AppText style={{ fontFamily: fonts.bold, fontSize: 26, color: colors.text }}>{price.amount}</AppText>
+          <AppText variant="body" tone="secondary" style={{ paddingBottom: 3 }}>
+            {price.per}
+          </AppText>
+        </View>
+        <AppText variant="small" tone="secondary">
+          {other}
         </AppText>
+        {saving ? (
+          <AppText variant="small" style={{ color: colors.primary, fontFamily: fonts.semibold }}>
+            {saving}
+          </AppText>
+        ) : null}
+        <View style={{ gap: 6 }}>
+          {shown.map((t) => (
+            <Check key={t} text={t} />
+          ))}
+        </View>
+      </Pressable>
+      {hidden > 0 ? (
+        <Button
+          label={open ? 'Ver menos' : `Ver tudo (mais ${hidden})`}
+          variant="text"
+          size="sm"
+          onPress={() => setOpen((v) => !v)}
+          accessibilityHint={open ? undefined : `Mostra tudo o que o plano ${p.name} inclui`}
+          style={{ alignSelf: 'flex-start' }}
+        />
       ) : null}
-      <View style={{ gap: 6 }}>
-        {p.items.map((t) => (
-          <Check key={t} text={t} />
-        ))}
-      </View>
-    </Pressable>
+    </View>
   )
 }
 
@@ -215,10 +236,36 @@ function LegalLinks() {
   )
 }
 
+/** O plano de agora, no alto da tela de planos (QA de 21/10: quem está sem plano não via em que plano estava). */
+function CurrentPlanCard() {
+  const { colors } = useTheme()
+  const sub = useSubscription()
+  const paid = isPlanId(sub.plan) && sub.status !== 'free' && sub.status !== 'trial'
+  const [name, detail] =
+    sub.status === 'trial'
+      ? ['Teste grátis', sub.daysLeft <= 1 ? 'Termina hoje à meia-noite. Tudo liberado até lá.' : `Faltam ${sub.daysLeft} dias. Tudo liberado até lá.`]
+      : paid
+        ? [`${PLAN_NAME[sub.plan as PlanId]}, ${sub.access.billing === 'annual' ? 'anual' : 'mensal'}`, STATUS_LABEL[sub.status as keyof typeof STATUS_LABEL] ?? '']
+        : ['Grátis', 'Ler e ouvir a Bíblia, a passagem e a reflexão do dia, e a célula de um líder com o plano Líder.']
+  return (
+    <View style={{ borderRadius: 16, backgroundColor: colors.primarySoft, padding: 14, gap: 2 }} accessible accessibilityLabel={`Seu plano agora: ${name}. ${detail}`}>
+      <AppText variant="label" tone="secondary">
+        Seu plano agora
+      </AppText>
+      <AppText variant="bodyStrong">{name}</AppText>
+      {detail ? (
+        <AppText variant="small" tone="secondary">
+          {detail}
+        </AppText>
+      ) : null}
+    </View>
+  )
+}
+
 const isPlanId = (p: unknown): p is PlanId => p === 'essencial' || p === 'completo' || p === 'lider'
 
 /**
- * Tela de planos: os três planos, mensal ou anual (o anual vem marcado).
+ * Tela de planos: os três planos, mensal ou anual (abre no mensal, o Completo recomendado). O botão de assinar fica preso embaixo.
  * Aberta por um cadeado, já vem no plano que libera a função. No dia 8, aparece uma vez com o botão para seguir só com a Bíblia.
  */
 export function PlansScreen() {
@@ -244,7 +291,27 @@ export function PlansScreen() {
   const close = () => router.replace('/')
   const p = planInfo(plan)
   return (
-    <Page title="Planos e preços" onBack={endOfTrial ? close : undefined}>
+    <Page
+      title="Planos e preços"
+      onBack={endOfTrial ? close : undefined}
+      // O botão de assinar fica preso embaixo (QA de 21/10): os cartões são longos e ele sumia no fim da página.
+      footer={
+        <>
+          <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }} accessibilityLiveRegion="polite">
+            {`${p.name} ${billing === 'annual' ? 'anual' : 'mensal'}: ${p.prices[billing].amount} ${p.prices[billing].per}. Renova sozinho; cancele quando quiser ${IN_STORE}.`}
+          </AppText>
+          {current === plan && currentBilling === billing ? (
+            <Button label="Este é o seu plano" disabled onPress={() => {}} />
+          ) : (
+            <Button
+              label={current === plan ? `Trocar para o ${billing === 'annual' ? 'anual' : 'mensal'}` : `Assinar ${p.name} ${billing === 'annual' ? 'anual' : 'mensal'}`}
+              onPress={() => buy(plan, billing)}
+            />
+          )}
+          {endOfTrial ? <Button label="Agora não, seguir só com a Bíblia" variant="text" size="sm" onPress={close} /> : null}
+        </>
+      }
+    >
       {endOfTrial ? (
         <View style={{ gap: 6 }}>
           <AppText variant="title" accessibilityRole="header">
@@ -258,29 +325,14 @@ export function PlansScreen() {
         <AppText variant="bodyStrong" accessibilityRole="header">
           {`Para ${FEATURE_ACTION[feature]}, escolha o plano ${PLAN_NAME[params.plano]}.`}
         </AppText>
-      ) : sub.status === 'trial' ? (
-        <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-          {sub.daysLeft <= 1 ? 'Seu teste termina hoje à meia-noite.' : `Faltam ${sub.daysLeft} dias do seu teste.`}
-        </AppText>
       ) : null}
+      {!endOfTrial ? <CurrentPlanCard /> : null}
       <BillingPicker value={billing} onChange={setBilling} />
       <View style={{ gap: 12 }} accessibilityRole="radiogroup" accessibilityLabel="Planos">
         {PLANS.map((x) => (
           <PlanCard key={x.id} id={x.id} billing={billing} selected={plan === x.id} current={current === x.id && currentBilling === billing} onSelect={() => setPlan(x.id)} />
         ))}
       </View>
-      {current === plan && currentBilling === billing ? (
-        <Button label="Este é o seu plano" disabled onPress={() => {}} />
-      ) : (
-        <Button
-          label={current === plan ? `Trocar para o ${billing === 'annual' ? 'anual' : 'mensal'}` : `Assinar ${p.name} ${billing === 'annual' ? 'anual' : 'mensal'}`}
-          onPress={() => buy(plan, billing)}
-        />
-      )}
-      {endOfTrial ? <Button label="Agora não, seguir só com a Bíblia" variant="outline" onPress={close} /> : null}
-      <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
-        {`Pagamento pela ${STORE_NAME}. Renova sozinho e você cancela quando quiser nas configurações da loja.`}
-      </AppText>
       <LegalLinks />
       <StoreSheet
         plan={plan}
@@ -450,7 +502,7 @@ export function MyPlanScreen() {
       ) : null}
 
       <Button label="Trocar de plano" variant="soft" onPress={() => router.push('/assinatura')} />
-      <Button label="Gerenciar assinatura" onPress={openStoreSubscriptions} accessibilityHint={`Abre as assinaturas na ${STORE_NAME}`} />
+      <Button label="Gerenciar assinatura" onPress={openStoreSubscriptions} accessibilityHint={`Abre as assinaturas ${IN_STORE}`} />
       <AppText variant="small" tone="secondary" style={{ textAlign: 'center' }}>
         O cancelamento e a troca de forma de pagamento são feitos nas configurações da sua conta na loja.
       </AppText>

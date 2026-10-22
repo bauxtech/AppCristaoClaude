@@ -88,3 +88,5 @@ export function openStoreSubscriptions() {
 }
 
 export const STORE_NAME = Platform.OS === 'ios' ? 'App Store' : 'Google Play'
+/** "na App Store" ou "no Google Play". */
+export const IN_STORE = Platform.OS === 'ios' ? 'na App Store' : 'no Google Play'
