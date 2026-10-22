@@ -79,18 +79,14 @@ export function HomeScreen() {
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: 20,
-          paddingBottom: 16,
+          paddingBottom: 2,
         }}
       >
-        <View style={{ flex: 1 }}>
-          <AppText variant="screenTitle" accessibilityRole="header">
-            Hoje
-          </AppText>
-          <AppText variant="small" tone="secondary">
-            {formatLongDate(new Date())}
-          </AppText>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <AppText variant="screenTitle" accessibilityRole="header" style={{ flex: 1 }}>
+          Hoje
+        </AppText>
+        {/* Ícones com mais respiro (pedido do Thiago, 22/10); a data fica embaixo, na largura toda. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <IconButton icon="bell" label="Avisos" badge={unreadNotifications} onPress={() => router.push('/avisos')} />
           <Pressable
             onPress={() => setDaysOpen(true)}
@@ -121,6 +117,9 @@ export function HomeScreen() {
           <IconButton icon="help" label="Como usar o Hoje" onPress={() => router.push('/ajuda')} />
         </View>
       </View>
+      <AppText variant="small" tone="secondary" style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
+        {formatLongDate(new Date())}
+      </AppText>
 
       <View style={{ paddingHorizontal: 20, gap: 20 }}>
         <TrialBanner />
