@@ -267,6 +267,19 @@ select tests.ok('curso pela foto: Essencial não lê foto', (public.use_limit('0
 select tests.ok('curso pela foto: no Completo, não no Essencial',
   public.can('00000000-0000-0000-0000-000000000025', 'course_photo') and not public.can('00000000-0000-0000-0000-000000000024', 'course_photo'));
 
+-- Roteiro da célula com IA: só no plano Líder. Completo e Essencial, não.
+select tests.ok('roteiro com IA: Completo não usa', (public.use_limit('00000000-0000-0000-0000-000000000025', 'plan_draft') ->> 'reason') = 'no_access');
+select tests.ok('roteiro com IA: Essencial não lê PDF', (public.use_limit('00000000-0000-0000-0000-000000000024', 'plan_import') ->> 'reason') = 'no_access');
+select tests.ok('roteiro com IA: 5 tentativas por dia no Líder',
+  (select count(*) from generate_series(1, 6) g where (public.use_limit('00000000-0000-0000-0000-000000000026', 'plan_ai') ->> 'ok')::boolean) = 5);
+select tests.ok('roteiro com IA: 10 rascunhos por mês no Líder',
+  (select count(*) from generate_series(1, 11) g where (public.use_limit('00000000-0000-0000-0000-000000000026', 'plan_draft') ->> 'ok')::boolean) = 10);
+select tests.ok('roteiro com IA: a leitura do PDF tem contador próprio',
+  (public.use_limit('00000000-0000-0000-0000-000000000026', 'plan_import') ->> 'ok')::boolean);
+update public.app_settings set value = '12' where key = 'plan_draft_per_month';
+select tests.ok('roteiro com IA: o limite do mês vem da configuração', (public.use_limit('00000000-0000-0000-0000-000000000026', 'plan_draft') ->> 'ok')::boolean);
+update public.app_settings set value = '10' where key = 'plan_draft_per_month';
+
 select set_config('request.jwt.claims', '{}', false);
 insert into public.cell_members (cell_id, user_id, role, status) values ('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000024', 'membro', 'pending');
 -- O líder cancela o plano Líder e não há outro líder com o plano: a célula para na hora, nada é apagado.

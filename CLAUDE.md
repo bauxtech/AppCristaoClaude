@@ -15,7 +15,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Página web da célula: Next.js, lendo o mesmo banco.
 - Banco, login e arquivos: Supabase, região São Paulo.
 - Funções do servidor: Edge Functions do Supabase. Transcrição pela API da OpenAI. Resumo do culto e chat pela API do Claude.
-- Modelos, decididos por custo e qualidade: chat no Claude Haiku 5.5; resumo do culto e conteúdo do dia no Claude Opus 5.5; leitura da foto ou do PDF do cronograma do curso no Claude Haiku 5.5, até 2 cursos lidos por mês (só conta leitura que deu certo; app_settings.course_read_per_month) e 5 tentativas por dia (app_settings.course_photo_per_day), PDF de até 20 páginas e 10 MB, sem guardar o arquivo; transcrição no gpt-4o-mini-transcribe. Todo assinante precisa dar lucro mesmo no uso máximo do plano.
+- Modelos, decididos por custo e qualidade: chat no Claude Haiku 5.5; resumo do culto e conteúdo do dia no Claude Opus 5.5; leitura da foto ou do PDF do cronograma do curso no Claude Haiku 5.5, até 2 cursos lidos por mês (só conta leitura que deu certo; app_settings.course_read_per_month) e 5 tentativas por dia (app_settings.course_photo_per_day), PDF de até 20 páginas e 10 MB, sem guardar o arquivo; transcrição no gpt-4o-mini-transcribe; roteiro da célula com IA (rascunho por tema e leitura do PDF ou da foto) no Claude Haiku 5.5 (24/10). Todo assinante precisa dar lucro mesmo no uso máximo do plano.
 - Assinatura: RevenueCat, com a compra nativa da App Store e do Google Play.
 - Avisos: serviço de notificação do Expo.
 - Nenhuma chave de API no app nem no repositório. Segredos ficam no Supabase e no EAS.
@@ -85,6 +85,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Igreja (21/10): busca pelo nome e pela cidade, numa lista tirada dos dados abertos da Receita (organizações religiosas), mais as igrejas cadastradas à mão no app. Sem Google Places, por custo. Se não achar, cadastra à mão (nome, cidade e bairro; CNPJ opcional). Horários de culto e acessibilidade: cada pessoa edita os da própria igreja e só ela vê. Na igreja cadastrada à mão, o que quem cadastrou informa vale para todos até a pessoa guardar os dela.
 - Música: só sugestões, sem conexão com Spotify. Só músicas brasileiras. A lista é escolhida pela IA e pode ser trocada pela equipe.
 - Culto longo: o servidor divide o áudio em partes de até 10 minutos antes da transcrição. Cada culto tem até 90 minutos (19/10): a gravação para sozinha aos 90 minutos e o servidor transcreve só os primeiros 90 minutos do áudio importado.
+- Roteiro da célula com IA (24/10): só no plano Líder. Três jeitos: "Montar com IA" a partir do tema, "Completar com IA" (preenche só as seções vazias, nunca troca o que o líder escreveu) e "PDF ou foto" (lê o roteiro da igreja; se o arquivo tem vários, o líder escolhe). Versículos só do texto bíblico do app. O líder revisa antes de salvar. O louvor fica para o líder (a IA não sugere músicas aqui). Arquivo não é guardado; PDF até 20 páginas e 10 MB. Limites em app_settings: plan_draft_per_month 10, plan_import_per_month 10 (só conta o que deu certo) e plan_ai_per_day 5 tentativas somando os dois.
 - Chat: só fala de Bíblia e fé cristã, cita só o texto bíblico do app e mostra a fonte. Se a pessoa falar em se machucar, mostra o CVV, telefone 188.
 
 ## EM ABERTO, PERGUNTAR ANTES DE CODAR

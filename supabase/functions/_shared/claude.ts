@@ -10,6 +10,8 @@ export const CHAT_MODEL = Deno.env.get('CHAT_MODEL') ?? 'claude-haiku-5-5'
 export const SUMMARY_MODEL = Deno.env.get('SUMMARY_MODEL') ?? MODEL
 // Leitura da foto do cronograma do curso: tarefa simples de extrair texto, no modelo mais barato.
 export const PHOTO_MODEL = Deno.env.get('PHOTO_MODEL') ?? CHAT_MODEL
+// Roteiro da célula com IA (rascunho e leitura do PDF): Haiku 5.5 no lançamento (24/10). PLAN_MODEL troca sem publicar de novo.
+export const PLAN_MODEL = Deno.env.get('PLAN_MODEL') ?? CHAT_MODEL
 
 const client = new Anthropic()
 

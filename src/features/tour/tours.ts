@@ -34,7 +34,7 @@ export const CELL_TOURS: Record<CellVariant, TourStep[]> = {
   lider: [
     { title: 'Site da célula', text: 'Compartilhe o link no WhatsApp e nas redes. Em Editar site, mude o texto sobre a célula, o logo, a capa e o endereço do site.' },
     { title: 'Quem entra', text: 'Os pedidos de entrada aparecem aqui. Você aprova como membro ou visitante. Até 20 membros sem plano usam a célula pela sua assinatura.' },
-    { title: 'A reunião', text: 'Monte o roteiro, marque a presença e organize a escala. O auxiliar pode marcar presença e editar a escala com você.' },
+    { title: 'A reunião', text: 'Monte o roteiro (à mão, com IA ou pelo PDF da igreja), marque a presença e organize a escala. O auxiliar pode marcar presença e editar a escala com você.' },
     { title: 'Opções da célula', text: 'Edite os dados da célula, convide pessoas, veja o histórico e, quando o grupo crescer, a sugestão de multiplicação.' },
   ],
   // Líder sem o plano Líder e sem outro líder com o plano: a célula para e fica só para leitura.
