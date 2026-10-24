@@ -154,3 +154,17 @@ test('sem logo, o site usa as iniciais da célula', () => {
   expect(cellInitials('Rrr')).toBe('R')
   expect(cellInitials('casais em missão')).toBe('CE')
 })
+
+describe('célula parada', () => {
+  test('o site mostra que está fora do ar e não deixa enviar capa nem logo', async () => {
+    const Sub = require('../src/features/subscription/SubscriptionContext')
+    const real = Sub.useSubscription
+    const spy = jest.spyOn(Sub, 'useSubscription').mockImplementation(() => ({ ...real(), cellActive: () => false }))
+    await renderApp(<WebPageScreen />, asLeader({ webSlug: 'celula-viva' }))
+    expect(screen.getByText('Site fora do ar')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Escolher logo' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Salvar endereço' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Ver plano Líder' })).toBeTruthy()
+    spy.mockRestore()
+  })
+})

@@ -2,16 +2,43 @@ import * as Clipboard from 'expo-clipboard'
 import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
 import { Image, Share, View } from 'react-native'
-import { AppText, Button, Card, Icon, ListRow, Page, SectionLabel, Switch, TextField, useToast } from '../../../components'
+import { router } from 'expo-router'
+import { AlertCard, AppText, Button, Card, Icon, ListRow, Page, SectionLabel, Switch, TextField, useToast } from '../../../components'
+import { useSubscription } from '../../subscription/SubscriptionContext'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { useCell } from '../CellContext'
 import type { Cell } from '../data'
-import { cellInitials, checkSlugRemote, cleanSlugInput, publicUrl, removePageImageRemote, setSlugRemote, SLUG_MESSAGE, slugFormatOk, uploadPageImageRemote, WEB_BASE, type PageImage, type SlugStatus } from '../webPage'
+import {
+  cellInitials,
+  checkSlugRemote,
+  cleanSlugInput,
+  publicUrl,
+  removePageImageRemote,
+  setSlugRemote,
+  SLUG_MESSAGE,
+  slugFormatOk,
+  uploadPageImageRemote,
+  WEB_BASE,
+  type PageImage,
+  type SlugStatus,
+} from '../webPage'
 import { CellGuard } from './Guard'
 
 /** Campo do endereço da página, com a conferência de que está livre enquanto o líder digita. */
-export function SlugField({ value, onChange, cellId, current, onStatus }: { value: string; onChange: (v: string) => void; cellId?: string; current?: string | null; onStatus?: (s: SlugStatus | 'checking' | null) => void }) {
+export function SlugField({
+  value,
+  onChange,
+  cellId,
+  current,
+  onStatus,
+}: {
+  value: string
+  onChange: (v: string) => void
+  cellId?: string
+  current?: string | null
+  onStatus?: (s: SlugStatus | 'checking' | null) => void
+}) {
   const { colors } = useTheme()
   const [status, setStatus] = useState<SlugStatus | 'checking' | null>(null)
 
@@ -72,17 +99,22 @@ export function SlugField({ value, onChange, cellId, current, onStatus }: { valu
 }
 
 export function WebPageScreen() {
-  return <CellGuard title="Site da célula" action="editCell">{(cell) => <WebPage cell={cell} />}</CellGuard>
+  return (
+    <CellGuard title="Site da célula" action="editCell">
+      {(cell) => <WebPage cell={cell} />}
+    </CellGuard>
+  )
 }
 
 const LOGO_ERROR = {
   too_big: 'A imagem passa de 1 MB. Escolha uma imagem menor.',
-  no_access: 'Só o líder de uma célula ativa troca o logo.',
-  failed: 'Não foi possível enviar o logo. Confira a internet e tente de novo.',
+  no_access: 'Só o líder de uma célula ativa troca a capa e o logo.',
+  failed: 'Não foi possível enviar a imagem. Confira a internet e tente de novo.',
 }
 
 function WebPage({ cell }: { cell: Cell }) {
   const { colors } = useTheme()
+  const sub = useSubscription()
   const toast = useToast()
   const { update } = useCell()
   const [slug, setSlug] = useState(cell.webSlug ?? '')
@@ -133,10 +165,24 @@ function WebPage({ cell }: { cell: Cell }) {
     toast(IMAGE[kind].removed)
   }
 
+  // Célula parada (líder sem o plano Líder): o site sai do ar e o banco recusa qualquer mudança.
+  // Antes, os botões ficavam abertos e o envio do logo caía num erro genérico (22/10).
+  if (!sub.cellActive(cell.id)) {
+    return (
+      <Page title="Site da célula">
+        <AlertCard tone="danger" title="Site fora do ar" action={{ label: 'Ver plano Líder', onPress: () => router.push('/assinatura?plano=lider&origem=celula-site' as '/assinatura') }}>
+          Sem o plano Líder, a célula fica parada e o site sai do ar. Não dá para mudar o texto, o endereço, a capa ou o logo. Nada foi apagado: assine o plano Líder ou passe a liderança para alguém
+          com o plano, e o site volta como estava.
+        </AlertCard>
+      </Page>
+    )
+  }
+
   return (
     <Page title="Site da célula">
       <AppText variant="body" tone="secondary">
-        O site da célula mostra nome, tipo, o texto sobre a célula, bairro e, se você quiser, dia e horário. Nome, tipo e bairro você muda em Editar célula. Endereço, roteiro e pedidos de oração ficam só no app. Quem quer participar deixa nome e telefone e recebe o código para entrar pelo app.
+        O site da célula mostra nome, tipo, o texto sobre a célula, bairro e, se você quiser, dia e horário. Nome, tipo e bairro você muda em Editar célula. Endereço, roteiro e pedidos de oração ficam
+        só no app. Quem quer participar deixa nome e telefone e recebe o código para entrar pelo app.
       </AppText>
 
       <Card style={{ gap: 12 }}>
@@ -207,7 +253,22 @@ function WebPage({ cell }: { cell: Cell }) {
           <View style={{ aspectRatio: 3, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
             {cell.webCoverUrl ? <Image source={{ uri: cell.webCoverUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Icon name="image" size={24} color={colors.primary} />}
           </View>
-          <View style={{ position: 'absolute', left: 16, bottom: 0, width: 64, height: 64, borderRadius: 16, borderWidth: 3, borderColor: colors.card, backgroundColor: colors.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            style={{
+              position: 'absolute',
+              left: 16,
+              bottom: 0,
+              width: 64,
+              height: 64,
+              borderRadius: 16,
+              borderWidth: 3,
+              borderColor: colors.card,
+              backgroundColor: colors.bg,
+              overflow: 'hidden',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             {cell.logoUrl ? (
               <Image source={{ uri: cell.logoUrl }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
             ) : (
