@@ -10,6 +10,8 @@ import { useSession } from '../../state/session'
 import { useDataReset } from '../../state/useDataReset'
 import { newCell, sampleCell, type Cell, type CellType, type MeetingSlot } from './data'
 import type { CellRole } from './permissions'
+import { useSubscription } from '../subscription/SubscriptionContext'
+import { cellPausedBlock, showPlanBlocked } from '../subscription/PlanBlocked'
 
 interface CellState {
   cells: Cell[]
@@ -82,12 +84,17 @@ export function CellProvider({ children, initial }: { children: ReactNode; initi
   // Nomes dos colegas, para "quem orou por você" nos pedidos.
   useEffect(() => setMemberNameLookup((id) => state.cells.flatMap((c) => c.members).find((m) => m.id === id)?.name ?? null), [state.cells])
 
+  const subscription = useSubscription()
+  const subRef = useRef(subscription)
+  subRef.current = subscription
   const update = useCallback(
     (fn: (c: Cell) => Cell) => {
       const s = current.current
       const id = s.currentId ?? s.cells[0]?.id
       const prev = s.cells.find((c) => c.id === id)
       if (!prev) return
+      // Célula parada: o banco recusa a mudança. Em vez de falhar calado, avisa e oferece o plano Líder.
+      if (!subRef.current.cellActive(prev.id)) return showPlanBlocked(cellPausedBlock(prev.myRole === 'lider'))
       const next = withIds(prev, fn(prev))
       if (next === prev) return
       const nextState = { ...s, cells: s.cells.map((c) => (c.id === id ? next : c)) }
@@ -168,7 +175,11 @@ export function CellProvider({ children, initial }: { children: ReactNode; initi
         const leaving = new Set([leaderId, ...memberIds])
         const apply = () => {
           const fresh = current.current.cells.find((c) => c.id === cell.id) ?? cell
-          const next = { ...fresh, members: fresh.members.filter((m) => !leaving.has(m.id)), schedule: fresh.schedule.map((x) => (x.memberId && leaving.has(x.memberId) ? { ...x, memberId: null } : x)) }
+          const next = {
+            ...fresh,
+            members: fresh.members.filter((m) => !leaving.has(m.id)),
+            schedule: fresh.schedule.map((x) => (x.memberId && leaving.has(x.memberId) ? { ...x, memberId: null } : x)),
+          }
           const nextState = { ...current.current, cells: current.current.cells.map((c) => (c.id === cell.id ? next : c)) }
           current.current = nextState
           setState(nextState)

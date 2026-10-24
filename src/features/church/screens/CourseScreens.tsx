@@ -1,4 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker'
+import { showPlanBlocked } from '../../subscription/PlanBlocked'
 import * as ImagePicker from 'expo-image-picker'
 import { useImagePicker } from '../../../lib/useImagePicker'
 import { IS_REMOTE } from '../../../lib/supabase'
@@ -8,7 +9,26 @@ import { NotesLockedInline, useNotesLocked } from '../../settings/NotesLock'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Image, Linking, Pressable, View } from 'react-native'
-import { AppText, Button, Card, Chip, ConfirmCard, Cover, CoverGrid, EmptyState, IconButton, Page, ProgressBar, SectionLabel, Switch, Tag, TapCard, TextField, useGridItemWidth, useToast } from '../../../components'
+import {
+  AppText,
+  Button,
+  Card,
+  Chip,
+  ConfirmCard,
+  Cover,
+  CoverGrid,
+  EmptyState,
+  IconButton,
+  Page,
+  ProgressBar,
+  SectionLabel,
+  Switch,
+  Tag,
+  TapCard,
+  TextField,
+  useGridItemWidth,
+  useToast,
+} from '../../../components'
 import { Icon } from '../../../components/Icon'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -99,7 +119,12 @@ function useCourse() {
 export function CourseDetailScreen() {
   const { colors } = useTheme()
   const c = useCourse()
-  if (!c) return <Page title="Curso"><EmptyState text="Este curso não existe mais." /></Page>
+  if (!c)
+    return (
+      <Page title="Curso">
+        <EmptyState text="Este curso não existe mais." />
+      </Page>
+    )
   const s = courseStats(c)
   const today = toISODate(new Date())
   return (
@@ -137,10 +162,31 @@ export function CourseDetailScreen() {
         const past = l.date <= today
         const status = l.present === true ? 'presente' : l.present === false ? 'faltou' : past ? 'presença não marcada' : 'a fazer'
         return (
-          <TapCard key={l.id} label={`Aula ${i + 1}, ${l.title}, ${formatMeetingDay(l.date)}, ${status}`} onPress={() => router.push({ pathname: '/igreja/curso/[id]/aula/[aula]', params: { id: c.id, aula: l.id } })}>
+          <TapCard
+            key={l.id}
+            label={`Aula ${i + 1}, ${l.title}, ${formatMeetingDay(l.date)}, ${status}`}
+            onPress={() => router.push({ pathname: '/igreja/curso/[id]/aula/[aula]', params: { id: c.id, aula: l.id } })}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: l.present ? colors.primary : colors.bg, borderWidth: l.present ? 0 : 1, borderColor: colors.line }}>
-                {l.present ? <Icon name="check" size={14} color={colors.primaryText} strokeWidth={3} /> : <AppText variant="small" style={{ fontFamily: fonts.semibold, color: colors.textSecondary }}>{i + 1}</AppText>}
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: l.present ? colors.primary : colors.bg,
+                  borderWidth: l.present ? 0 : 1,
+                  borderColor: colors.line,
+                }}
+              >
+                {l.present ? (
+                  <Icon name="check" size={14} color={colors.primaryText} strokeWidth={3} />
+                ) : (
+                  <AppText variant="small" style={{ fontFamily: fonts.semibold, color: colors.textSecondary }}>
+                    {i + 1}
+                  </AppText>
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <AppText variant="body">{`Aula ${i + 1}: ${l.title}`}</AppText>
@@ -176,7 +222,12 @@ export function LessonScreen() {
   const [notes, setNotes] = useState(l?.notes ?? '')
   const { pickImage, permissionSheet } = useImagePicker()
   const notesLocked = useNotesLocked()
-  if (!c || !l) return <Page title="Aula"><EmptyState text="Esta aula não existe mais." /></Page>
+  if (!c || !l)
+    return (
+      <Page title="Aula">
+        <EmptyState text="Esta aula não existe mais." />
+      </Page>
+    )
   const setLesson = (patch: Partial<Lesson>) => updateCourse(c.id, (x) => ({ ...x, lessons: x.lessons.map((y) => (y.id === l.id ? { ...y, ...patch } : y)) }))
   const addMaterial = (m: Omit<Material, 'id'>) => {
     setLesson({ materials: [...l.materials, { ...m, id: `mt${Date.now()}` }] })
@@ -196,7 +247,11 @@ export function LessonScreen() {
 
       <Card style={{ gap: 10 }}>
         <SectionLabel>Material</SectionLabel>
-        {l.materials.length === 0 ? <AppText variant="body" tone="secondary">Nenhum material nesta aula.</AppText> : null}
+        {l.materials.length === 0 ? (
+          <AppText variant="body" tone="secondary">
+            Nenhum material nesta aula.
+          </AppText>
+        ) : null}
         {l.materials.map((m) => (
           <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             {m.kind === 'Foto' ? (
@@ -290,7 +345,12 @@ export function ReviewScreen() {
   const [i, setI] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [answers, setAnswers] = useState<boolean[]>([])
-  if (!c) return <Page title="Revisão"><EmptyState text="Este curso não existe mais." /></Page>
+  if (!c)
+    return (
+      <Page title="Revisão">
+        <EmptyState text="Este curso não existe mais." />
+      </Page>
+    )
   if (c.cards.length === 0) {
     return (
       <Page title="Revisão">
@@ -305,14 +365,22 @@ export function ReviewScreen() {
     const wrong = c.cards.filter((_, j) => !answers[j])
     return (
       <Page title="Resultado da revisão">
-        <View style={{ alignItems: 'center', padding: 24, borderRadius: 16, backgroundColor: colors.primarySoft, gap: 4 }} accessible accessibilityLabel={`${pct} por cento de acertos, ${right} de ${c.cards.length} cartões`}>
+        <View
+          style={{ alignItems: 'center', padding: 24, borderRadius: 16, backgroundColor: colors.primarySoft, gap: 4 }}
+          accessible
+          accessibilityLabel={`${pct} por cento de acertos, ${right} de ${c.cards.length} cartões`}
+        >
           <AppText style={{ fontFamily: fonts.bold, fontSize: 44, color: colors.primary }}>{`${pct}%`}</AppText>
           <AppText variant="bodyStrong">Acertos</AppText>
           <AppText variant="small" tone="secondary">{`${right} de ${c.cards.length} cartões`}</AppText>
         </View>
         <Card style={{ gap: 8 }}>
           <SectionLabel>Para rever</SectionLabel>
-          {wrong.length === 0 ? <AppText variant="body" tone="secondary">Nada para rever. Você acertou todos.</AppText> : null}
+          {wrong.length === 0 ? (
+            <AppText variant="body" tone="secondary">
+              Nada para rever. Você acertou todos.
+            </AppText>
+          ) : null}
           {wrong.map((w) => (
             <View key={w.q} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
               <Icon name="close" size={14} color={colors.danger} strokeWidth={3} />
@@ -337,7 +405,17 @@ export function ReviewScreen() {
         accessibilityRole="button"
         accessibilityLabel={`${flipped ? 'Resposta' : 'Pergunta'}: ${flipped ? card.a : card.q}`}
         accessibilityHint={flipped ? 'Toque para ver a pergunta' : 'Toque para ver a resposta'}
-        style={{ minHeight: 220, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: flipped ? colors.primary : colors.line, backgroundColor: flipped ? colors.primarySoft : colors.card, alignItems: 'center', justifyContent: 'center', gap: 12 }}
+        style={{
+          minHeight: 220,
+          padding: 24,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: flipped ? colors.primary : colors.line,
+          backgroundColor: flipped ? colors.primarySoft : colors.card,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 12,
+        }}
       >
         <AppText variant="label" tone="secondary">
           {flipped ? 'RESPOSTA' : 'PERGUNTA'}
@@ -351,7 +429,13 @@ export function ReviewScreen() {
       </Pressable>
       {flipped ? (
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Button label="Errei" icon="close" variant="outline" onPress={() => (setAnswers((a) => [...a, false]), setI((x) => Math.min(x + 1, c.cards.length - 1)), setFlipped(false))} style={{ flex: 1 }} />
+          <Button
+            label="Errei"
+            icon="close"
+            variant="outline"
+            onPress={() => (setAnswers((a) => [...a, false]), setI((x) => Math.min(x + 1, c.cards.length - 1)), setFlipped(false))}
+            style={{ flex: 1 }}
+          />
           <Button label="Acertei" icon="check" onPress={() => (setAnswers((a) => [...a, true]), setI((x) => Math.min(x + 1, c.cards.length - 1)), setFlipped(false))} style={{ flex: 1 }} />
         </View>
       ) : (
@@ -373,7 +457,12 @@ export function ExamScreen() {
   const [place, setPlace] = useState(c?.exam?.place ?? '')
   const [reminder, setReminder] = useState(c?.exam?.reminder ?? true)
   const [error, setError] = useState<string | undefined>()
-  if (!c) return <Page title="Prova"><EmptyState text="Este curso não existe mais." /></Page>
+  if (!c)
+    return (
+      <Page title="Prova">
+        <EmptyState text="Este curso não existe mais." />
+      </Page>
+    )
   return (
     <Page title="Prova ou entrega">
       <TextField label="Data" value={date} onChangeText={(v) => (setDate(maskDate(v)), setError(undefined))} placeholder="DD/MM/AAAA" keyboardType="number-pad" error={error} />
@@ -409,14 +498,21 @@ export function CourseCompleteScreen() {
   const { updateCourse } = useChurch()
   const c = useCourse()
   const [confirm, setConfirm] = useState(false)
-  if (!c) return <Page title="Conclusão"><EmptyState text="Este curso não existe mais." /></Page>
+  if (!c)
+    return (
+      <Page title="Conclusão">
+        <EmptyState text="Este curso não existe mais." />
+      </Page>
+    )
   const s = courseStats(c)
   const remaining = s.total - s.done
 
   if (!c.completedAt) {
     return (
       <Page title="Concluir curso">
-        <AppText variant="body">{remaining > 0 ? `Ainda faltam ${remaining} ${remaining === 1 ? 'aula' : 'aulas'} pelo calendário. Quer marcar o curso como concluído mesmo assim?` : `Marcar ${c.name} como concluído?`}</AppText>
+        <AppText variant="body">
+          {remaining > 0 ? `Ainda faltam ${remaining} ${remaining === 1 ? 'aula' : 'aulas'} pelo calendário. Quer marcar o curso como concluído mesmo assim?` : `Marcar ${c.name} como concluído?`}
+        </AppText>
         {confirm ? null : <Button label="Concluir curso" onPress={() => setConfirm(true)} />}
         {confirm ? (
           <ConfirmCard
@@ -547,6 +643,14 @@ export function CourseByPhotoScreen() {
       setNote('Confira o que o app leu e corrija o que precisar.')
     } else {
       setNote(PHOTO_ERROR[r.reason](r.resetsAt))
+      // Plano vencido no meio do caminho: além do texto, oferece o plano que libera (24/10).
+      if (r.reason === 'no_access')
+        showPlanBlocked({
+          title: 'Curso pela foto ou PDF',
+          text: 'Ler o cronograma pela foto ou PDF é do plano Completo. Você pode preencher os dados à mão agora.',
+          plan: 'completo',
+          origin: 'curso-foto',
+        })
     }
   }
 
@@ -638,7 +742,11 @@ function Preview({ photo, pdfName }: { photo: string | null; pdfName: string | n
   const { colors } = useTheme()
   if (photo) return <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16 }} accessibilityLabel="Foto do cronograma" />
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, borderRadius: 20, backgroundColor: colors.card }} accessible accessibilityLabel={`PDF do cronograma: ${pdfName ?? ''}`}>
+    <View
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, borderRadius: 20, backgroundColor: colors.card }}
+      accessible
+      accessibilityLabel={`PDF do cronograma: ${pdfName ?? ''}`}
+    >
       <Icon name="file" size={24} color={colors.primary} />
       <AppText variant="body" style={{ flex: 1 }} numberOfLines={2}>
         {pdfName}
@@ -678,7 +786,11 @@ export function AddCourseScreen() {
         </Card>
       ))}
       <Button label="Acrescentar aula" icon="plus" variant="outline" onPress={() => setLessons((x) => [...x, { title: '', date: '', time: x[x.length - 1]?.time ?? '' }])} />
-      {error ? <AppText variant="small" tone="danger" accessibilityLiveRegion="polite">{error}</AppText> : null}
+      {error ? (
+        <AppText variant="small" tone="danger" accessibilityLiveRegion="polite">
+          {error}
+        </AppText>
+      ) : null}
       <Button
         label="Salvar curso"
         disabled={!name.trim()}

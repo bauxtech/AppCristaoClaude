@@ -94,7 +94,7 @@ export function NewCellRequestScreen() {
   const prayer = usePrayer()
   const [text, setText] = useState('')
   return (
-    <CellGuard title="Novo pedido" action="seePrayers" needsSeat>
+    <CellGuard title="Novo pedido" action="seePrayers" needsSeat writes>
       {(cell) => (
         <Page title="Novo pedido">
           <TextField label="Seu pedido" value={text} onChangeText={setText} placeholder="Escreva seu pedido de oração" multiline maxLength={2000} />

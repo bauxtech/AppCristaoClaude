@@ -2,9 +2,7 @@ import * as Clipboard from 'expo-clipboard'
 import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
 import { Image, Share, View } from 'react-native'
-import { router } from 'expo-router'
-import { AlertCard, AppText, Button, Card, Icon, ListRow, Page, SectionLabel, Switch, TextField, useToast } from '../../../components'
-import { useSubscription } from '../../subscription/SubscriptionContext'
+import { AppText, Button, Card, Icon, ListRow, Page, SectionLabel, Switch, TextField, useToast } from '../../../components'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
 import { useCell } from '../CellContext'
@@ -114,7 +112,6 @@ const LOGO_ERROR = {
 
 function WebPage({ cell }: { cell: Cell }) {
   const { colors } = useTheme()
-  const sub = useSubscription()
   const toast = useToast()
   const { update } = useCell()
   const [slug, setSlug] = useState(cell.webSlug ?? '')
@@ -163,19 +160,6 @@ function WebPage({ cell }: { cell: Cell }) {
     if (r !== 'ok') return setError(LOGO_ERROR[r])
     update((c) => (kind === 'logo' ? { ...c, logoUrl: null, logoPath: null } : { ...c, webCoverUrl: null, webCoverPath: null }))
     toast(IMAGE[kind].removed)
-  }
-
-  // Célula parada (líder sem o plano Líder): o site sai do ar e o banco recusa qualquer mudança.
-  // Antes, os botões ficavam abertos e o envio do logo caía num erro genérico (22/10).
-  if (!sub.cellActive(cell.id)) {
-    return (
-      <Page title="Site da célula">
-        <AlertCard tone="danger" title="Site fora do ar" action={{ label: 'Ver plano Líder', onPress: () => router.push('/assinatura?plano=lider&origem=celula-site' as '/assinatura') }}>
-          Sem o plano Líder, a célula fica parada e o site sai do ar. Não dá para mudar o texto, o endereço, a capa ou o logo. Nada foi apagado: assine o plano Líder ou passe a liderança para alguém
-          com o plano, e o site volta como estava.
-        </AlertCard>
-      </Page>
-    )
   }
 
   return (

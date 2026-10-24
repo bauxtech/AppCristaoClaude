@@ -18,6 +18,7 @@ import { watchSession } from '../lib/supabase'
 import { startSync } from '../lib/sync'
 import { configureStore } from '../lib/store'
 import { Splash } from '../features/onboarding/Splash'
+import { PlanBlockedSheet } from '../features/subscription/PlanBlocked'
 import { AudioProvider } from '../features/audio/AudioContext'
 import { BibleProvider } from '../features/bible/BibleContext'
 import { CellProvider } from '../features/cell/CellContext'
@@ -44,7 +45,14 @@ function RootStack() {
   useEffect(() => startSync(), [])
   // Avisos do servidor: atualizam a central e, ao tocar, abrem a tela do aviso.
   const { refreshNotices } = useSettings()
-  useEffect(() => watchPushes(() => void refreshNotices(), (href) => isInternalRoute(href) && jumpTo(href as '/avisos')), [refreshNotices])
+  useEffect(
+    () =>
+      watchPushes(
+        () => void refreshNotices(),
+        (href) => isInternalRoute(href) && jumpTo(href as '/avisos'),
+      ),
+    [refreshNotices],
+  )
   // Voltar depois de um salto para outra aba: a tela atual vai para o registro, e o voltar do Android também desfaz o salto.
   const pathname = usePathname()
   useEffect(() => setCurrentRoute(pathname), [pathname])
@@ -79,6 +87,7 @@ function RootStack() {
         </Stack>
       </ConnectionFrame>
       {splash ? <Splash onDone={endSplash} /> : <UpdateBanner />}
+      <PlanBlockedSheet />
     </>
   )
 }
