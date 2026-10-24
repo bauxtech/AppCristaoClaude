@@ -144,6 +144,24 @@ export function isTransient(r: RunResult) {
   return /fetch|network|timeout|offline|jwt/i.test(r.error?.message ?? '')
 }
 
+/** Recusa pela regra de acesso do banco (RLS) ou pelo Storage: quase sempre plano vencido ou célula parada. */
+export function isAccessRefusal(r: RunResult) {
+  if (!r.error) return false
+  if (r.error.code === '42501' || r.status === 403) return true
+  return /row-level security|permission denied|not authorized|no_access/i.test(r.error.message ?? '')
+}
+
+/** Nome do que foi recusado: tabela, função ou balde. */
+export function opTarget(op: SyncOp) {
+  return op.kind === 'rpc' ? op.fn : op.kind === 'upload' || op.kind === 'remove' ? op.bucket : op.table
+}
+
+let refusedListener: ((target: string) => void) | null = null
+/** Quem avisa a pessoa quando o servidor recusa uma mudança por acesso (o painel do plano, na raiz do app). */
+export function onAccessRefused(fn: ((target: string) => void) | null) {
+  refusedListener = fn
+}
+
 async function run(c: SupabaseClient, op: SyncOp, uid: string): Promise<RunResult> {
   if (op.kind === 'upsert') return await c.from(op.table).upsert(fill(op.row, uid), op.onConflict ? { onConflict: op.onConflict } : undefined)
   if (op.kind === 'update') return await c.from(op.table).update(fill(op.values, uid)).match(fill(op.match, uid))
@@ -192,6 +210,8 @@ export function flush(): Promise<void> {
         if (r.error) {
           console.warn('Sincronização: operação recusada pelo servidor', op.kind === 'rpc' ? op.fn : op.kind === 'upload' || op.kind === 'remove' ? op.bucket : op.table, r.error.message)
           setItem(DROPPED, [...droppedOps(), op].slice(-50))
+          // Antes a recusa ficava calada e a pessoa achava que tinha salvado (24/10).
+          if (isAccessRefusal(r)) refusedListener?.(opTarget(op))
         }
         // Tira a operação enviada. O que entrou na fila durante o envio continua lá.
         save(load().filter((x) => x !== op))

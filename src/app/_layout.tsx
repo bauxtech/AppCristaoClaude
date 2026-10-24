@@ -15,10 +15,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ConnectionFrame, ToastProvider, UpdateBanner } from '../components'
 import { ConnectionProvider } from '../state/connection'
 import { watchSession } from '../lib/supabase'
-import { startSync } from '../lib/sync'
+import { onAccessRefused, startSync } from '../lib/sync'
 import { configureStore } from '../lib/store'
 import { Splash } from '../features/onboarding/Splash'
-import { PlanBlockedSheet } from '../features/subscription/PlanBlocked'
+import { PlanBlockedSheet, refusedBlock, showPlanBlocked } from '../features/subscription/PlanBlocked'
 import { AudioProvider } from '../features/audio/AudioContext'
 import { BibleProvider } from '../features/bible/BibleContext'
 import { CellProvider } from '../features/cell/CellContext'
@@ -43,6 +43,11 @@ function RootStack() {
   useEffect(() => watchSession(configureStore), [])
   // Fila de sincronização com o banco: acompanha o login e a volta da internet.
   useEffect(() => startSync(), [])
+  // Mudança recusada pelo servidor por falta de plano: avisa e oferece o plano, em vez de ficar calado.
+  useEffect(() => {
+    onAccessRefused((target) => showPlanBlocked(refusedBlock(target)))
+    return () => onAccessRefused(null)
+  }, [])
   // Avisos do servidor: atualizam a central e, ao tocar, abrem a tela do aviso.
   const { refreshNotices } = useSettings()
   useEffect(

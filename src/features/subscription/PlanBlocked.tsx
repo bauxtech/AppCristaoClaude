@@ -53,6 +53,21 @@ export function PlanBlockedSheet() {
   )
 }
 
+/** Mudança recusada pelo servidor por acesso: diz que não foi salva e oferece o plano que costuma liberar. */
+export function refusedBlock(target: string): PlanBlock {
+  const cell = /^cell|^join_|^ride|^schedule|^set_cell|^mark_attendance|^approve|^decide|cell-logos|cell-/.test(target)
+  const sermon = /^sermon|sermons/.test(target)
+  const plan: PlanId = cell ? 'lider' : sermon ? 'completo' : 'essencial'
+  return {
+    title: 'Não foi salvo',
+    text: cell
+      ? 'A célula está parada porque o líder está sem o plano Líder. A mudança ficou só neste celular e não chegou para o grupo. Nada foi apagado.'
+      : 'Seu plano não está ativo agora, então essa mudança ficou só neste celular. Nada foi apagado: com um plano ativo, você volta a salvar.',
+    plan,
+    origin: 'recusa-servidor',
+  }
+}
+
 /** Célula parada: o líder vê a oferta do plano Líder; o membro, o motivo. */
 export function cellPausedBlock(leader: boolean): PlanBlock {
   return leader

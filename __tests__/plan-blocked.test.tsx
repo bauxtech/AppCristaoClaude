@@ -52,3 +52,15 @@ test('célula parada: qualquer mudança vira aviso com a oferta, não erro', asy
   expect(screen.getByRole('header', { name: 'Célula parada' })).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Ver plano Líder' })).toBeTruthy()
 })
+
+test('recusa do servidor por acesso vira aviso; erro de rede não', () => {
+  const { isAccessRefusal } = require('../src/lib/sync')
+  const { refusedBlock } = require('../src/features/subscription/PlanBlocked')
+  expect(isAccessRefusal({ error: { code: '42501', message: 'new row violates row-level security policy' }, status: 403 })).toBe(true)
+  expect(isAccessRefusal({ error: { message: 'new row violates row-level security policy' }, status: 400 })).toBe(true)
+  expect(isAccessRefusal({ error: { message: 'Network request failed' }, status: 0 })).toBe(false)
+  expect(isAccessRefusal({ error: null, status: 200 })).toBe(false)
+  expect(refusedBlock('cells').plan).toBe('lider')
+  expect(refusedBlock('sermons').plan).toBe('completo')
+  expect(refusedBlock('prayer_diary')).toMatchObject({ title: 'Não foi salvo', plan: 'essencial' })
+})
