@@ -18,7 +18,7 @@ export const CELL_TOURS: Record<CellVariant, TourStep[]> = {
   sem: [
     { title: 'O que é a célula', text: 'Um grupo pequeno que se reúne para ler a Bíblia e orar. Aqui ficam a próxima reunião, o roteiro e os pedidos de oração do grupo.' },
     { title: 'Como entrar', text: 'Peça ao líder o código ou o link de convite e toque em Entrar com convite. O líder aprova cada pessoa.' },
-    { title: 'Quer liderar uma célula?', text: 'No plano Líder você cria a sua célula, com um site próprio para convidar pessoas, roteiro, presença e escala.' },
+    { title: 'Quer liderar uma célula?', text: 'No plano Líder você cria a sua célula, com um site próprio para convidar pessoas, roteiro montado com IA, presença e escala.' },
   ],
   // Sem célula, com o plano Líder.
   semLider: [
@@ -34,7 +34,8 @@ export const CELL_TOURS: Record<CellVariant, TourStep[]> = {
   lider: [
     { title: 'Site da célula', text: 'Compartilhe o link no WhatsApp e nas redes. Em Editar site, mude o texto sobre a célula, o logo, a capa e o endereço do site.' },
     { title: 'Quem entra', text: 'Os pedidos de entrada aparecem aqui. Você aprova como membro ou visitante. Até 20 membros sem plano usam a célula pela sua assinatura.' },
-    { title: 'A reunião', text: 'Monte o roteiro (à mão, com IA ou pelo PDF da igreja), marque a presença e organize a escala. O auxiliar pode marcar presença e editar a escala com você.' },
+    { title: 'Roteiro com IA', text: 'Em Roteiro, toque em Editar roteiro. Escreva um tema e toque em Montar com IA, complete só as partes vazias ou envie o PDF ou a foto do roteiro da igreja. Os versículos vêm da Bíblia do app e você revisa antes de salvar.' },
+    { title: 'A reunião', text: 'Marque a presença e organize a escala. O auxiliar pode marcar presença e editar a escala com você.' },
     { title: 'Opções da célula', text: 'Edite os dados da célula, convide pessoas, veja o histórico e, quando o grupo crescer, a sugestão de multiplicação.' },
   ],
   // Líder sem o plano Líder e sem outro líder com o plano: a célula para e fica só para leitura.
