@@ -64,8 +64,8 @@ export async function syncReminders(prefs: NotificationPrefs): Promise<{ schedul
     }
     await Notifications.cancelAllScheduledNotificationsAsync()
     const items = [
-      { on: prefs.types.leitura, time: prefs.readingTime, title: 'Leitura do dia', body: 'Hora da sua leitura.', id: 'leitura' },
-      { on: prefs.types.oracao, time: prefs.prayerTime, title: 'Momento de oração', body: 'Que tal orar agora?', id: 'oracao' },
+      { on: prefs.types.leitura, time: prefs.readingTime, title: 'Leitura do dia', body: 'Reserve um tempo para a leitura de hoje.', id: 'leitura' },
+      { on: prefs.types.oracao, time: prefs.prayerTime, title: 'Momento de oração', body: 'A oração guiada de hoje leva poucos minutos.', id: 'oracao' },
     ]
     for (const it of items) {
       if (!it.on || inQuietHours(it.time, prefs.quietFrom, prefs.quietTo)) continue
