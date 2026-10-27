@@ -20,6 +20,10 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Avisos: serviço de notificação do Expo.
 - Nenhuma chave de API no app nem no repositório. Segredos ficam no Supabase e no EAS.
 
+## LOJAS (já decidido e configurado, não perguntar de novo)
+- Google Play: conta de empresa, BAUX ESTUDIO LTDA, já ativa e verificada. Não precisa do teste fechado de 14 dias com 12 pessoas. Perfil de pagamentos BAUX ESTUDIO LTDA, taxa de 15% (grupo de contas Baux Tech).
+- App Store: app 6825504897, time VT8LPC3YRJ, só Brasil, grátis com assinaturas. Programa para pequenas empresas (15%) enviado.
+
 ## DESIGN
 - A referência visual é o repositório do protótipo. Leia os valores no código, não em imagem.
 - Estrutura: 5 abas (Hoje, Bíblia, Célula, Igreja, Eu), botão do chat e oração como painel por cima.
