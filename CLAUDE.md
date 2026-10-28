@@ -107,7 +107,7 @@ Quem conduz é o Thiago, diretor de design. Não há desenvolvedor na equipe. O 
 - Testes de permissão são obrigatórios: um teste tenta ler o pedido de oração de outra célula e precisa falhar. O mesmo para telefone, presença e diário.
 - Antes de fechar um pull request, peça revisão a uma sessão separada, com foco em segurança, permissões, dado sensível e acessibilidade.
 - Nada vai para a loja com teste quebrado.
-- Revisão por pessoa de fora antes do lançamento: não haverá (decidido pelo Thiago em 28/10).
+- Revisão por pessoa de fora antes do lançamento: não haverá (decidido pelo Thiago em 28/10). No lugar, antes de abrir para o público (31/10), uma sessão separada do Claude faz a conferência final das regras de acesso do banco, das chaves e do pagamento.
 
 ## DOCUMENTOS
 - docs/funcionalidades-v1.md: os 15 fluxos (cópia de https://claude.ai/code/artifact/6464c542-3f43-4e73-b9de-0eb1b8ec43f7).
