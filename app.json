@@ -42,7 +42,8 @@
         "expo-audio",
         {
           "microphonePermission": "O microfone é usado para gravar o culto e transformar a pregação em texto para você.",
-          "enableBackgroundRecording": true
+          "enableBackgroundRecording": true,
+          "enableBackgroundPlayback": false
         }
       ],
       "expo-video",
