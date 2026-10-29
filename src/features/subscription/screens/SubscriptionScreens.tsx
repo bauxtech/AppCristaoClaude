@@ -231,6 +231,8 @@ const RESULT_TEXT: Record<Exclude<PurchaseResult, 'ok'>, string | null> = {
 function SendStoreDetails() {
   const toast = useToast()
   const [sent, setSent] = useState(false)
+  // Um envio por toque: toques repetidos enviavam o mesmo relato 2 ou 3 vezes e gastavam o limite do dia (29/10).
+  const sending = useRef(false)
   if (sent) return null
   return (
     <Button
@@ -239,7 +241,12 @@ function SendStoreDetails() {
       size="sm"
       accessibilityHint="Manda à equipe do acasa os detalhes técnicos da compra, sem senha nem dados de pagamento"
       onPress={async () => {
-        const ok = await sendReport(`Compra não concluída. Registro da loja:\n${storeLog()}`.slice(-2000), '/assinatura')
+        if (sending.current) return
+        sending.current = true
+        // O cabeçalho fica; do registro, vão as linhas mais recentes que couberem.
+        const head = 'Compra não concluída. Registro da loja:\n'
+        const ok = await sendReport(head + storeLog().slice(-(2000 - head.length)), '/assinatura')
+        sending.current = false
         toast(ok ? 'Detalhes enviados. Obrigado.' : 'Não foi possível enviar agora. Tente de novo.')
         if (ok) setSent(true)
       }}
