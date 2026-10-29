@@ -9,13 +9,21 @@ const store = require('../src/lib/store') as typeof import('../src/lib/store')
 const pkg = { product: { identifier: 'acasa_completo_anual' } }
 const mocked = jest.mocked(Purchases)
 
-beforeAll(() => store.configureStore('u1'))
+let configureArgs: unknown
+beforeAll(() => {
+  store.configureStore('u1')
+  configureArgs = mocked.configure.mock.calls[0]?.[0]
+})
 beforeEach(() => {
   jest.clearAllMocks()
   mocked.getOfferings.mockResolvedValue({ current: { availablePackages: [pkg] } } as never)
 })
 
 describe('compra na loja', () => {
+  test('no iPhone, a loja é ligada no StoreKit 1', () => {
+    expect(configureArgs).toEqual(expect.objectContaining({ appUserID: 'u1', storeKitVersion: 'STOREKIT_1' }))
+  })
+
   test('cancelar volta sem erro', async () => {
     mocked.purchasePackage.mockRejectedValueOnce({ code: '1' })
     expect(await store.purchase('completo', 'annual')).toBe('cancelled')

@@ -64,6 +64,8 @@ jest.mock('react-native-purchases', () => ({
   __esModule: true,
   default: { configure: jest.fn(), getOfferings: jest.fn(), purchasePackage: jest.fn(), restorePurchases: jest.fn() },
   PURCHASES_ERROR_CODE: { PURCHASE_CANCELLED_ERROR: '1', PAYMENT_PENDING_ERROR: '20' },
+  STOREKIT_VERSION: { STOREKIT_1: 'STOREKIT_1', STOREKIT_2: 'STOREKIT_2', DEFAULT: 'DEFAULT' },
+  LOG_LEVEL: { DEBUG: 'DEBUG' },
 }))
 // Armazenamento seguro: os testes que precisam dele põem um objeto em globalThis.__secureStore.
 jest.mock('expo-secure-store', () => ({
@@ -82,4 +84,3 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
   isErrorWithCode: (e) => !!e?.code,
   statusCodes: { SIGN_IN_CANCELLED: 'cancelled', IN_PROGRESS: 'in_progress' },
 }))
-

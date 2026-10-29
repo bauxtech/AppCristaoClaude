@@ -1,5 +1,5 @@
 import { Linking, Platform } from 'react-native'
-import Purchases, { LOG_LEVEL, PURCHASES_ERROR_CODE, type CustomerInfo, type PurchasesPackage } from 'react-native-purchases'
+import Purchases, { LOG_LEVEL, PURCHASES_ERROR_CODE, STOREKIT_VERSION, type CustomerInfo, type PurchasesPackage } from 'react-native-purchases'
 import { callFunction } from './supabase'
 
 // Compra nativa da App Store e do Google Play pelo RevenueCat.
@@ -37,7 +37,8 @@ export function configureStore(userId: string) {
   } catch {
     // sem registro: a compra segue normal
   }
-  Purchases.configure({ apiKey: KEY, appUserID: userId })
+  // StoreKit 1 no iPhone (29/10): no TestFlight do iOS 26, a compra pelo StoreKit 2 volta "cancelada" logo depois da senha.
+  Purchases.configure({ apiKey: KEY, appUserID: userId, storeKitVersion: STOREKIT_VERSION.STOREKIT_1 })
   configured = true
 }
 
