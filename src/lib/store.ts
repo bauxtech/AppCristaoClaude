@@ -1,5 +1,5 @@
 import { Linking, Platform } from 'react-native'
-import Purchases, { PURCHASES_ERROR_CODE, type CustomerInfo, type PurchasesPackage } from 'react-native-purchases'
+import Purchases, { LOG_LEVEL, PURCHASES_ERROR_CODE, type CustomerInfo, type PurchasesPackage } from 'react-native-purchases'
 import { callFunction } from './supabase'
 
 // Compra nativa da App Store e do Google Play pelo RevenueCat.
@@ -16,9 +16,27 @@ type Billing = 'monthly' | 'annual'
 export const STORE_ENABLED = !!KEY
 let configured = false
 
+// Registro técnico da loja (30/10), para descobrir por que uma compra não termina. Fica só na memória do aparelho
+// e só sai dele quando a pessoa toca em "Enviar detalhes". Cada linha é cortada; nada de senha ou cartão passa pela biblioteca.
+const LOG: string[] = []
+const MAX_LINES = 120
+export function storeLog(note?: string) {
+  if (note) LOG.push(`app: ${note}`)
+  return LOG.slice(-MAX_LINES).join('\n')
+}
+
 /** Liga a loja com o id da pessoa no Supabase, para o webhook saber de quem é a compra. */
 export function configureStore(userId: string) {
   if (!KEY || configured) return
+  try {
+    Purchases.setLogHandler((level, message) => {
+      LOG.push(`${level}: ${message.slice(0, 300)}`)
+      if (LOG.length > MAX_LINES * 2) LOG.splice(0, LOG.length - MAX_LINES)
+    })
+    void Purchases.setLogLevel(LOG_LEVEL.DEBUG)
+  } catch {
+    // sem registro: a compra segue normal
+  }
   Purchases.configure({ apiKey: KEY, appUserID: userId })
   configured = true
 }
@@ -45,13 +63,19 @@ function findPackage(list: PurchasesPackage[], plan: PlanId, billing: Billing) {
 export async function purchase(plan: PlanId, billing: Billing): Promise<PurchaseResult> {
   if (!configured) return 'unavailable'
   const offerings = await Purchases.getOfferings()
-  const pkg = findPackage(offerings.current?.availablePackages ?? [], plan, billing)
+  const list = offerings.current?.availablePackages ?? []
+  storeLog(`oferta ${offerings.current?.identifier ?? 'nenhuma'}: ${list.map((p) => p.product.identifier).join(', ')}`)
+  const pkg = findPackage(list, plan, billing)
   if (!pkg) return 'no_package'
+  storeLog(`comprando ${pkg.product.identifier} (${pkg.product.priceString})`)
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg)
+    storeLog(`loja respondeu; ativos: ${Object.keys(customerInfo.entitlements.active).join(', ') || 'nenhum'}`)
     return active(customerInfo) ? 'ok' : 'not_active'
   } catch (e) {
-    const code = (e as { code?: string }).code
+    const err = e as { code?: string; message?: string; underlyingErrorMessage?: string; userCancelled?: boolean }
+    storeLog(`erro ${err.code ?? '?'} cancelado=${String(err.userCancelled)}: ${err.message ?? ''} / ${err.underlyingErrorMessage ?? ''}`)
+    const code = err.code
     if (code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR) return 'cancelled'
     // Pagamento que a loja ainda vai confirmar (boleto, por exemplo): o plano libera quando o aviso da loja chegar.
     if (code === PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR) return 'pending'

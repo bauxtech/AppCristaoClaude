@@ -21,6 +21,14 @@ describe('compra na loja', () => {
     expect(await store.purchase('completo', 'annual')).toBe('cancelled')
   })
 
+  test('o registro técnico guarda o produto e a resposta da loja, para Enviar detalhes', async () => {
+    mocked.purchasePackage.mockRejectedValueOnce({ code: '1', message: 'Purchase was cancelled.', userCancelled: true })
+    await store.purchase('completo', 'annual')
+    const log = store.storeLog()
+    expect(log).toContain('comprando acasa_completo_anual')
+    expect(log).toContain('erro 1 cancelado=true: Purchase was cancelled.')
+  })
+
   test('pagamento pendente não vira erro', async () => {
     mocked.purchasePackage.mockRejectedValueOnce({ code: '20' })
     expect(await store.purchase('completo', 'annual')).toBe('pending')

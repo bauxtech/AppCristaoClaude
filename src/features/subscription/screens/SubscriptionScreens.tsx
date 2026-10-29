@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { AlertCard, AppText, Button, Card, Icon, MIN_TOUCH, Page, Segmented, Sheet, TextField, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
-import { openStoreSubscriptions, purchase, simulateStorePurchase, IN_STORE, STORE_ENABLED, STORE_NAME, syncSubscription, type PurchaseResult } from '../../../lib/store'
+import { openStoreSubscriptions, purchase, simulateStorePurchase, IN_STORE, STORE_ENABLED, STORE_NAME, storeLog, syncSubscription, type PurchaseResult } from '../../../lib/store'
+import { sendReport } from '../../settings/screens/ReportScreen'
 import { phoneCodeProblem, sendPhoneChangeCode, supabase, verifyPhoneChange, type PhoneCodeProblem } from '../../../lib/supabase'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -219,11 +220,31 @@ function useBuy(onSample: () => void, from?: { source: string; feature?: string 
 }
 
 const RESULT_TEXT: Record<Exclude<PurchaseResult, 'ok'>, string | null> = {
-  cancelled: null,
+  cancelled: 'A compra foi cancelada. Se você não cancelou, toque em Enviar detalhes.',
   pending: 'Pagamento pendente. O plano é liberado quando a loja confirmar.',
   unavailable: 'A loja não está disponível agora. Tente de novo.',
   no_package: 'Este plano não foi encontrado na loja agora. Tente de novo em alguns minutos.',
   not_active: 'A loja concluiu a compra, mas o plano ainda não apareceu. Toque em Restaurar compra.',
+}
+
+/** Manda o registro técnico da loja para a equipe, quando a compra não termina (30/10). */
+function SendStoreDetails() {
+  const toast = useToast()
+  const [sent, setSent] = useState(false)
+  if (sent) return null
+  return (
+    <Button
+      label="Enviar detalhes"
+      variant="text"
+      size="sm"
+      accessibilityHint="Manda à equipe do acasa os detalhes técnicos da compra, sem senha nem dados de pagamento"
+      onPress={async () => {
+        const ok = await sendReport(`Compra não concluída. Registro da loja:\n${storeLog()}`.slice(-2000), '/assinatura')
+        toast(ok ? 'Detalhes enviados. Obrigado.' : 'Não foi possível enviar agora. Tente de novo.')
+        if (ok) setSent(true)
+      }}
+    />
+  )
 }
 
 function useRestore() {
@@ -328,6 +349,7 @@ export function PlansScreen() {
               {buyStatus}
             </AppText>
           ) : null}
+          {buyStatus && !buyStatus.startsWith('Falando') && !buyStatus.startsWith('Compra feita') ? <SendStoreDetails /> : null}
           {endOfTrial ? <Button label="Agora não, seguir só com a Bíblia" variant="text" size="sm" onPress={close} /> : null}
         </>
       }

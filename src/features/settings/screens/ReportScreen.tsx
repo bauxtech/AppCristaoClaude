@@ -20,6 +20,17 @@ function deviceLabel() {
   return `${model ? `${model}, ` : ''}${Platform.OS} ${String(Platform.Version)}`
 }
 
+/** Manda um relato pronto, sem passar pela tela (ex.: os detalhes técnicos de uma compra que não terminou). */
+export async function sendReport(message: string, screen: string) {
+  if (!IS_REMOTE) return false
+  try {
+    const r = await callFunction<{ kind: string }>('report-problem', { message: message.slice(0, 2000), screen, appVersion: APP_VERSION, platform: Platform.OS, device: deviceLabel() })
+    return r?.kind === 'ok'
+  } catch {
+    return false
+  }
+}
+
 /**
  * Reportar um problema: a pessoa escreve, o servidor guarda e avisa a equipe por e-mail.
  * A versão do app, o celular e a tela vão junto, para achar o erro.
