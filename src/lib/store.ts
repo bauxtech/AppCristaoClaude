@@ -33,7 +33,8 @@ function activePlan(info: CustomerInfo): { plan: PlanId; billing: Billing } | nu
 }
 const active = (info: CustomerInfo) => !!activePlan(info)
 
-export type PurchaseResult = 'ok' | 'cancelled' | 'pending' | 'unavailable'
+/** no_package: a oferta atual não tem o plano. not_active: a loja concluiu, mas o plano não apareceu ativo no RevenueCat. */
+export type PurchaseResult = 'ok' | 'cancelled' | 'pending' | 'unavailable' | 'no_package' | 'not_active'
 
 /** Pacote do plano e período na oferta atual do RevenueCat, pelo nome do produto. */
 function findPackage(list: PurchasesPackage[], plan: PlanId, billing: Billing) {
@@ -45,10 +46,10 @@ export async function purchase(plan: PlanId, billing: Billing): Promise<Purchase
   if (!configured) return 'unavailable'
   const offerings = await Purchases.getOfferings()
   const pkg = findPackage(offerings.current?.availablePackages ?? [], plan, billing)
-  if (!pkg) return 'unavailable'
+  if (!pkg) return 'no_package'
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg)
-    return active(customerInfo) ? 'ok' : 'unavailable'
+    return active(customerInfo) ? 'ok' : 'not_active'
   } catch (e) {
     const code = (e as { code?: string }).code
     if (code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR) return 'cancelled'

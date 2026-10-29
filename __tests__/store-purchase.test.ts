@@ -26,8 +26,8 @@ describe('compra na loja', () => {
     expect(await store.purchase('completo', 'annual')).toBe('pending')
   })
 
-  test('plano sem pacote na loja fica indisponível', async () => {
-    expect(await store.purchase('lider', 'monthly')).toBe('unavailable')
+  test('plano sem pacote na loja avisa que não achou o plano', async () => {
+    expect(await store.purchase('lider', 'monthly')).toBe('no_package')
     expect(mocked.purchasePackage).not.toHaveBeenCalled()
   })
 })

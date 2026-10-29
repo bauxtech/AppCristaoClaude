@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { AlertCard, AppText, Button, Card, Icon, MIN_TOUCH, Page, Segmented, Sheet, TextField, useToast } from '../../../components'
 import { IS_PREVIEW } from '../../../lib/preview'
-import { openStoreSubscriptions, purchase, simulateStorePurchase, IN_STORE, STORE_ENABLED, syncSubscription } from '../../../lib/store'
+import { openStoreSubscriptions, purchase, simulateStorePurchase, IN_STORE, STORE_ENABLED, STORE_NAME, syncSubscription, type PurchaseResult } from '../../../lib/store'
 import { phoneCodeProblem, sendPhoneChangeCode, supabase, verifyPhoneChange, type PhoneCodeProblem } from '../../../lib/supabase'
 import { useTheme } from '../../../theme/ThemeProvider'
 import { fonts } from '../../../theme/typography'
@@ -186,29 +186,44 @@ export function StoreSheet({ plan, billing, visible, onCancel, onConfirm }: { pl
  * Sem a loja, abre a folha de exemplo. Cancelar volta para a tela, sem mensagem de erro.
  */
 function useBuy(onSample: () => void, from?: { source: string; feature?: string }) {
-  const toast = useToast()
   const sub = useSubscription()
   // Um toque de cada vez: dois toques seguidos não abrem duas compras.
   const busy = useRef(false)
-  return async (plan: PlanId, billing: Billing) => {
+  // O que está acontecendo com a compra, na tela (30/10): antes, um erro da loja não aparecia e a tela parecia travada.
+  const [status, setStatus] = useState<string | null>(null)
+  const buy = async (plan: PlanId, billing: Billing) => {
     if (!STORE_ENABLED) return onSample()
     if (busy.current) return
     busy.current = true
+    setStatus(`Falando com a ${STORE_NAME}. Confirme na janela da loja.`)
+    const slow = setTimeout(() => setStatus(`A ${STORE_NAME} ainda não respondeu. Se a janela da loja já fechou, toque em Restaurar compra ou tente de novo.`), 45000)
     try {
       const r = await purchase(plan, billing)
       if (r === 'ok') {
+        setStatus('Compra feita. Liberando o plano.')
         if (from) logPaywall('purchase', from.source, from.feature)
         await syncSubscription()
         await sub.refresh()
+        setStatus(null)
         router.replace('/assinatura/confirmada')
-      } else if (r === 'pending') toast('Pagamento pendente. O plano é liberado quando a loja confirmar.')
-      else if (r === 'unavailable') toast('A loja não está disponível agora. Tente de novo.')
-    } catch {
-      toast('A compra não foi concluída. Tente de novo.')
+      } else setStatus(RESULT_TEXT[r])
+    } catch (e) {
+      const err = e as { code?: string; message?: string; underlyingErrorMessage?: string }
+      setStatus(`A compra não foi concluída. Código ${err.code ?? 'desconhecido'}: ${err.underlyingErrorMessage || err.message || 'sem detalhe'}`)
     } finally {
+      clearTimeout(slow)
       busy.current = false
     }
   }
+  return { buy, status }
+}
+
+const RESULT_TEXT: Record<Exclude<PurchaseResult, 'ok'>, string | null> = {
+  cancelled: null,
+  pending: 'Pagamento pendente. O plano é liberado quando a loja confirmar.',
+  unavailable: 'A loja não está disponível agora. Tente de novo.',
+  no_package: 'Este plano não foi encontrado na loja agora. Tente de novo em alguns minutos.',
+  not_active: 'A loja concluiu a compra, mas o plano ainda não apareceu. Toque em Restaurar compra.',
 }
 
 function useRestore() {
@@ -280,7 +295,7 @@ export function PlansScreen() {
   // Abre no mensal (site, 21/10); quem já assina vê o período que já tem.
   const [billing, setBilling] = useState<Billing>(currentBilling ?? 'monthly')
   const [sheet, setSheet] = useState(false)
-  const buy = useBuy(() => setSheet(true), { source, feature: feature ?? undefined })
+  const { buy, status: buyStatus } = useBuy(() => setSheet(true), { source, feature: feature ?? undefined })
   useEffect(() => {
     logPaywall('view', source, feature)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -308,6 +323,11 @@ export function PlansScreen() {
               onPress={() => buy(plan, billing)}
             />
           )}
+          {buyStatus ? (
+            <AppText variant="small" style={{ textAlign: 'center' }} accessibilityLiveRegion="polite">
+              {buyStatus}
+            </AppText>
+          ) : null}
           {endOfTrial ? <Button label="Agora não, seguir só com a Bíblia" variant="text" size="sm" onPress={close} /> : null}
         </>
       }
