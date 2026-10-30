@@ -20,8 +20,8 @@ beforeEach(() => {
 })
 
 describe('compra na loja', () => {
-  test('no iPhone, a loja é ligada no StoreKit 1', () => {
-    expect(configureArgs).toEqual(expect.objectContaining({ appUserID: 'u1', storeKitVersion: 'STOREKIT_1' }))
+  test('no iPhone, a loja é ligada no StoreKit padrão (2)', () => {
+    expect(configureArgs).toEqual(expect.objectContaining({ appUserID: 'u1', storeKitVersion: 'DEFAULT' }))
   })
 
   test('cancelar volta sem erro', async () => {

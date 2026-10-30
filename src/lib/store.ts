@@ -37,8 +37,9 @@ export function configureStore(userId: string) {
   } catch {
     // sem registro: a compra segue normal
   }
-  // StoreKit 1 no iPhone (29/10): no TestFlight do iOS 26, a compra pelo StoreKit 2 volta "cancelada" logo depois da senha.
-  Purchases.configure({ apiKey: KEY, appUserID: userId, storeKitVersion: STOREKIT_VERSION.STOREKIT_1 })
+  // StoreKit 2, o padrão recomendado. O StoreKit 1 só serviu para o teste de 30/10: mostrou que a falha no TestFlight era a
+  // autenticação da conta Apple dona do desenvolvedor no ambiente de teste (ASDErrorDomain 530), não o app.
+  Purchases.configure({ apiKey: KEY, appUserID: userId, storeKitVersion: STOREKIT_VERSION.DEFAULT })
   configured = true
 }
 
