@@ -10,7 +10,7 @@ import { router, Stack, usePathname } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useState } from 'react'
-import { BackHandler, View } from 'react-native'
+import { BackHandler } from 'react-native'
 
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ConnectionFrame, ToastProvider, UpdateBanner } from '../components'
@@ -35,9 +35,6 @@ import { ThemeProvider, useTheme } from '../theme/ThemeProvider'
 import { isInternalRoute } from '../lib/links'
 import { watchPushes } from '../lib/push'
 import { backFromJump, jumpTo, setCurrentRoute } from '../lib/nav'
-
-/** Largura máxima do app em tela grande (iPad, tablet): a mesma leitura do celular, centralizada. */
-const MAX_APP_WIDTH = 640
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
@@ -76,29 +73,24 @@ function RootStack() {
     <>
       <StatusBar style={splash ? (isDark ? 'dark' : 'light') : isDark ? 'light' : 'dark'} />
       <ConnectionFrame>
-        {/* iPad e tablet (30/10): o app fica numa coluna centralizada, como no celular, em vez de esticar na tela toda. */}
-        <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center' }}>
-          <View style={{ flex: 1, width: '100%', maxWidth: MAX_APP_WIDTH }}>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.bg },
-              }}
-            >
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="(onboarding)" />
-              <Stack.Screen name="chat" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="oracao" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="culto" />
-              <Stack.Screen name="avisos" />
-              <Stack.Screen name="ajuda" />
-              <Stack.Screen name="configuracoes" />
-              <Stack.Screen name="assinatura" />
-              <Stack.Screen name="componentes" />
-              <Stack.Screen name="teste-gravacao" />
-            </Stack>
-          </View>
-        </View>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.bg },
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(onboarding)" />
+          <Stack.Screen name="chat" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="oracao" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="culto" />
+          <Stack.Screen name="avisos" />
+          <Stack.Screen name="ajuda" />
+          <Stack.Screen name="configuracoes" />
+          <Stack.Screen name="assinatura" />
+          <Stack.Screen name="componentes" />
+          <Stack.Screen name="teste-gravacao" />
+        </Stack>
       </ConnectionFrame>
       {splash ? <Splash onDone={endSplash} /> : <UpdateBanner />}
       <PlanBlockedSheet />
