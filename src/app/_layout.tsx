@@ -11,7 +11,6 @@ import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useState } from 'react'
 import { BackHandler } from 'react-native'
-
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ConnectionFrame, ToastProvider, UpdateBanner } from '../components'
 import { ConnectionProvider } from '../state/connection'
